@@ -1,0 +1,32 @@
+# Node modules
+node_modules/
+
+# Build artifacts (we'll commit the built files for releases)
+# Uncomment these if you don't want built files in git:
+# main.js
+# styles.css
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+

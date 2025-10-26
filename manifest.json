@@ -1,0 +1,10 @@
+{
+  "id": "json-table-plugin",
+  "name": "JSON Table Viewer",
+  "version": "1.0.0",
+  "minAppVersion": "0.15.0",
+  "description": "Renders JSON files as tables",
+  "author": "Your Name",
+  "authorUrl": "https://yourwebsite.com",
+  "isDesktopOnly": false
+}

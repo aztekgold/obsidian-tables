@@ -1,0 +1,1108 @@
+// src/styles/main.scss
+
+// Variables
+$table-cell-height: 48px;
+
+// Import flatpickr styles first
+// @use 'flatpickr/dist/flatpickr.min.css';
+@use 'styles/flatpickr_overides.scss';
+
+/* ==========================================================================
+   Base Container
+   ========================================================================== */
+
+.json-table-view-container {
+  padding: 20px;
+  overflow: auto;
+  height: 100%;
+  background: var(--background-primary);
+}
+
+.json-table-wrapper {
+  overflow-x: auto;
+  padding-bottom: 1em;
+}
+
+/* ==========================================================================
+   File Rename Input
+   ========================================================================== */
+
+.json-table-rename-container {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+input.json-table-rename-input {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 1.25em;
+  font-weight: 500;
+  color: var(--text-normal);
+  width: 100%;
+  max-width: 400px;
+  transition: border-color 0.2s ease;
+}
+
+.json-table-rename-input:focus {
+  outline: none;
+  border: 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+  border-color: var(--interactive-accent);
+  box-shadow: none;
+}
+
+.json-table-rename-input:hover {
+  border-color: var(--background-modifier-border-hover);
+}
+
+/* ==========================================================================
+   Unified Button System
+   ========================================================================== */
+
+/* Core button base styles */
+button.json-table-btn,
+div.json-table-btn {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  outline: none;
+  gap: 8px;
+}
+
+button.json-table-btn:hover,
+div.json-table-btn:hover {
+  color: var(--text-normal);
+}
+
+button.json-table-btn:focus,
+div.json-table-btn:focus {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+/* Icon button variant - transparent with hover background, 8px padding */
+button.json-table-btn--icon,
+div.json-table-btn--icon {
+  padding: 8px;
+  border-radius: 4px;
+}
+
+button.json-table-btn--icon:hover,
+div.json-table-btn--icon:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* Standard button variant - 8px 12px padding */
+button.json-table-btn--standard,
+div.json-table-btn--standard {
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+/* Hybrid button variant - no background unless hovered, 8px 12px padding */
+button.json-table-btn--hybrid,
+div.json-table-btn--hybrid {
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+button.json-table-btn--hybrid:hover,
+div.json-table-btn--hybrid:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* Active state for buttons that can be toggled */
+button.json-table-btn--active,
+div.json-table-btn--active {
+  background: var(--interactive-accent-tint);
+  border-color: var(--interactive-accent);
+  color: var(--interactive-accent);
+}
+
+button.json-table-btn--active:hover,
+div.json-table-btn--active:hover {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+/* ==========================================================================
+   Table Core & Body
+   ========================================================================== */
+
+.json-table {
+  /* Reverted to your settings: */
+  min-width: 100%;
+  width: min-content; 
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.9em;
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.json-table th,
+.json-table td {
+  padding: 0;
+  min-width: 150px;
+  height: $table-cell-height;
+  text-align: left;
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* Default for simple text */
+}
+
+.json-table th {
+  padding: 12px 16px;
+  background-color: var(--background-secondary);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  position: relative; /* For resize handle */
+}
+
+.json-table tbody tr:nth-child(even) {
+  background-color: var(--background-primary-alt);
+}
+
+.json-table tbody tr:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+/* ==========================================================================
+   Table Headers & Add Column
+   ========================================================================== */
+
+.json-table-header-cell {
+  cursor: pointer;
+  user-select: none;
+}
+
+.json-table-header-cell:hover {
+  background: var(--background-modifier-hover);
+}
+
+.json-table-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  bottom: 0;
+  width: 5px;
+  cursor: col-resize;
+  z-index: 10;
+}
+
+.json-table-add-col-header {
+  width: 50px;
+  min-width: 50px;
+  background-color: var(--background-secondary);
+  position: sticky;
+  right: 0;
+  z-index: 11;
+}
+
+/* Legacy class - use .json-table-btn.json-table-btn--icon instead */
+.json-table-add-col-btn {
+  @extend .json-table-btn;
+  @extend .json-table-btn--icon;
+  font-size: 20px;
+}
+
+.json-table-add-col-cell {
+  width: 50px;
+  min-width: 50px;
+  background: var(--background-primary-alt);
+}
+
+/* ==========================================================================
+   Base Cell & Text Input
+   ========================================================================== */
+
+.json-table-cell {
+  padding: 0;
+  height: 100%;
+}
+
+/* Unified cell content container */
+.json-table-cell-content {
+  padding: 8px;
+  width: 100%;
+  height: 100%;
+  min-height: $table-cell-height;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+input.json-table-input {
+  width: 100%;
+  height: 100%;
+  min-height: $table-cell-height;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  color: var(--text-normal);
+  font-family: inherit;
+  font-size: inherit;
+  outline: none;
+  box-sizing: border-box;
+  display: block;
+  text-overflow: ellipsis;
+}
+
+.json-table-input:focus {
+  background: var(--background-modifier-form-field) !important;
+  box-shadow: inset 0 0 0 1px var(--interactive-accent) !important;
+}
+
+/* ==========================================================================
+   Cell Type: Checkbox
+   ========================================================================== */
+
+/* Checkbox container */
+.json-table-cell-checkbox {
+  text-align: center;
+  vertical-align: middle;
+  justify-content: center;
+}
+
+.json-table-checkbox {
+  width: 1.2em;
+  height: 1.2em;
+  cursor: pointer;
+  margin: 0;
+}
+
+/* ==========================================================================
+   Cell Type: Dropdown & MultiSelect
+   ========================================================================== */
+
+/* Wrapper for single-select dropdown */
+.json-table-dropdown {
+  width: 100%;
+  height: 100%;
+  min-height: $table-cell-height;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+/* Wrapper for multi-select dropdown */
+.json-table-multiselect {
+  width: 100%;
+  height: 100%;
+  min-height: $table-cell-height;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  cursor: pointer;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.json-table-dropdown-placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Your tag styling */
+.json-table-dropdown-tag {
+  padding: 4px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Cell Type: NoteLink (Wrapper-based)
+   ========================================================================== */
+
+/* This is the new wrapper INSIDE the <td> */
+.json-table-notelink-wrapper {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  min-height: $table-cell-height;
+}
+
+/* This rule applies styles ONLY in display mode */
+.json-table-notelink-wrapper.is-displaying-link {
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+/* The input itself will fill the wrapper */
+.json-table-notelink-wrapper .json-table-input {
+  height: 100%;
+}
+
+/* Keep the 'empty' and 'link' rules simple */
+.json-table-notelink-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ==========================================================================
+   Popups: Base
+   ========================================================================== */
+
+.json-table-popup {
+  position: absolute;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  z-index: 1000;
+  min-width: 280px;
+}
+
+.json-table-popup-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px;
+}
+
+.json-table-popup-header {
+  padding: 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  border-radius: 8px 8px 0 0;
+}
+
+.json-table-popup-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-normal);
+  margin: 0;
+}
+
+.json-table-popup-content {
+  padding: 12px;
+}
+
+.json-table-popup-footer {
+  padding: 12px;
+  border-top: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  border-radius: 0 0 8px 8px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.json-table-popup-label {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.json-table-popup-select {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-normal);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  height: 36px;
+  line-height: 20px;
+  vertical-align: middle;
+}
+
+.json-table-popup-select:focus {
+  border-color: var(--interactive-accent);
+}
+
+.json-table-popup-select:last-child {
+  margin-bottom: 0;
+}
+
+/* Sort popup specific styles */
+.json-table-sort-popup .json-table-popup-content {
+  display: flex;
+  gap: 12px;
+}
+
+.json-table-sort-popup .json-table-popup-select {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* ==========================================================================
+   Popups: Add Column
+   ========================================================================== */
+
+.json-table-column-popup {
+  min-width: 200px;
+}
+
+.json-table-type-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Legacy class - use .json-table-btn.json-table-btn--hybrid instead */
+.json-table-type-btn {
+  @extend .json-table-btn;
+  @extend .json-table-btn--hybrid;
+  width: 100%;
+  font-size: 14px;
+  text-align: left;
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+}
+
+.json-table-type-btn:active {
+  transform: scale(0.98);
+}
+
+.json-table-add-col-input {
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  background: var(--background-modifier-form-field);
+  border: 2px solid var(--interactive-accent);
+  color: var(--text-normal);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.json-table-add-col-input::placeholder {
+  color: var(--text-muted);
+  font-weight: normal;
+}
+
+/* ==========================================================================
+   Popups: Edit Column (Base & Dropdown Editor)
+   ========================================================================== */
+
+.json-table-edit-column-popup {
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Shared text input for column name and new option */
+.json-table-edit-input {
+  width: 100%;
+  padding: 8px;
+  background: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.json-table-edit-input:focus {
+  border-color: var(--interactive-accent);
+}
+
+/* Legacy class - use .json-table-btn.json-table-btn--standard instead */
+.json-table-delete-btn {
+  @extend .json-table-btn;
+  @extend .json-table-btn--standard;
+  width: 100%;
+  background: var(--background-modifier-error);
+  border: 1px solid var(--background-modifier-error);
+  color: var(--text-error);
+  font-size: 14px;
+}
+
+.json-table-delete-btn:hover {
+  background: var(--text-error);
+  color: var(--text-on-accent);
+}
+
+/* Container for the list of editable options */
+.json-table-edit-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 6px;
+  background-color: var(--background-modifier-form-field);
+  border-radius: 4px;
+  margin: 4px 0 8px;
+}
+
+/* A single row in the editable options list */
+.json-table-edit-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* The 'x' delete button for an option */
+.json-table-edit-option-delete {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.4em;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 8px;
+  line-height: 1;
+}
+.json-table-edit-option-delete:hover {
+  color: var(--text-error);
+}
+
+/* Container for the "Add new option" UI */
+.json-table-edit-option-add {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.json-table-edit-option-add .json-table-edit-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.json-table-edit-option-add .json-table-add-row {
+  margin-top: 0;
+  padding: 8px 12px;
+}
+
+.json-table-edit-column-popup .json-table-popup-label {
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
+
+/* ==========================================================================
+   Popups: Dropdown (Cell)
+   ========================================================================== */
+
+.json-table-dropdown-popup {
+  padding: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Your style for dropdown options */
+.json-table-dropdown-option {
+  padding: 8px 10px; /* Use the roomier padding */
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.json-table-dropdown-option:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.json-table-dropdown-option.is-selected {
+  background-color: var(--background-modifier-active);
+  font-weight: 600;
+}
+
+.json-table-dropdown-option.is-disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.json-table-multiselect-tag-remove {
+  font-weight: bold;
+  font-size: 1.1em;
+  margin-left: 6px;
+  padding: 0 2px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.json-table-multiselect-tag-remove:hover {
+  background-color: rgba(0,0,0,0.2);
+  color: var(--text-error);
+}
+
+/* This darkens the cell slightly in edit mode to show it's active */
+.json-table-multiselect.is-editing {
+  background-color: var(--background-modifier-hover);
+}
+
+/* Make tags in edit mode more "tag-like" */
+.json-table-multiselect.is-editing .json-table-dropdown-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 2px 4px 8px; /* Tighter padding for the 'x' */
+}
+/* ==========================================================================
+   Color Palette (Dropdown Tags) - YOUR COLORS
+   ========================================================================== */
+
+.dropdown-tag--default {
+  background-color: var(--background-modifier-hover);
+  color: white;
+}
+.dropdown-tag--red {
+  background-color: rgba(255, 100, 100, 0.2);
+  color: white;
+}
+.dropdown-tag--blue {
+  background-color: rgba(100, 100, 255, 0.2);
+  color: white;
+}
+.dropdown-tag--green {
+  background-color: rgba(100, 255, 100, 0.2);
+  color: white;
+}
+
+/* Hover/select states */
+.json-table-dropdown-option:hover .dropdown-tag--blue,
+.json-table-dropdown-option.is-selected .dropdown-tag--blue {
+  background-color: rgba(100, 100, 255, 0.3);
+}
+
+.json-table-dropdown-option:hover .dropdown-tag--green,
+.json-table-dropdown-option.is-selected .dropdown-tag--green {
+  background-color: rgba(100, 255, 100, 0.3);
+}
+
+.json-table-dropdown-option:hover .dropdown-tag--red,
+.json-table-dropdown-option.is-selected .dropdown-tag--red {
+  background-color: rgba(255, 100, 100, 0.3);
+}
+
+
+/* ==========================================================================
+   Utility & Misc
+   ========================================================================== */
+
+.json-table-add-row {
+  padding-bottom: 0.65em;
+  /* padding: 8px 16px; */
+  /* background: var(--interactive-normal); */
+  color: var(--text-normal);
+  border-bottom: 1px solid var(--background-modifier-border);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+/* Legacy class - use .json-table-btn.json-table-btn--hybrid instead */
+.json-table-add-row-btn {
+  @extend .json-table-btn;
+  @extend .json-table-btn--hybrid;
+  height: 40px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.json-table-add-row-btn:active {
+  background: var(--interactive-active);
+}
+
+.json-table-error {
+  color: var(--text-error);
+  padding: 1em;
+  border: 1px solid var(--text-error);
+  border-radius: 4px;
+  margin: 20px;
+  background: var(--background-primary);
+}
+
+/* "Open as text" button on error screens */
+.json-table-error .json-table-add-row {
+  margin-top: 16px;
+  background: var(--background-secondary);
+}
+.json-table-error .json-table-add-row:hover {
+  background: var(--background-modifier-hover);
+}
+
+.json-table-debug {
+  color: var(--text-muted);
+  padding: 1em;
+  margin: 20px;
+}
+
+/* ICONS */
+
+.json-table-header-cell {
+  /* display: flex; Align icon and text */
+  /* align-items: center; */
+  /* gap: 6px; Space between icon and text */
+  /* padding is already handled */
+  cursor: pointer;
+  user-select: none;
+}
+
+.json-table-header-cell .json-table-icon {
+  width: 14px; /* Slightly smaller in header */
+  height: 14px;
+  flex-shrink: 0; /* Prevent icon from shrinking */
+  color: var(--text-muted); /* Make header icons less prominent */
+}
+
+/* Ensure the resize handle doesn't overlap */
+.json-table-resize-handle {
+  /* Make sure it's positioned relative to the right edge */
+  right: -2px; 
+}
+
+
+.json-table-header-content {
+  display: flex;
+  align-items: center;
+  gap: 6px; /* Space between icon and text */
+  /* This prevents the wrapper from interfering with the resize handle */
+  position: relative; 
+  z-index: 1; /* Ensure content is below the handle */
+}
+
+.json-table-header-content .json-table-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+/* styles.css */
+
+/* Add cursor style to the header cell */
+.json-table-header-cell {
+  cursor: grab; /* Indicate draggable */
+  user-select: none;
+  /* Keep other styles */
+}
+
+/* Change cursor during drag */
+.json-table-header-cell.is-dragging {
+  cursor: grabbing;
+  opacity: 0.5;
+  background-color: var(--background-modifier-active);
+}
+
+/* REMOVE these rules */
+/* .json-table-drag-handle { ... } */
+/* .json-table-drag-handle:hover { ... } */
+/* .json-table-header-cell.is-dragging .json-table-drag-handle { ... } */
+
+/* Keep dragover style */
+.json-table-header-cell.is-dragover {
+  box-shadow: inset 2px 0 0 0 var(--interactive-accent);
+}
+
+/* Ensure content wrapper doesn't interfere */
+.json-table-header-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+  /* width: 100%; REMOVE this if it causes issues */
+  pointer-events: none; /* Make content non-interactive for drag */
+}
+
+/* Keep resize handle interactive */
+.json-table-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  bottom: 0;
+  width: 5px;
+  cursor: col-resize;
+  z-index: 10;
+  pointer-events: auto; /* Ensure handle is clickable */
+}
+
+/* styles.css */
+/* In the Popups: Edit Column section */
+
+.json-table-editor-setting {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Space between checkbox and label */
+  padding: 4px 0;
+}
+
+.json-table-editor-setting input[type="checkbox"] {
+  margin: 0; /* Remove default margin */
+  width: 1.1em;
+  height: 1.1em;
+  cursor: pointer;
+}
+
+.json-table-editor-setting label {
+  font-size: 0.95em;
+  color: var(--text-normal);
+  cursor: pointer;
+}
+/* Reset pointer-events for header text/icon if needed for other interactions (like tooltips) */
+/* .json-table-header-content * { pointer-events: auto; } */
+
+.json-table-date-wrapper {
+  width: 100%;
+  height: 100%;
+  min-height: $table-cell-height;
+  padding: 8px;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* The displayed date text */
+.json-table-date-display {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Flatpickr calendar adjustments (optional, customize as needed) */
+.flatpickr-calendar {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  border-radius: 4px;
+  /* Adjust colors to match Obsidian theme */
+}
+.flatpickr-day.selected {
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+}
+.flatpickr-day:hover {
+  background: var(--background-modifier-hover);
+}
+
+.json-table-controls {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 1em;
+}
+
+.json-table-header-buttons-container {
+  display: flex;
+  gap: 8px;
+}
+
+/* Legacy class - use .json-table-btn.json-table-btn--icon instead */
+.json-table-header-button {
+  @extend .json-table-btn;
+  @extend .json-table-btn--icon;
+  display: flex;
+}
+
+/* Cell containing the row action buttons (like delete) */
+.json-table-buttons-cell,
+.json-table-row-actions-cell {
+  width: 80px;
+  min-width: 80px;
+  padding: 0;
+  text-align: center;
+  vertical-align: middle;
+  border-left: 1px solid var(--background-modifier-border);
+}
+
+/* Center the content in row actions cell */
+.json-table-row-actions-cell .json-table-cell-content {
+  justify-content: center;
+}
+
+/* Legacy class - use .json-table-btn.json-table-btn--icon instead */
+.json-table-row-button {
+  @extend .json-table-btn;
+  @extend .json-table-btn--icon;
+  width: 28px;
+  height: 28px;
+  color: var(--text-muted);
+}
+
+/* Specific style for the delete button */
+.json-table-delete-row-btn:hover {
+  color: var(--text-error); /* Red on hover for delete */
+  background-color: rgba(255, 100, 100, 0.1); /* Faint red background */
+}
+
+.json-table-row-button .json-table-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Ensure alternating row color applies correctly if needed */
+.json-table tbody tr:nth-child(even) .json-table-buttons-cell {
+    background-color: var(--background-primary-alt);
+}
+
+/* styles.scss or styles.css */
+
+/* ... existing styles ... */
+
+/* Legacy class - use .json-table-btn.json-table-btn--standard instead */
+/* Sort and Filter buttons in table controls */
+.json-table-sort-button,
+.json-table-filter-button {
+  @extend .json-table-btn;
+  @extend .json-table-btn--standard;
+  background: var(--interactive-normal);
+  color: var(--text-on-accent);
+  border: none;
+  font-size: 13px;
+}
+
+.json-table-sort-button:hover,
+.json-table-filter-button:hover {
+  background: var(--interactive-hover);
+  color: var(--text-on-accent);
+}
+
+.json-table-filter-button.is-active {
+  @extend .json-table-btn--active;
+}
+
+
+/* --- Filter Popup --- */
+.json-table-filter-popup {
+  min-width: 400px;
+}
+
+.json-table-filters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.json-table-filter-empty {
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 20px;
+  text-align: center;
+}
+
+.json-table-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Adjust select/input widths within the row */
+.json-table-filter-row .json-table-popup-select {
+  flex: 1;
+  min-width: 100px;
+  height: 36px;
+  line-height: 20px;
+  vertical-align: middle;
+}
+
+.json-table-filter-row .json-table-popup-input {
+  flex: 2;
+  padding: 8px 12px;
+  background: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-normal);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  height: 36px;
+  line-height: 20px;
+  vertical-align: middle;
+}
+
+.json-table-filter-row .json-table-popup-input:focus {
+  border-color: var(--interactive-accent);
+}
+
+
+/* Legacy class - use .json-table-btn.json-table-btn--icon instead */
+.json-table-delete-filter-button {
+  @extend .json-table-btn;
+  @extend .json-table-btn--icon;
+  padding: 4px;
+  color: var(--text-muted);
+}
+
+.json-table-delete-filter-button:hover {
+  color: var(--text-error);
+}
+
+.json-table-delete-filter-button .json-table-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Legacy class - use .json-table-btn.json-table-btn--standard instead */
+.json-table-add-filter-button {
+  @extend .json-table-btn;
+  @extend .json-table-btn--standard;
+  background: var(--interactive-normal);
+  color: var(--text-on-accent);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.json-table-add-filter-button:hover {
+  background: var(--interactive-hover);
+}
+
+.table-filename-container {
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+input.table-filename-input {
+    font-size: 1.5em;
+    font-weight: bold;
+    border-radius: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    width: 100%;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+}
+
+.table-filename-input:hover {
+    background: var(--background-modifier-hover);
+    border-radius: 4px;
+}
+
+.table-filename-input.is-focused {
+    background: var(--background-modifier-border);
+    border-radius: 4px;
+}
