@@ -1,8 +1,10 @@
-# JSON Table Plugin for Obsidian
+# Tables for Obsidian
 
-Create and manage interactive tables in Obsidian with support for multiple column types, sorting, filtering, and more.
+A powerful table plugin for Obsidian that lets you create, manage, and visualize structured data with an intuitive interface.
 
-## Features
+![Tables Screenshot](images/tables-screeshot.jpg)
+
+## ✨ Features
 
 ### Multiple Column Types
 - **Text** - Simple text input
@@ -12,102 +14,121 @@ Create and manage interactive tables in Obsidian with support for multiple colum
 - **Note Link** - Link to other notes in your vault
 - **Date** - Date picker with customizable format
 
-### Table Management
-- **Add/Delete Rows** - Easily add or remove data
-- **Add/Delete Columns** - Flexible column management
-- **Drag to Reorder Columns** - Intuitive column reordering
-- **Resize Columns** - Adjust column widths to your needs
-- **Rename Tables** - Quick inline table renaming
+### 🎯 Table Management
+- **Add/Delete Rows & Columns** - Flexible data structure management
+- **Drag to Reorder** - Intuitive drag-and-drop column reordering
+- **Resize Columns** - Adjust column widths to fit your content
+- **Inline Renaming** - Rename tables directly in the view
+- **Smart Linking** - Automatic backlink updates when notes are renamed or deleted
 
-### Data Operations
-- **Sort** - Sort by any column in ascending or descending order
-- **Filter** - Filter rows based on column values with multiple filter rules
-- **Persistent Scroll** - Maintains scroll position when editing
+### 🔍 Data Operations
+- **Advanced Sorting** - Multi-level sorting with ascending/descending order
+- **Powerful Filtering** - Complex filter rules with multiple conditions
+- **Persistent State** - Scroll position and view state preserved during edits
+- **Real-time Updates** - Changes save automatically as you type
 
-### File Formats
-- `.table.json` - JSON-based table storage
-- `.table.md` - Markdown files with frontmatter for table data
+### 📁 File Formats
+- **`.table.md`** (Default) - Maximizes Obsidian compatibility with backlinks and graph view
+- **`.table.json`** - Alternative format for faster performance
 
-## Usage
+### 🔗 Graph View Integration
 
-### Creating a New Table
+Tables seamlessly integrate with Obsidian's graph view through note link columns:
 
-1. Create a new file with `.table.json` or `.table.md` extension
-2. Open the file - it will automatically render as a table
-3. Click "Add row" to start adding data
-4. Use the "+" button in the header to add columns
+![Graph View Integration](images/obsidian-tables_graph-veiw.gif)
 
-### Editing Tables
+## 🚀 Quick Start
 
-- **Edit Cell Values**: Click on any cell to edit its value
-- **Add Columns**: Click the "+" button in the table header
-- **Delete Columns**: Click the "⋮" button on any column header
-- **Reorder Columns**: Drag column headers to reorder
-- **Add Rows**: Click "Add row" at the bottom of the table
-- **Delete Rows**: Click the trash icon on any row
+### Creating Your First Table
 
-### Sorting and Filtering
+1. **Right-click** in your file explorer or use the command palette
+2. Select **"New table"**
+3. Start adding columns with different data types
+4. Add rows and populate your data
 
-- **Sort**: Click the "Sort" button to choose a column and direction
-- **Filter**: Click the "Filter" button to add filter rules
-- Multiple filters can be combined
+### Keyboard Shortcuts & Tips
 
-### Column Types
+- **Click any cell** to start editing
+- **Tab** to move to the next cell
+- **Enter** in text fields to save
+- **Drag column headers** to reorder
+- **Right-click table files** for quick actions
 
-When adding a column, you can choose from different types:
+## 📚 Usage Guide
 
-- **Text**: Basic text input
-- **Checkbox**: Toggle between checked/unchecked
-- **Dropdown**: Select one option from a predefined list
-- **Multi-select**: Select multiple options from a predefined list
-- **Note Link**: Link to another note in your vault
-- **Date**: Pick a date using a date picker
+### Working with Columns
 
-For dropdown and multi-select columns, you can customize the available options and their colors when editing the column.
+**Add a Column**
+- Click the **"+"** button in the table header
+- Choose from 6 column types: Text, Checkbox, Dropdown, Multi-select, Note Link, or Date
+- Customize options for dropdown and multi-select columns with color-coded tags
 
-## Installation
+**Edit a Column**
+- Click the column name to rename
+- Click settings to modify column properties
+- Delete columns when no longer needed
 
-### From Obsidian Community Plugins (Coming Soon)
+### Managing Data
 
-1. Open Settings → Community plugins
-2. Click "Browse" and search for "JSON Table"
-3. Click "Install" then "Enable"
+**Rows**
+- **Add**: Click "Add row" at the bottom
+- **Delete**: Click the trash icon on any row
+- **Reorder**: Use drag handles (coming soon)
+
+**Filtering & Sorting**
+- **Filter**: Build complex queries with multiple conditions (equals, contains, greater than, etc.)
+- **Sort**: Multi-level sorting by any column
+- Combine multiple filters for precise data views
+
+## 📦 Installation
+
+### Community Plugins (Recommended)
+
+1. Open **Settings** → **Community plugins**
+2. Click **"Browse"** and search for **"Tables"**
+3. Click **"Install"** then **"Enable"**
 
 ### Manual Installation
 
 1. Download the latest release from [GitHub Releases](https://github.com/aztekgold/obsidian-tables/releases)
-2. Extract the files to your vault's plugins folder: `<vault>/.obsidian/plugins/json-table-plugin/`
+2. Extract `main.js`, `manifest.json`, and `styles.css` to `<vault>/.obsidian/plugins/tables/`
 3. Reload Obsidian
-4. Enable the plugin in Settings → Community plugins
+4. Enable the plugin in **Settings** → **Community plugins**
 
-## Development
+## 🛠️ Development
 
-### Building the Plugin
+Want to contribute or customize the plugin?
 
 ```bash
+# Clone the repository
+git clone https://github.com/aztekgold/obsidian-tables.git
+
 # Install dependencies
 npm install
 
-# Build for development (watches for changes)
+# Build for development (auto-rebuilds on changes)
 npm run dev
 
-# Build for production
+# Build for production (minified)
 npm run build
 ```
 
-## Support
+## 💬 Support & Feedback
 
-If you encounter any issues or have suggestions, please [open an issue](https://github.com/aztekgold/obsidian-tables/issues) on GitHub.
+Found a bug or have a feature request? 
 
-## License
+- [Open an issue](https://github.com/aztekgold/obsidian-tables/issues) on GitHub
+- [Discussions](https://github.com/aztekgold/obsidian-tables/discussions) for questions and ideas
+
+## 📝 License
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
-## Author
+## 👤 Author
 
-Created by Matt Smith
+Created with ❤️ by [Matt Smith](https://github.com/aztekgold)
 
 ---
 
-**Note**: This plugin stores table data in JSON format within your vault files. Always back up your data regularly.
+**⚠️ Important**: This plugin stores table data within your vault files. Always back up your vault regularly!
 
