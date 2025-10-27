@@ -33,7 +33,6 @@ export class DateRenderer implements ICellRenderer {
     // --- Cleanup previous instance ---
     const oldInstance = flatpickrInstances.get(container);
     if (oldInstance) {
-      console.log('Destroying old flatpickr instance for TD:', container);
       oldInstance.destroy();
       flatpickrInstances.delete(container);
     }
@@ -95,12 +94,8 @@ export class DateRenderer implements ICellRenderer {
                   onChange('');
               }
           },
-          onOpen: () => console.log('Flatpickr opened for TD:', container),
-          onClose: () => console.log('Flatpickr closed for TD:', container),
-          onDestroy: () => console.log('Flatpickr instance destroyed for TD:', container)
         });
 
-        console.log('Flatpickr instance created for TD:', container, fpInstance);
         // Store the new instance associated with the TD
         flatpickrInstances.set(container, fpInstance);
 

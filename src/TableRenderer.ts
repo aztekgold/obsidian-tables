@@ -25,18 +25,18 @@ import { FilterHandler } from './FilterHandler';
 
 // Import Icons
 import {
-    IconText, IconDropdown, IconMultiSelect, IconCheckbox, IconDate, IconLink, IconSort, IconFilter, IconMoreVertical, IconPlus, IconTrash, // Ensure all needed icons are imported
+    ICON_NAMES,
     createIconElement
 } from './icons'; // Adjust path if needed
 
-// Map column types to their icon SVGs
+// Map column types to their icon names
 const TYPE_ICONS: Record<string, string> = {
-  text: IconText,
-  dropdown: IconDropdown,
-  multiselect: IconMultiSelect,
-  checkbox: IconCheckbox,
-  date: IconDate,
-  notelink: IconLink,
+  text: ICON_NAMES.text,
+  dropdown: ICON_NAMES.dropdown,
+  multiselect: ICON_NAMES.multiselect,
+  checkbox: ICON_NAMES.checkbox,
+  date: ICON_NAMES.date,
+  notelink: ICON_NAMES.link,
 };
 
 
@@ -137,13 +137,10 @@ export class TableRenderer {
   // --- Main Render ---
 
   public render() {
-    console.log('TableRenderer.render called');
-    
     // Save scroll position before clearing
     const existingWrapper = this.container.querySelector('.json-table-wrapper') as HTMLElement;
     const scrollLeft = existingWrapper?.scrollLeft ?? 0;
     const scrollTop = existingWrapper?.scrollTop ?? 0;
-    console.log('Saved scroll position:', { scrollLeft, scrollTop });
     
     this.container.empty(); // Clear everything before re-rendering
 
@@ -158,8 +155,8 @@ export class TableRenderer {
       cls: 'json-table-btn json-table-btn--standard json-table-sort-button',
       attr: { 'aria-label': 'Sort table' }
     });
-    const sortIcon = createIconElement(IconSort, 16, 'icon-sort');
-    if (sortIcon) sortButton.appendChild(sortIcon);
+    const sortIcon = createIconElement(ICON_NAMES.sort, 16, 'icon-sort');
+    sortButton.appendChild(sortIcon);
     sortButton.appendText(' Sort');
     sortButton.addEventListener('click', () => {
       this.sortHandler.showSortPopup(sortButton);
@@ -169,8 +166,8 @@ export class TableRenderer {
     const filterButton = controlsContainer.createEl('button', {
         cls: 'json-table-btn json-table-btn--standard json-table-filter-button',
     });
-    const filterIcon = createIconElement(IconFilter, 16, 'icon-filter');
-    if (filterIcon) filterButton.appendChild(filterIcon);
+    const filterIcon = createIconElement(ICON_NAMES.filter, 16, 'icon-filter');
+    filterButton.appendChild(filterIcon);
     filterButton.appendText(' Filter');
     if (this.filterHandler.hasActiveFilters()) {
         filterButton.addClass('json-table-btn--active');
@@ -206,10 +203,7 @@ export class TableRenderer {
     requestAnimationFrame(() => {
       tableWrapper.scrollLeft = scrollLeft;
       tableWrapper.scrollTop = scrollTop;
-      console.log('Restored scroll position:', { scrollLeft, scrollTop });
     });
-    
-    console.log('Table HTML created');
   }
 
   // --- Column Group Rendering ---
@@ -284,16 +278,16 @@ export class TableRenderer {
     const buttonsTh = headerRow.createEl('th', { cls: 'json-table-header-sticky json-table-buttons-th' });
     const buttonContainer = buttonsTh.createEl('div', { cls: 'json-table-header-buttons-container' });
 
-    // More Options Button Div
-    const moreOptionsBtnDiv = buttonContainer.createEl('div', { cls: 'json-table-btn json-table-btn--icon', attr: { 'aria-label': 'More options', title: 'More options' } });
-    const moreIcon = createIconElement(IconMoreVertical, 18);
-    if (moreIcon) moreOptionsBtnDiv.appendChild(moreIcon);
-    moreOptionsBtnDiv.addEventListener('click', (e) => { e.stopPropagation(); console.log("More options clicked!"); /* TODO: Menu */ });
+    // More Options Button - Commented out until functionality is implemented
+    // const moreOptionsBtnDiv = buttonContainer.createEl('div', { cls: 'json-table-btn json-table-btn--icon', attr: { 'aria-label': 'More options', title: 'More options' } });
+    // const moreIcon = createIconElement(ICON_NAMES.moreVertical, 18);
+    // moreOptionsBtnDiv.appendChild(moreIcon);
+    // moreOptionsBtnDiv.addEventListener('click', (e) => { e.stopPropagation(); /* TODO: Menu */ });
 
     // Add Column Button Div
     const addColBtnDiv = buttonContainer.createEl('div', { cls: 'json-table-btn json-table-btn--icon', attr: { 'aria-label': 'Add column', title: 'Add column' } });
-    const plusIcon = createIconElement(IconPlus, 18);
-    if (plusIcon) addColBtnDiv.appendChild(plusIcon);
+    const plusIcon = createIconElement(ICON_NAMES.plus, 18);
+    addColBtnDiv.appendChild(plusIcon);
     let isAddColPopupOpen = false;
     addColBtnDiv.addEventListener('click', (e) => {
         e.preventDefault(); e.stopPropagation(); if (isAddColPopupOpen) return;
@@ -318,13 +312,12 @@ export class TableRenderer {
       const deleteCell = tr.createEl('td', { cls: 'json-table-row-actions-cell' }); // Sticky cell for actions
       const cellContent = deleteCell.createEl('div', { cls: 'json-table-cell-content' });
       const deleteButton = cellContent.createEl('div', { cls: 'json-table-btn json-table-btn--icon', attr: { 'aria-label': 'Delete row', title: 'Delete row' } });
-      const trashIcon = createIconElement(IconTrash, 16);
-      if (trashIcon) deleteButton.appendChild(trashIcon);
+      const trashIcon = createIconElement(ICON_NAMES.trash, 16);
+      deleteButton.appendChild(trashIcon);
 
       deleteButton.addEventListener('click', async (e) => {
         e.stopPropagation();
         if (originalRowIndex > -1) { // Ensure original index was found
-          console.log(`Deleting original row index: ${originalRowIndex}`);
           this.data.rows.splice(originalRowIndex, 1); // Delete from original data
           await this.view.saveTableData(this.data);
           this.render(); // Re-render
@@ -350,7 +343,6 @@ export class TableRenderer {
       if (!renderer) { /* ... error handling ... */ return; }
 
       const onCellChange = async (newValue: string) => {
-        console.log(`Saving cell [original index ${originalRowIndex}, col ${col.id}]: ${newValue}`);
         const cellData = row.find(c => c.column === col.id);
         if (cellData) { cellData.value = newValue; }
         else { row.push({ column: col.id, value: newValue }); }
@@ -370,8 +362,8 @@ export class TableRenderer {
   private renderAddRowButton(container: Element) {
       const addRowBtn = container.createEl('div', { cls: 'json-table-add-row' }); // Use div
       const content = addRowBtn.createDiv({ cls: 'json-table-btn json-table-btn--hybrid' });
-      const plusIcon = createIconElement(IconPlus, 16);
-      if (plusIcon) content.appendChild(plusIcon);
+      const plusIcon = createIconElement(ICON_NAMES.plus, 16);
+      content.appendChild(plusIcon);
       content.createSpan({ text: 'Add row', cls: 'json-table-add-row-text' });
 
       addRowBtn.addEventListener('click', async () => {
@@ -384,7 +376,6 @@ export class TableRenderer {
           const activeFilters = this.filterHandler.getCurrentFilterRules();
           activeFilters.forEach(rule => {
               if (rule.operator === 'equals' && rule.value && newRowData.hasOwnProperty(rule.columnId)) {
-                   console.log(`Pre-populating column ${rule.columnId} with filter value ${rule.value}`);
                   newRowData[rule.columnId] = rule.value;
               }
               // TODO: Add logic for other operators if applicable for pre-population
@@ -441,7 +432,13 @@ export class TableRenderer {
     const editorContainer = wrapper.createEl('div', { cls: 'json-table-column-editor-container' });
     let editor = this.columnEditors.get(column.type) || this.columnEditors.get('text');
     if (editor) editor.render(editorContainer, column, this.data, this.view);
-    const deleteBtn = wrapper.createEl('button', { text: 'Delete Column', cls: 'json-table-btn json-table-btn--standard' });
+    
+    // Delete Column Button
+    const deleteBtn = wrapper.createEl('button', { cls: 'json-table-btn json-table-btn--hybrid json-table-btn---delete-column' });
+    const deleteIcon = createIconElement(ICON_NAMES.trash, 16);
+    deleteBtn.appendChild(deleteIcon);
+    deleteBtn.appendText('Delete Column');
+    
     nameInput.focus(); nameInput.select();
 
     const closePopup = () => { popup.remove(); document.removeEventListener('click', clickOutside); };
@@ -493,12 +490,12 @@ export class TableRenderer {
     const typeButtonsContainer = wrapper.createEl('div', { cls: 'json-table-type-buttons' });
 
     const types = [ /* ... type definitions ... */
-        { type: 'text' as const, name: 'Text', icon: IconText },
-        { type: 'checkbox' as const, name: 'Checkbox', icon: IconCheckbox },
-        { type: 'dropdown' as const, name: 'Dropdown', icon: IconDropdown },
-        { type: 'multiselect' as const, name: 'Multi-select', icon: IconMultiSelect },
-        { type: 'notelink' as const, name: 'Note Link', icon: IconLink },
-        { type: 'date' as const, name: 'Date', icon: IconDate },
+        { type: 'text' as const, name: 'Text', icon: ICON_NAMES.text },
+        { type: 'checkbox' as const, name: 'Checkbox', icon: ICON_NAMES.checkbox },
+        { type: 'dropdown' as const, name: 'Dropdown', icon: ICON_NAMES.dropdown },
+        { type: 'multiselect' as const, name: 'Multi-select', icon: ICON_NAMES.multiselect },
+        { type: 'notelink' as const, name: 'Note Link', icon: ICON_NAMES.link },
+        { type: 'date' as const, name: 'Date', icon: ICON_NAMES.date },
     ];
     const defaultDropdownOptions = [ /* ... default options ... */
         { value: 'To Do', style: 'red' }, { value: 'In Progress', style: 'blue' }, { value: 'Done', style: 'green' }

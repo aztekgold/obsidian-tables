@@ -93,8 +93,6 @@ private data: TableData,
 
     // --- Apply Button Click Handler (Arrow Function) ---
     const handleApplyClick = async () => {
-        console.log("Apply Sort button clicked. 'this' is:", this); // Check context
-        console.log("'this.triggerRender' is:", typeof this.triggerRender); // Check function reference
 
         const selectedColumnId = columnSelect.value || null;
         const selectedDirection = directionSelect.value as 'asc' | 'desc';
@@ -106,7 +104,6 @@ private data: TableData,
             // Explicitly call the save function passed from TableRenderer
 if (this.view && typeof this.view.saveTableData === 'function') {
                 await this.view.saveTableData(this.data); // Call the view's save method
-                console.log("Sort data saved via view instance.");
             } else {
                 console.error("Error: View instance or saveTableData method is not available!");
                 closePopup();
@@ -148,7 +145,6 @@ if (this.view && typeof this.view.saveTableData === 'function') {
   // public sortDataInMemory(): void {
   //   const rules = this.getCurrentSortRules();
   //   if (rules.length === 0) {
-  //     console.log("No sort rules to apply.");
   //     // TODO: Restore original order if needed
   //     return;
   //   }
@@ -159,7 +155,6 @@ if (this.view && typeof this.view.saveTableData === 'function') {
   //       console.warn(`Sort column with ID "${columnId}" not found. Skipping sort.`);
   //       return;
   //   }
-  //   console.log(`Sorting data by column "${sortColumn.name}" (${direction})`);
 
   //   const stripEmojis = (str: string): string => { /* ... emoji stripping regex ... */
   //       return str.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE0F}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}]/gu, '').trim();
@@ -199,7 +194,6 @@ if (this.view && typeof this.view.saveTableData === 'function') {
 public sortDataInMemory(): void {
     const rules = this.getCurrentSortRules();
     if (rules.length === 0) {
-      console.log("No sort rules to apply.");
       // TODO: Restore original order if needed
       return;
     }
@@ -210,7 +204,6 @@ public sortDataInMemory(): void {
         console.warn(`Sort column with ID "${columnId}" not found. Skipping sort.`);
         return;
     }
-    console.log(`Sorting data by column "${sortColumn.name}" (${direction}), empties last.`);
 
     const stripEmojis = (str: string): string => { /* ... emoji stripping regex ... */
         return str.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE0F}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}]/gu, '').trim();

@@ -34,7 +34,6 @@ export default class JsonTablePlugin extends Plugin {
     settings: JsonTableSettings; // Store settings
 
     async onload() {
-        console.log('Loading JSON Table Plugin');
         await this.loadSettings(); // Load settings first
 
         // Register the custom view
@@ -167,22 +166,18 @@ export default class JsonTablePlugin extends Plugin {
 // --- Add File Open Listener (Reverted Frontmatter Check) ---
     this.registerEvent(
         this.app.workspace.on('file-open', async (file) => { // Keep async
-            console.log(`file-open event fired for: ${file?.path}`);
 
             // 1. Check Setting and File Type (OK)
-            if (!this.settings.useMarkdownWrapper || !file || !file.name.endsWith('.table.md')) {
+            if (this.settings.tableRenderer !== 'default' || !file || !file.name.endsWith('.table.md')) {
                 return;
             }
-            console.log("file-open: Setting ON and file is .table.md:", file.path);
 
             // 2. Check Frontmatter (REVERTED: Always read file content)
             let hasTableFrontmatter = false;
             try {
-                 console.log("file-open: Reading file content for frontmatter check...");
                  const content = await this.app.vault.read(file);
                  // Original regex check on file content
                  hasTableFrontmatter = /^---\s*\n[\s\S]*?json-table-plugin:\s*true[\s\S]*?\n---/.test(content);
-                 if(hasTableFrontmatter) console.log("file-open: Found frontmatter key in file content.");
             } catch (readErr) {
                  console.error("file-open: Error reading file content:", readErr);
                  return; // Exit if reading fails
@@ -191,10 +186,8 @@ export default class JsonTablePlugin extends Plugin {
 
             // If frontmatter check failed, exit
             if (!hasTableFrontmatter) {
-                console.log("file-open: json-table-plugin frontmatter key not found. Skipping switch.");
                 return;
             }
-            console.log("file-open: Frontmatter confirmed. Searching for matching leaf...");
 
             // 3. Find the Correct Leaf (OK)
             let targetLeaf: WorkspaceLeaf | null = null;
@@ -202,7 +195,6 @@ export default class JsonTablePlugin extends Plugin {
             for (const leaf of markdownLeaves) {
                 const viewState = leaf.getViewState();
                 if (viewState.state?.file === file.path) {
-                    console.log(`file-open: Found matching markdown leaf for ${file.path}.`);
                     targetLeaf = leaf;
                     break;
                 }
@@ -210,19 +202,16 @@ export default class JsonTablePlugin extends Plugin {
 
             // 4. Perform the View Switch (Keep try/catch and focus)
             if (targetLeaf) {
-                console.log(`file-open: Attempting setViewState on target leaf for ${file.path}...`);
                 try {
                     await targetLeaf.setViewState({
                         type: VIEW_TYPE_JSON_TABLE,
                         state: { file: file.path } // Pass file path
                     }, { focus: true }); // Keep focus option
-                    console.log(`file-open: setViewState call completed successfully for ${file.path}.`);
                 } catch (err) {
                     // Keep error logging
                     console.error("file-open: Error during setViewState:", err);
                 }
             } else {
-                console.log(`file-open: Could not find a matching markdown leaf for ${file.path}. View switch aborted.`);
             }
         })
     );
@@ -230,7 +219,6 @@ export default class JsonTablePlugin extends Plugin {
     } // --- End onload ---
 
     onunload() {
-        console.log('Unloading JSON Table Plugin');
         // Clean up resources, interval timers etc. if any were added
     }
 
@@ -239,7 +227,6 @@ export default class JsonTablePlugin extends Plugin {
     registerFileExtensions() {
         // Unregistering old handlers is complex. Register both potentially relevant
         // extensions and let the JsonTableView decide if it can handle the specific file.
-        console.log('Registering extensions for table view: .table.md and json (for .table.json)');
         this.registerExtensions(['table.md'], VIEW_TYPE_JSON_TABLE); // For direct open attempts of MD wrappers
         this.registerExtensions(['json'], VIEW_TYPE_JSON_TABLE);     // Catches .table.json and allows view to show errors for other .json
     }
@@ -304,7 +291,7 @@ export default class JsonTablePlugin extends Plugin {
         // Determine folder path, handling root case correctly
         const folderPath = targetFolder.path === '/' ? '' : targetFolder.path;
 
-        if (this.settings.useMarkdownWrapper) {
+        if (this.settings.tableRenderer === 'default') {
             // --- Create Markdown File ---
             const extension = '.table.md';
             fileName = `${baseName}${extension}`;
@@ -341,7 +328,6 @@ export default class JsonTablePlugin extends Plugin {
 
         // Create and open the file
         try {
-            console.log(`Creating table file at: ${filePath}`);
             const file = await this.app.vault.create(filePath, fileContent);
             // Open in the current leaf or a new one
             const leaf = this.app.workspace.getLeaf('tab'); // Open in a new tab for clarity
@@ -369,17 +355,14 @@ export default class JsonTablePlugin extends Plugin {
 
     /** Scans all relevant table files and updates links matching oldPath to newPath */
     async updateLinksInAllTables(oldPath: string, newPath: string) {
-        console.log(`Checking for links to update: ${oldPath} -> ${newPath}`);
         // Get all files *once* for efficiency
         const allFiles = this.app.vault.getFiles();
         // Filter for potential table files
         const tableFiles = allFiles.filter(f => f.name.endsWith('.table.json') || f.name.endsWith('.table.md'));
 
         if (tableFiles.length === 0) {
-            console.log("No table files found to scan for links.");
             return;
         }
-        console.log(`Scanning ${tableFiles.length} table files for links...`);
 
         // Process each potential table file
         for (const file of tableFiles) {
@@ -416,27 +399,22 @@ export default class JsonTablePlugin extends Plugin {
                 // If any links were changed, save the file using the handler
                 if (dataChanged) {
                     await handler.save(file, data);
-                    console.log(`Updated links in: ${file.path}`);
                 }
             } catch (e) {
                 // Log errors encountered during read/save but continue processing other files
                 console.error(`Failed to process links update in ${file.path}:`, e);
             }
         }
-        console.log(`Finished link update scan.`);
     }
 
     /** Scans all relevant table files and removes links pointing to the deletedPath */
     async removeLinksInAllTables(deletedPath: string) {
-        console.log(`Checking for links to remove: ${deletedPath}`);
         const allFiles = this.app.vault.getFiles();
         const tableFiles = allFiles.filter(f => f.name.endsWith('.table.json') || f.name.endsWith('.table.md'));
 
         if (tableFiles.length === 0) {
-            console.log("No table files found to scan for links.");
             return;
         }
-        console.log(`Scanning ${tableFiles.length} table files for links...`);
 
         for (const file of tableFiles) {
             const handler = this.getHandlerForFile(file);
@@ -463,13 +441,11 @@ export default class JsonTablePlugin extends Plugin {
 
                 if (dataChanged) {
                     await handler.save(file, data);
-                    console.log(`Removed links in: ${file.path}`);
                 }
             } catch (e) {
                 console.error(`Failed to process link removal in ${file.path}:`, e);
             }
         }
-        console.log(`Finished link removal scan.`);
     }
 
 } // End Plugin Class
@@ -490,24 +466,25 @@ class JsonTableSettingTab extends PluginSettingTab {
         } = this;
         containerEl.empty();
         containerEl.createEl('h2', {
-            text: 'JSON Table Settings'
+            text: 'Tables Settings'
         });
 
         new Setting(containerEl)
-            .setName('Use Markdown Wrapper (.table.md)')
+            .setName('Table Renderer')
             .setDesc(
-                'Store table data inside Markdown files (.table.md) with links in frontmatter for graph view integration. ' +
-                'If disabled, uses simpler .table.json files (not visible in graph view). ' +
+                'By default, Tables uses .table.md to maximise compatibility and incorporate Obsidian backlink functionality. ' +
+                'JSON is an alternative - it\'s faster and uses native JSON. Use if experiencing issues with the default renderer. ' +
                 'Reload Obsidian for changes to take full effect on file handling and creation.'
             )
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.useMarkdownWrapper)
+            .addDropdown(dropdown => dropdown
+                .addOption('default', 'Default (.table.md)')
+                .addOption('json', 'JSON (.table.json)')
+                .setValue(this.plugin.settings.tableRenderer)
                 .onChange(async (value) => {
-                    console.log('Markdown Wrapper setting changed:', value);
-                    this.plugin.settings.useMarkdownWrapper = value;
+                    this.plugin.settings.tableRenderer = value as 'default' | 'json';
                     await this.plugin.saveSettings();
                     // Prompt user to reload for the change to reliably affect extension handling
-                    new Notice("Reload required for file handling changes to take full effect.", 7000); // Longer notice
+                    new Notice("Reload required for file handling changes to take full effect.", 7000);
                 }));
 
         // Add more settings here later if needed

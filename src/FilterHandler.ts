@@ -1,7 +1,7 @@
 // src/FilterHandler.ts
 import { TableData, ColumnDef, FilterRule, FilterOperator, CellData } from './types'; // Adjust path if needed
 import { JsonTableView } from './JsonTableView'; // Adjust path if needed
-import { IconTrash, createIconElement } from './icons'; // Adjust path if needed
+import { ICON_NAMES, createIconElement } from './icons'; // Adjust path if needed
 
 /**
  * Handles the state, UI, and logic for filtering table rows.
@@ -194,8 +194,8 @@ export class FilterHandler {
 
     // Delete Button
     const deleteButton = rowDiv.createEl('button', { cls: 'json-table-delete-filter-button' });
-    const trashIcon = createIconElement(IconTrash, 14);
-    if (trashIcon) deleteButton.appendChild(trashIcon);
+    const trashIcon = createIconElement(ICON_NAMES.trash, 14);
+    deleteButton.appendChild(trashIcon);
     deleteButton.addEventListener('click', async () => { // Make async
       const currentRules = this.getCurrentFilterRules();
       currentRules.splice(index, 1); // Remove rule by index
@@ -242,7 +242,6 @@ export class FilterHandler {
       return this.data.rows;
     }
 
-    console.log(`Applying ${rules.length} filter(s)...`);
 
     // Filter the main rows array
     return this.data.rows.filter(row => {

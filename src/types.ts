@@ -103,11 +103,13 @@ export interface TableData {
 export const VIEW_TYPE_JSON_TABLE = 'json-table-view';
 
 // Defines the structure for the plugin's settings
+export type TableRenderer = 'default' | 'json';
+
 export interface JsonTableSettings {
-  useMarkdownWrapper: boolean; // Whether to use .table.md files
+  tableRenderer: TableRenderer; // 'default' uses .table.md, 'json' uses .table.json
 }
 
 // Default values for the plugin settings
 export const DEFAULT_SETTINGS: JsonTableSettings = {
-  useMarkdownWrapper: false // Default to using .table.json files
+  tableRenderer: 'default' // Default to using .table.md files for compatibility
 }

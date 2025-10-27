@@ -1,10 +1,10 @@
 {
-  "id": "json-table-plugin",
-  "name": "JSON Table Viewer",
+  "id": "tables",
+  "name": "Tables",
   "version": "1.0.0",
   "minAppVersion": "0.15.0",
-  "description": "Renders JSON files as tables",
-  "author": "Your Name",
-  "authorUrl": "https://yourwebsite.com",
-  "isDesktopOnly": false
+  "description": "Create and manage interactive tables with multiple column types, sorting, filtering, and more",
+  "author": "Matt Smith",
+  "authorUrl": "https://github.com/aztekgold",
+  "isDesktopOnly": true
 }

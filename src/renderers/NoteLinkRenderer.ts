@@ -101,7 +101,6 @@ export class NoteLinkRenderer implements ICellRenderer {
       if (saveCalled) return;
       saveCalled = true;
 
-      console.log("NoteLink Save triggered with:", saveValue);
 
       if (!newWrapper.parentElement) return; // Check if still in DOM
 

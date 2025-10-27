@@ -75,7 +75,7 @@ For dropdown and multi-select columns, you can customize the available options a
 
 ### Manual Installation
 
-1. Download the latest release from [GitHub Releases](https://github.com/your-username/json-table-plugin/releases)
+1. Download the latest release from [GitHub Releases](https://github.com/aztekgold/obsidian-tables/releases)
 2. Extract the files to your vault's plugins folder: `<vault>/.obsidian/plugins/json-table-plugin/`
 3. Reload Obsidian
 4. Enable the plugin in Settings → Community plugins
@@ -97,7 +97,7 @@ npm run build
 
 ## Support
 
-If you encounter any issues or have suggestions, please [open an issue](https://github.com/your-username/json-table-plugin/issues) on GitHub.
+If you encounter any issues or have suggestions, please [open an issue](https://github.com/aztekgold/obsidian-tables/issues) on GitHub.
 
 ## License
 
@@ -105,7 +105,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Author
 
-Created by [Your Name]
+Created by Matt Smith
 
 ---
 

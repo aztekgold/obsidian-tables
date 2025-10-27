@@ -12,7 +12,7 @@ $table-cell-height: 48px;
    ========================================================================== */
 
 .json-table-view-container {
-  padding: 20px;
+  padding: 24px !important;
   overflow: auto;
   height: 100%;
   background: var(--background-primary);
@@ -43,18 +43,33 @@ input.json-table-rename-input {
   width: 100%;
   max-width: 400px;
   transition: border-color 0.2s ease;
+  border-radius: 0 !important;
 }
 
-.json-table-rename-input:focus {
+input.json-table-rename-input:focus {
   outline: none;
   border: 0;
-  border-bottom: 1px solid var(--background-modifier-border);
-  border-color: var(--interactive-accent);
   box-shadow: none;
 }
 
 .json-table-rename-input:hover {
   border-color: var(--background-modifier-border-hover);
+}
+
+/* ==========================================================================
+   Icons
+   ========================================================================== */
+
+/* Base icon styling */
+.json-table-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.json-table-icon svg {
+  display: block;
 }
 
 /* ==========================================================================
@@ -74,14 +89,16 @@ div.json-table-btn {
   transition: all 0.2s ease;
   border-radius: 4px;
   display: inline-flex;
+  justify-content: flex-start;
   align-items: center;
   text-decoration: none;
   outline: none;
-  gap: 8px;
+  gap: 6px;
 }
 
 button.json-table-btn:hover,
 div.json-table-btn:hover {
+  background: var(--interactive-hover);
   color: var(--text-normal);
 }
 
@@ -934,11 +951,6 @@ input.json-table-input {
   text-align: center;
   vertical-align: middle;
   border-left: 1px solid var(--background-modifier-border);
-}
-
-/* Center the content in row actions cell */
-.json-table-row-actions-cell .json-table-cell-content {
-  justify-content: center;
 }
 
 /* Legacy class - use .json-table-btn.json-table-btn--icon instead */

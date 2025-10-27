@@ -30,7 +30,6 @@ export class MarkdownFileHandler implements ITableFileHandler {
    */
   async read(file: TFile): Promise<TableData> {
     const content = await this.app.vault.read(file);
-    console.log(`Reading MD file: ${file.path}. Content length: ${content.length}`);
 
     // --- Verify Frontmatter ---
     // Although the file-open listener checks, this ensures direct opening works too
@@ -59,7 +58,6 @@ export class MarkdownFileHandler implements ITableFileHandler {
 
     // --- Extract JSON from Code Block ---
     const match = content.match(JSON_CODE_BLOCK_REGEX);
-    console.log("Regex match result:", match ? `Found match, group 1 length: ${match[1]?.length}` : "No match found");
 
     if (!match || match[1] === undefined || match[1] === null) {
         // Provide more detailed error messages
@@ -82,7 +80,6 @@ export class MarkdownFileHandler implements ITableFileHandler {
         return { columns: [], rows: [], views: [{ id: 'default_'+Date.now(), name: 'Default', sort: [], filter: [] }] };
     }
 
-    console.log("Attempting to parse JSON content...");
     try {
       const data: TableData = JSON.parse(jsonContent);
       // Basic validation
@@ -92,7 +89,6 @@ export class MarkdownFileHandler implements ITableFileHandler {
 
       // --- Ensure views array and default view exist (migration for older files) ---
       if (!data.views || !Array.isArray(data.views) || data.views.length === 0) {
-        console.log("No views found in file data, creating default view.");
         data.views = [{
             id: 'default_' + Date.now(),
             name: 'Default',
@@ -126,7 +122,6 @@ export class MarkdownFileHandler implements ITableFileHandler {
        });
        // --- End Migration ---
 
-      console.log("JSON parsed successfully.");
       return data;
     } catch (e) {
       console.error(`Error parsing embedded JSON in ${file.path}:`, jsonContent.substring(0, 500), e); // Log more context on error
@@ -153,7 +148,6 @@ export class MarkdownFileHandler implements ITableFileHandler {
 
       // 5. Write the updated content back to the file
       await this.app.vault.modify(file, newContent);
-      console.log(`Table data saved successfully to Markdown file ${file.path}`);
 
     } catch (e) {
       console.error(`Error saving Markdown file ${file.path}:`, e);
@@ -235,7 +229,6 @@ export class MarkdownFileHandler implements ITableFileHandler {
 
     if (match) {
       // If a block exists, replace it
-      console.log("Replacing existing json-table code block.");
       // Check if the body *only* contains the code block (and maybe whitespace/comments)
       // This prevents duplicating surrounding text if the body was minimal
       const contentOutsideBlock = body.replace(JSON_CODE_BLOCK_REGEX, '').trim();
@@ -244,13 +237,11 @@ export class MarkdownFileHandler implements ITableFileHandler {
 
       if (!nonCommentContent || nonCommentContent.startsWith('##')) { // Allow headings before block
           // If only comments or headings exist outside, replace the whole effective body part found
-          console.log("Body mainly contains code block, replacing matched section.");
           newBody = body.replace(JSON_CODE_BLOCK_REGEX, newCodeBlock);
           // If the original body had leading/trailing whitespace after frontmatter, preserve it?
           // This logic can get complex depending on desired preservation.
           // Let's assume trimming and adding newlines is acceptable.
       } else {
-           console.log("Replacing json-table code block within existing body content.");
           newBody = body.replace(JSON_CODE_BLOCK_REGEX, newCodeBlock);
       }
     } else {

@@ -26,7 +26,6 @@ export class JsonTableView extends ItemView {
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
-    console.log('JsonTableView constructor called');
   }
 
   // --- Core View Methods ---
@@ -54,7 +53,6 @@ export class JsonTableView extends ItemView {
 
   setSettings(settings: JsonTableSettings) {
     this.settings = settings;
-    console.log('JsonTableView settings updated:', this.settings);
     // If view is active, re-evaluate and re-render if necessary
     if (this.currentFilePath && this.app.workspace.activeLeaf === this.leaf) {
         this.loadFileAndRender(this.currentFilePath); // Reload based on path
@@ -64,7 +62,6 @@ export class JsonTableView extends ItemView {
   // --- State Management (Replaces FileView's file handling) ---
 
 async setState(state: any, result: ViewStateResult): Promise<void> {
-    console.log('setState called with state:', state);
     
     const newFilePath = state.file || null;
     const fileChanged = newFilePath !== this.currentFilePath;
@@ -78,21 +75,17 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
     // 1. The file path has changed, OR
     // 2. We don't have data loaded yet
     if (this.currentFilePath && (fileChanged || !this.data)) {
-        console.log('setState: Loading and rendering file:', this.currentFilePath);
         await this.loadFileAndRender(this.currentFilePath);
     } else if (!this.currentFilePath) {
-        console.log('setState: No file path provided');
         const container = this.containerEl.children[1];
         if (container) {
             this.showError(container, "No file specified in view state.", false);
         }
     } else {
-        console.log('setState: File unchanged and data already loaded, skipping render');
     }
 }
 
 // async setState(state: any, result: ViewStateResult): Promise<void> {
-//     console.log('setState called with state:', state);
     
 //     const newFilePath = state.file || null;
 //     const fileChanged = newFilePath !== this.currentFilePath;
@@ -113,16 +106,13 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
 //             loadingDiv.createEl('div', { text: 'Loading table...', cls: 'json-table-loading-text' });
 //         }
         
-//         console.log('setState: Loading and rendering file:', this.currentFilePath);
 //         await this.loadFileAndRender(this.currentFilePath);
 //     } else if (!this.currentFilePath) {
-//         console.log('setState: No file path provided');
 //         const container = this.containerEl.children[1];
 //         if (container) {
 //             this.showError(container, "No file specified in view state.", false);
 //         }
 //     } else {
-//         console.log('setState: File unchanged and data already loaded, skipping render');
 //     }
 // }
 
@@ -137,7 +127,6 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
 
   /** Loads the file based on path and triggers rendering */
   async loadFileAndRender(filePath: string) {
-      console.log(`loadFileAndRender called for path: ${filePath}`);
       const file = this.app.vault.getAbstractFileByPath(filePath);
 
       if (file instanceof TFile) {
@@ -155,8 +144,7 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
 
   /** Selects the appropriate file handler based on file extension and settings */
   private selectFileHandler(file: TFile) {
-      // (This method remains largely the same as before)
-      const useMarkdown = this.settings.useMarkdownWrapper;
+      const useMarkdown = this.settings.tableRenderer === 'default';
       const isMarkdownTableFile = file.name.endsWith('.table.md');
       const isJsonTableFile = file.name.endsWith('.table.json');
 
@@ -164,16 +152,12 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
 
       if (isMarkdownTableFile) {
           if (useMarkdown) {
-              console.log('Selecting MarkdownFileHandler for', file.path);
               this.fileHandler = new MarkdownFileHandler(this.app);
           } else {
-              console.log('Markdown wrapper setting is OFF for .table.md file:', file.path);
           }
       } else if (isJsonTableFile) {
-          console.log('Selecting JsonFileHandler for', file.path);
           this.fileHandler = new JsonFileHandler(this.app);
       } else {
-           console.log('File is not a .table.md or .table.json file:', file.path);
       }
   }
 
@@ -181,7 +165,6 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
 
   /** Reads data using the selected handler and renders the table for a specific file */
   async renderContent(file: TFile) { // Accepts TFile
-    console.log(`renderContent attempting for file: ${file.path}`);
     const container = this.containerEl.children[1];
     if (!container) return;
     container.empty();
@@ -198,9 +181,9 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
     if (!this.fileHandler || !this.checkIfHandlerIsValid(file)) {
       console.warn(`renderContent: No valid file handler for ${file.path} with current settings.`);
       // ... (Error handling logic - unchanged) ...
-       const useMarkdown = this.settings.useMarkdownWrapper;
+       const useMarkdown = this.settings.tableRenderer === 'default';
        if (file.name.endsWith('.table.md') && !useMarkdown) {
-           this.showError(container, "Enable 'Use Markdown Wrapper' in settings to view this file.", false);
+           this.showError(container, "Set 'Table Renderer' to 'Default' in settings to view this file.", false);
        } else {
            this.showError(container, "This file is not recognized as a valid table type or requires different settings.", true);
        }
@@ -209,9 +192,7 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
 
     // Try reading and rendering
     try {
-      console.log('Attempting to read using handler:', this.fileHandler.constructor.name);
       this.data = await this.fileHandler.read(file);
-      console.log('Parsed data obtained.');
 
       if (!this.data || typeof this.data !== 'object' || !Array.isArray(this.data.columns) || !Array.isArray(this.data.rows)) {
         throw new Error('Invalid table data structure received.');
@@ -219,7 +200,6 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
 
       this.renderer = new TableRenderer(container, this.data, this);
       this.renderer.render();
-      console.log('Table rendered successfully');
 
     } catch (e) {
       console.error(`Error rendering table for ${file.path}:`, e);
@@ -254,7 +234,6 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
         return;
       }
 
-      console.log('Attempting to save using handler:', this.fileHandler.constructor.name);
       try {
         await this.fileHandler.save(file, dataToSave);
         this.data = dataToSave; // Keep internal data in sync
@@ -268,20 +247,16 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
 
   // Called when view is attached to DOM
   async onOpen() {
-    console.log('onOpen called');
     // If state includes a file path, ensure it's loaded and rendered
     if (this.currentFilePath && !this.renderer) {
-        console.log('onOpen: File path exists but not rendered, attempting loadFileAndRender.');
         await this.loadFileAndRender(this.currentFilePath);
     } else if (!this.currentFilePath) {
-         console.log('onOpen: No file path set.');
          this.showError(this.containerEl.children[1], "No file loaded.", false);
     }
   }
 
   // Called when view is detached
   async onClose() {
-    console.log('onClose called');
     this.clearView();
   }
 
@@ -333,7 +308,6 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
       // Update our internal path reference
       this.currentFilePath = newPath;
       
-      console.log(`File renamed successfully: ${this.currentFilePath}`);
       return true;
     } catch (error) {
       console.error('Error renaming file:', error);
@@ -353,7 +327,7 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
 
    /** Checks if the currently selected handler is valid for the file and settings */
    private checkIfHandlerIsValid(file: TFile): boolean {
-       const useMarkdown = this.settings.useMarkdownWrapper;
+       const useMarkdown = this.settings.tableRenderer === 'default';
        const isMarkdownTableFile = file.name.endsWith('.table.md');
        const isJsonTableFile = file.name.endsWith('.table.json');
 

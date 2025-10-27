@@ -31,7 +31,6 @@ export class JsonFileHandler implements ITableFileHandler {
 
       // 1. Ensure 'views' array and default view exist
       if (!data.views || !Array.isArray(data.views) || data.views.length === 0) {
-        console.log(`Migrating file: Adding default view structure to ${file.path}`);
         data.views = [{
             id: 'default_' + Date.now(),
             name: 'Default',
@@ -59,17 +58,14 @@ export class JsonFileHandler implements ITableFileHandler {
           // Migrate known properties based on column type
           const oldCol = col as any; // Use 'any' temporarily for migration access
           if (col.type === 'date' && oldCol.dateFormat) {
-            console.log(`Migrating dateFormat for column ${col.id}`);
             (col.typeOptions as DateTypeOptions).dateFormat = oldCol.dateFormat;
             delete oldCol.dateFormat;
           }
           if ((col.type === 'dropdown' || col.type === 'multiselect') && oldCol.options) {
-             console.log(`Migrating options for column ${col.id}`);
              (col.typeOptions as SelectTypeOptions).options = oldCol.options;
              delete oldCol.options;
           }
           if (col.type === 'notelink' && oldCol.suggestAllFiles !== undefined) {
-             console.log(`Migrating suggestAllFiles for column ${col.id}`);
              (col.typeOptions as NoteLinkTypeOptions).suggestAllFiles = oldCol.suggestAllFiles;
              delete oldCol.suggestAllFiles;
           }
@@ -78,7 +74,6 @@ export class JsonFileHandler implements ITableFileHandler {
 
       // If migration happened, log it (saving happens separately if needed)
       if (migrationNeeded) {
-        console.log(`Migration applied to columns in ${file.path}. Save will persist changes.`);
       }
       // --- End Migration Logic ---
 
@@ -107,7 +102,6 @@ export class JsonFileHandler implements ITableFileHandler {
 
       const jsonString = JSON.stringify(data, null, 2); // Pretty print
       await this.app.vault.modify(file, jsonString);
-      console.log(`Table data saved successfully to ${file.path}`);
     } catch (e) {
       console.error(`Error saving JSON file ${file.path}:`, e);
       throw new Error(`Failed to save file: ${(e as Error).message}`);
