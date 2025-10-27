@@ -81,7 +81,7 @@ export default class JsonTablePlugin extends Plugin {
                         if (leaf.view.getViewType() !== VIEW_TYPE_JSON_TABLE) {
                             menu.addItem((item) => {
                                 item
-                                    .setTitle('Open as JSON Table') // The command text
+                                    .setTitle('Open as Table') // The command text
                                     .setIcon('table') // Use a relevant icon
                                     .onClick(async () => {
                                         // Force the view switch on the current leaf using state
@@ -92,10 +92,6 @@ export default class JsonTablePlugin extends Plugin {
                                     });
                             });
                         }
-                        // (Optional: Add "Open as Markdown" if currently in table view)
-                        // else {
-                        //     menu.addItem((item) => { /* ... add 'Open as Markdown' option ... */ });
-                        // }
                     }
                 }
             })
@@ -161,9 +157,7 @@ export default class JsonTablePlugin extends Plugin {
         );
         // --- End Link Listeners ---
 
-        // --- Add File Open Listener for dynamic MD switching ---
-// --- Add File Open Listener (Revised Logic) ---
-// --- Add File Open Listener (Reverted Frontmatter Check) ---
+    // --- Add File Open Listener for dynamic MD switching ---
     this.registerEvent(
         this.app.workspace.on('file-open', async (file) => { // Keep async
 

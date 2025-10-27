@@ -32,26 +32,13 @@ export class MarkdownFileHandler implements ITableFileHandler {
     const content = await this.app.vault.read(file);
 
     // --- Verify Frontmatter ---
-    // Although the file-open listener checks, this ensures direct opening works too
-    // and provides a check if the listener somehow fails.
-    let frontmatter: any = {};
-    if (content.startsWith('---')) {
-        const fmMatch = content.match(/^---\s*([\s\\S]*?)\s*---/);
-        if (fmMatch && fmMatch[1]) {
-            try {
-                frontmatter = parseYaml(fmMatch[1]);
-            } catch (e) {
-                console.warn(`Could not parse frontmatter in ${file.path}, proceeding without check.`);
-            }
-        }
-    }
-    // Check if the file identifies itself as one of ours
-    if (frontmatter?.[FRONTMATTER_PLUGIN_KEY] !== true) {
-         // This check might be redundant if the view's selectFileHandler already does it,
-         // but provides safety. Adjust error handling as needed.
-         console.warn(`File ${file.path} is missing '${FRONTMATTER_PLUGIN_KEY}: true' in frontmatter.`);
-         // Depending on desired behavior, could throw error or try parsing anyway
-         // throw new Error(`File is not marked as a JSON Table file in frontmatter.`);
+    // Use Obsidian's metadata cache to get frontmatter (more reliable than manual parsing)
+    const fileCache = this.app.metadataCache.getFileCache(file);
+    const frontmatter = fileCache?.frontmatter || {};
+    
+    // Validate that this file is properly formatted as a table file
+    if (frontmatter[FRONTMATTER_PLUGIN_KEY] !== true) {
+         throw new Error(`File ${file.path} is not a valid table file. Missing '${FRONTMATTER_PLUGIN_KEY}: true' in frontmatter.`);
     }
     // --- End Frontmatter Verification ---
 

@@ -39,6 +39,7 @@ const context = await esbuild.context({
     logLevel: "info",
     sourcemap: prod ? false : 'inline',
     treeShaking: true,
+    minify: prod,
     outdir: '.',
     plugins: [
         sassPlugin() // This should still work correctly
