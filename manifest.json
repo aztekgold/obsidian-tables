@@ -3,8 +3,8 @@
   "name": "Tables",
   "version": "1.0.0",
   "minAppVersion": "0.15.0",
-  "description": "Create and manage interactive tables with multiple column types, sorting, filtering, and more",
-  "author": "Matt Smith",
+  "description": "Create and manage interactive tables with multiple column types, sorting, filtering, and more.",
+  "author": "aztekgold",
   "authorUrl": "https://github.com/aztekgold",
   "fundingUrl": "https://buymeacoffee.com/aztekgold",
   "isDesktopOnly": true
