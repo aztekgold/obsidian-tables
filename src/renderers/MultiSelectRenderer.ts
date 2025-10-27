@@ -240,10 +240,6 @@ export class MultiSelectRenderer implements ICellRenderer {
           tag.addClass(`dropdown-tag--${option.style}`);
         }
 
-        // Highlight if already selected
-        if (selected.includes(option.value)) {
-          optionEl.addClass('is-selected');
-        }
 
         // Click selects the option (if not already selected)
         optionEl.addEventListener('mousedown', (e) => {

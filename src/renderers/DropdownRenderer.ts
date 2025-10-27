@@ -215,10 +215,6 @@ export class DropdownRenderer implements ICellRenderer {
           tag.addClass(`dropdown-tag--${option.style}`);
         }
 
-        // Highlight if currently selected
-        if (option.value === currentValue) {
-          optionEl.addClass('is-selected');
-        }
 
         // Click selects/replaces the option
         optionEl.addEventListener('mousedown', (e) => {

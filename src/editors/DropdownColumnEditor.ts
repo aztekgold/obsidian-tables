@@ -54,23 +54,50 @@ export class DropdownColumnEditor implements IColumnEditor {
         deleteOptBtn.addEventListener('mousedown', e => e.preventDefault());
 
         deleteOptBtn.addEventListener('click', async () => {
-          // --- Modify options within typeOptions ---
-          typeOpts.options!.splice(index, 1); // Remove from data
-          await view.saveTableData(data);      // Save the entire TableData
-const currentPath = view.getFilePath(); // Use the getter
-                if (currentPath) {
-                    const file = view.app.vault.getAbstractFileByPath(currentPath);
-                    if (file instanceof TFile) {
-                        await view.renderContent(file); // Call renderContent
-                    } else {
-                        console.error("Cannot re-render, file not found at path:", currentPath);
-                    }
-                } else {
-                    console.error("Cannot re-render, view has no file path set.");
-                }
+          // Get the option value before deleting
+          const deletedValue = option.value;
           
-          renderOptionsList();                  // Re-render this list
-          // --- End Modification ---
+          // Remove the option
+          typeOpts.options!.splice(index, 1);
+          
+          // Clean up any cells that have this deleted value
+          // For dropdown: clear the cell value
+          // For multiselect: remove the value from comma-separated list
+          data.rows.forEach(row => {
+            row.forEach(cell => {
+              if (cell.column === column.id && cell.value) {
+                if (column.type === 'dropdown') {
+                  // Clear cell if it matches deleted value
+                  if (cell.value === deletedValue) {
+                    cell.value = '';
+                  }
+                } else if (column.type === 'multiselect') {
+                  // Remove from comma-separated list and filter out empty values
+                  const values = cell.value
+                    .split(',')
+                    .map(v => v.trim())
+                    .filter(v => v && v !== deletedValue);
+                  cell.value = values.join(',');
+                }
+              }
+            });
+          });
+          
+          await view.saveTableData(data);
+          
+          const currentPath = view.getFilePath();
+          if (currentPath) {
+            const file = view.app.vault.getAbstractFileByPath(currentPath);
+            if (file instanceof TFile) {
+              await view.renderContent(file);
+            } else {
+              console.error("Cannot re-render, file not found at path:", currentPath);
+            }
+          } else {
+            console.error("Cannot re-render, view has no file path set.");
+          }
+          
+          renderOptionsList();
         });
       });
     };

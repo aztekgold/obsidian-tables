@@ -648,11 +648,6 @@ input.json-table-input {
   background-color: var(--background-modifier-hover);
 }
 
-.json-table-dropdown-option.is-selected {
-  background-color: var(--background-modifier-active);
-  font-weight: 600;
-}
-
 .json-table-dropdown-option.is-disabled {
   color: var(--text-muted);
   cursor: not-allowed;
@@ -704,18 +699,15 @@ input.json-table-input {
 }
 
 /* Hover/select states */
-.json-table-dropdown-option:hover .dropdown-tag--blue,
-.json-table-dropdown-option.is-selected .dropdown-tag--blue {
+.json-table-dropdown-option:hover .dropdown-tag--blue {
   background-color: rgba(100, 100, 255, 0.3);
 }
 
-.json-table-dropdown-option:hover .dropdown-tag--green,
-.json-table-dropdown-option.is-selected .dropdown-tag--green {
+.json-table-dropdown-option:hover .dropdown-tag--green {
   background-color: rgba(100, 255, 100, 0.3);
 }
 
-.json-table-dropdown-option:hover .dropdown-tag--red,
-.json-table-dropdown-option.is-selected .dropdown-tag--red {
+.json-table-dropdown-option:hover .dropdown-tag--red {
   background-color: rgba(255, 100, 100, 0.3);
 }
 
