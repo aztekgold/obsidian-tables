@@ -3,7 +3,7 @@ import { App } from 'obsidian';
 import { ICellRenderer } from './ICellRenderer';
 import { ColumnDef, DateFormat, DateTypeOptions } from '../types'; // Import DateTypeOptions
 import flatpickr from 'flatpickr';
-import 'flatpickr/dist/flatpickr.min.css';
+// flatpickr CSS is included in styles.scss
 import { format } from 'date-fns';
 
 // Map to store instances associated with TD elements

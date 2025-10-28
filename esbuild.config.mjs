@@ -18,7 +18,7 @@ const context = await esbuild.context({
     // --- UPDATE SCSS ENTRY POINT ---
     entryPoints: {
         main: 'src/main.ts',
-        styles: 'src/styles.scss' // Output to styles.css instead of main.css
+        styles: 'src/styles.scss'
     },
     bundle: true,
     external: [
@@ -45,7 +45,9 @@ const context = await esbuild.context({
     minify: prod,
     outdir: '.',
     plugins: [
-        sassPlugin() // This should still work correctly
+        sassPlugin({
+            filter: /styles\.scss$/ // Only process styles.scss, not any other potential CSS imports
+        })
     ]
 });
 
