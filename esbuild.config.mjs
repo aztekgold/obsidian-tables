@@ -16,7 +16,10 @@ const context = await esbuild.context({
         js: banner,
     },
     // --- UPDATE SCSS ENTRY POINT ---
-    entryPoints: ['src/main.ts', 'src/styles.scss'], // Changed path here
+    entryPoints: {
+        main: 'src/main.ts',
+        styles: 'src/styles.scss' // Output to styles.css instead of main.css
+    },
     bundle: true,
     external: [
         'obsidian',
