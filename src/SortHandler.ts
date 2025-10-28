@@ -46,6 +46,7 @@ private data: TableData,
     if (existingPopup) existingPopup.remove();
 
     const popup = document.body.createEl('div', { cls: 'json-table-popup json-table-sort-popup' });
+    // Position popup dynamically based on button location
     const rect = button.getBoundingClientRect();
     popup.style.top = `${rect.bottom + 5}px`;
     popup.style.left = `${rect.left}px`;

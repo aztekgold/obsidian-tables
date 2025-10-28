@@ -46,6 +46,7 @@ export class FilterHandler {
     if (existingPopup) existingPopup.remove();
 
     const popup = document.body.createEl('div', { cls: 'json-table-popup json-table-filter-popup' });
+    // Position popup dynamically based on button location
     const rect = button.getBoundingClientRect();
     popup.style.top = `${rect.bottom + 5}px`;
     popup.style.left = `${rect.left}px`;
@@ -167,7 +168,11 @@ export class FilterHandler {
     operatorSelect.addEventListener('change', () => {
       rule.operator = operatorSelect.value as FilterOperator;
       // Show/hide value input based on operator
-      valueInput.style.display = (rule.operator === 'isEmpty' || rule.operator === 'isNotEmpty') ? 'none' : '';
+      if (rule.operator === 'isEmpty' || rule.operator === 'isNotEmpty') {
+        valueInput.addClass('is-hidden');
+      } else {
+        valueInput.removeClass('is-hidden');
+      }
       this.applyFiltersAndRerender();
     });
 
@@ -177,7 +182,10 @@ export class FilterHandler {
       value: rule.value || '',
       cls: 'json-table-popup-input'
     });
-    valueInput.style.display = (rule.operator === 'isEmpty' || rule.operator === 'isNotEmpty') ? 'none' : ''; // Initial state
+    // Initial state
+    if (rule.operator === 'isEmpty' || rule.operator === 'isNotEmpty') {
+      valueInput.addClass('is-hidden');
+    }
     // Apply on blur or change instead of input for less frequent updates? Your choice.
     valueInput.addEventListener('blur', () => { // Changed from 'input'
       rule.value = valueInput.value;

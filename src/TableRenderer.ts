@@ -214,13 +214,14 @@ export class TableRenderer {
 
     this.data.columns.forEach((colDef, index) => {
       const col = colGroupEl.createEl('col');
+      // Width must be set via JS for user-resizable columns
       col.style.width = colDef.width ? `${colDef.width}px` : `150px`;
       col.setAttribute('data-col-index', index.toString());
     });
 
     // Add a <col> for the combined buttons column
     const buttonsCol = colGroupEl.createEl('col');
-    buttonsCol.style.width = '125px'; // Match CSS width
+    buttonsCol.addClass('json-table-buttons-col');
   }
 
   // --- Header Rendering ---
@@ -402,6 +403,7 @@ export class TableRenderer {
     if (!colElement) { this.isResizing = false; return; }
     const startX = e.clientX; const startWidth = colElement.offsetWidth;
     const onMouseMove = (moveE: MouseEvent) => {
+        // Update width dynamically during resize
         const newWidth = startWidth + (moveE.clientX - startX);
         if (newWidth > 40) colElement.style.width = `${newWidth}px`;
     };
@@ -422,8 +424,10 @@ export class TableRenderer {
     const existingPopup = document.querySelector('.json-table-edit-column-popup');
     if (existingPopup) existingPopup.remove();
     const popup = document.body.createEl('div', { cls: 'json-table-popup json-table-edit-column-popup' });
+    // Position popup dynamically based on header cell location
     const rect = headerCell.getBoundingClientRect();
-    popup.style.top = `${rect.bottom + 5}px`; popup.style.left = `${rect.left}px`;
+    popup.style.top = `${rect.bottom + 5}px`; 
+    popup.style.left = `${rect.left}px`;
     
     // Create wrapper for flex layout
     const wrapper = popup.createEl('div', { cls: 'json-table-popup-wrapper' });
@@ -475,11 +479,12 @@ export class TableRenderer {
   }
 
   private showAddColumnDialog(headerCell: HTMLElement, buttonDiv: HTMLElement, data: TableData, onClose: () => void) {
-    buttonDiv.style.opacity = '0.5';
+    buttonDiv.addClass('is-dimmed');
     const popup = document.body.createEl('div', { cls: 'json-table-popup json-table-column-popup' });
-    const rect = buttonDiv.getBoundingClientRect(); // Position near '+' button
-    popup.style.top = `${rect.top}px`; // Align top
-    popup.style.right = `${document.body.clientWidth - rect.right}px`; // Align right
+    // Position popup dynamically near the '+' button
+    const rect = buttonDiv.getBoundingClientRect();
+    popup.style.top = `${rect.top}px`;
+    popup.style.right = `${document.body.clientWidth - rect.right}px`;
 
     // Create wrapper for flex layout
     const wrapper = popup.createEl('div', { cls: 'json-table-popup-wrapper' });
@@ -517,7 +522,7 @@ export class TableRenderer {
     });
 
     // Helpers
-    const closePopup = () => { popup.remove(); buttonDiv.style.opacity = '1'; document.removeEventListener('click', clickOutside); document.removeEventListener('keydown', handleEscape); onClose(); };
+    const closePopup = () => { popup.remove(); buttonDiv.removeClass('is-dimmed'); document.removeEventListener('click', clickOutside); document.removeEventListener('keydown', handleEscape); onClose(); };
     const addColumn = async (columnType: string, typeName: string, extraProps: Record<string, any> = {}) => {
         let columnName = nameInputPopup.value.trim() || typeName;
         const columnId = 'col_' + Date.now();

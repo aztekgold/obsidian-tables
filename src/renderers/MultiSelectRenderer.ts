@@ -217,7 +217,7 @@ export class MultiSelectRenderer implements ICellRenderer {
       cls: 'json-table-popup json-table-dropdown-popup'
     });
 
-    // Positioning
+    // Positioning - must be dynamic based on cell position
     const rect = wrapper.getBoundingClientRect();
     popup.style.top = `${rect.bottom + 4}px`;
     popup.style.left = `${rect.left}px`;

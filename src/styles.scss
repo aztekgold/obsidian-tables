@@ -716,6 +716,20 @@ input.json-table-input {
    Utility & Misc
    ========================================================================== */
 
+// Utility classes for dynamic visibility and states
+.is-hidden {
+  display: none !important;
+}
+
+.is-dimmed {
+  opacity: 0.5;
+}
+
+// Buttons column width
+.json-table-buttons-col {
+  width: 125px;
+}
+
 .json-table-add-row {
   padding-bottom: 0.65em;
   /* padding: 8px 16px; */
