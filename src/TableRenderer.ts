@@ -301,11 +301,16 @@ export class TableRenderer {
 
   private renderBody(table: HTMLTableElement, rowsToRender: CellData[][]) { // Accept filtered rows
     const tbody = table.createEl('tbody');
+    
+    // Build row index map once before loop - O(N) instead of O(N²)
+    const rowIndexMap = new Map<CellData[], number>();
+    this.data.rows.forEach((row, idx) => rowIndexMap.set(row, idx));
+    
     rowsToRender.forEach((row) => { // Iterate over filtered rows
       const tr = tbody.createEl('tr', { cls: 'json-table-row' });
 
-      // Find original index needed for deletion
-      const originalRowIndex = this.data.rows.findIndex(originalRow => originalRow === row);
+      // Fast O(1) lookup instead of O(N) findIndex
+      const originalRowIndex = rowIndexMap.get(row) ?? -1;
 
       this.renderRow(tr, row, this.data.columns, originalRowIndex, this.data); // Pass original index
 

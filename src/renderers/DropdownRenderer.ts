@@ -194,11 +194,11 @@ export class DropdownRenderer implements ICellRenderer {
       cls: 'json-table-popup json-table-dropdown-popup'
     });
 
-    // Positioning using CSS custom properties
+    // Position popup dynamically based on cell position
     const rect = wrapper.getBoundingClientRect();
-    popup.style.setProperty('--popup-top', `${rect.bottom + 4}px`);
-    popup.style.setProperty('--popup-left', `${rect.left}px`);
-    popup.style.setProperty('--popup-min-width', `${rect.width}px`);
+    popup.style.top = `${rect.bottom + 4}px`;
+    popup.style.left = `${rect.left}px`;
+    popup.style.minWidth = `${rect.width}px`;
 
     // Show all options
     if (allOptions.length > 0) {

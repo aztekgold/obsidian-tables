@@ -1,7 +1,7 @@
 // src/fileHandlers/JsonFileHandler.ts
 import { App, TFile } from 'obsidian';
-import { TableData, DateFormat, DropdownOption, TypeOptions, DateTypeOptions, SelectTypeOptions, NoteLinkTypeOptions } from '../types'; // Adjust path if needed
-import { ITableFileHandler } from './ITableFileHandler'; // Adjust path if needed
+import { TableData } from '../types';
+import { ITableFileHandler } from './ITableFileHandler';
 
 /**
  * Handles reading and writing table data directly as JSON files (.table.json).
@@ -48,39 +48,17 @@ export class JsonFileHandler implements ITableFileHandler {
       }
 
 
-      // 2. Ensure 'typeOptions' exists and migrate old properties
-      let migrationNeeded = false;
+      // Ensure all columns have typeOptions initialized
       data.columns.forEach(col => {
         if (!col.typeOptions) {
-          migrationNeeded = true;
-          col.typeOptions = {}; // Initialize empty object
-
-          // Migrate known properties based on column type
-          const oldCol = col as any; // Use 'any' temporarily for migration access
-          if (col.type === 'date' && oldCol.dateFormat) {
-            (col.typeOptions as DateTypeOptions).dateFormat = oldCol.dateFormat;
-            delete oldCol.dateFormat;
-          }
-          if ((col.type === 'dropdown' || col.type === 'multiselect') && oldCol.options) {
-             (col.typeOptions as SelectTypeOptions).options = oldCol.options;
-             delete oldCol.options;
-          }
-          if (col.type === 'notelink' && oldCol.suggestAllFiles !== undefined) {
-             (col.typeOptions as NoteLinkTypeOptions).suggestAllFiles = oldCol.suggestAllFiles;
-             delete oldCol.suggestAllFiles;
-          }
+          col.typeOptions = {};
         }
       });
 
-      // If migration happened, log it (saving happens separately if needed)
-      if (migrationNeeded) {
-      }
-      // --- End Migration Logic ---
 
-
-      // Basic validation after potential migration
-      if (!data.columns || !data.rows || !data.views) { // Check views again
-        throw new Error('Invalid table JSON structure: missing columns, rows, or views after migration.');
+      // Basic validation
+      if (!data.columns || !data.rows || !data.views) {
+        throw new Error('Invalid table JSON structure: missing columns, rows, or views.');
       }
       return data;
 
