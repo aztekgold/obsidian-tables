@@ -126,7 +126,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 👤 Author
 
-Created with ❤️ by [Matt Smith](https://github.com/aztekgold)
+Created with ❤️ by [Aztekgold](https://github.com/aztekgold)
 
 ---
 
