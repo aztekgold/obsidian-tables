@@ -61,18 +61,21 @@ export class DateColumnEditor implements IColumnEditor {
       if (newTypeOpts.dateFormat !== newFormat) {
           newTypeOpts.dateFormat = newFormat; // Update the format
           await view.saveTableData(data); // Save the updated data
-          // Re-render the whole table to update display format in cells
-          const currentPath = view.getFilePath(); // Use the getter
-                          if (currentPath) {
-                              const file = view.app.vault.getAbstractFileByPath(currentPath);
-                              if (file instanceof TFile) {
-                                  await view.renderContent(file); // Call renderContent
-                              } else {
-                                  console.error("Cannot re-render, file not found at path:", currentPath);
-                              }
-                          } else {
-                              console.error("Cannot re-render, view has no file path set.");
-                          }
+          
+          // Re-render using existing renderer to preserve scroll position
+          const renderer = view.getRenderer();
+          if (renderer) {
+              renderer.render(); // This preserves scroll position
+          } else {
+              // Fallback: full re-render if no renderer exists
+              const currentPath = view.getFilePath();
+              if (currentPath) {
+                  const file = view.app.vault.getAbstractFileByPath(currentPath);
+                  if (file instanceof TFile) {
+                      await view.renderContent(file);
+                  }
+              }
+          }
       }
       // --- End Write ---
     });

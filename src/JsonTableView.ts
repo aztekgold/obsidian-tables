@@ -24,6 +24,10 @@ export class JsonTableView extends ItemView {
         return this.currentFilePath;
   }
 
+  public getRenderer(): TableRenderer | null {
+    return this.renderer;
+  }
+
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
   }
@@ -84,37 +88,6 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
     } else {
     }
 }
-
-// async setState(state: any, result: ViewStateResult): Promise<void> {
-    
-//     const newFilePath = state.file || null;
-//     const fileChanged = newFilePath !== this.currentFilePath;
-    
-//     this.currentFilePath = newFilePath;
-
-//     // Call parent setState
-//     await super.setState(state, result);
-
-//     // Show loading immediately if we have a file to load
-//     if (this.currentFilePath && (fileChanged || !this.data)) {
-//         // Show loading screen
-//         const container = this.containerEl.children[1];
-//         if (container) {
-//             container.empty();
-//             container.addClass('json-table-view-container');
-//             const loadingDiv = container.createEl('div', { cls: 'json-table-loading' });
-//             loadingDiv.createEl('div', { text: 'Loading table...', cls: 'json-table-loading-text' });
-//         }
-        
-//         await this.loadFileAndRender(this.currentFilePath);
-//     } else if (!this.currentFilePath) {
-//         const container = this.containerEl.children[1];
-//         if (container) {
-//             this.showError(container, "No file specified in view state.", false);
-//         }
-//     } else {
-//     }
-// }
 
   getState(): any {
     // Save the current file path
