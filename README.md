@@ -128,6 +128,14 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 Created with ❤️ by [Aztekgold](https://github.com/aztekgold)
 
+## Support
+
+If you enjoy using Obsidian Tables consider [Buy me a coffee](https://www.buymeacoffee.com/aztekgold)
+
+<a href="https://www.buymeacoffee.com/aztekgold" target="_blank">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="180">
+</a>
+
 ---
 
 **⚠️ Important**: This plugin stores table data within your vault files. Always back up your vault regularly!
