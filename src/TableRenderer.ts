@@ -657,7 +657,9 @@ export class TableRenderer {
   // --- Add Row Button ---
 
   private renderAddRowButton(container: Element) {
-    const addRowBtn = container.createEl('div', { cls: 'json-table-add-row' }); // Use div
+    const wrapper = container.createEl('div', { cls: 'json-table-add-row-wrapper' }); // New wrapper
+
+    const addRowBtn = wrapper.createEl('div', { cls: 'json-table-add-row' });
     const content = addRowBtn.createDiv({ cls: 'json-table-btn json-table-btn--hybrid' });
     const plusIcon = createIconElement(ICON_NAMES.plus, 16);
     content.appendChild(plusIcon);
@@ -672,15 +674,32 @@ export class TableRenderer {
       // Pre-populate based on filter
       const activeFilters = this.filterHandler.getCurrentFilterRules();
       activeFilters.forEach(rule => {
-        if (rule.operator === 'equals' && newRowData.hasOwnProperty(rule.columnId)) {
+        if (!newRowData.hasOwnProperty(rule.columnId)) return;
+
+        if (rule.operator === 'equals') {
           // Handle boolean values explicitly
           if (typeof rule.value === 'boolean') {
             newRowData[rule.columnId] = rule.value ? 'true' : 'false';
           } else if (rule.value) {
             newRowData[rule.columnId] = rule.value.toString();
           }
+        } else if (rule.operator === 'contains' && rule.value) {
+          // Handle 'contains' for multi-select (append value)
+          const colDef = this.data.columns.find(c => c.id === rule.columnId);
+          if (colDef && colDef.type === 'multiselect') {
+            const currentVal = newRowData[rule.columnId];
+            const valToAdd = rule.value.toString();
+            if (currentVal) {
+              // Avoid duplicates
+              const parts = currentVal.split(',');
+              if (!parts.includes(valToAdd)) {
+                newRowData[rule.columnId] = currentVal + ',' + valToAdd;
+              }
+            } else {
+              newRowData[rule.columnId] = valToAdd;
+            }
+          }
         }
-        // TODO: Add logic for other operators if applicable for pre-population
       });
 
       const newRow: CellData[] = Object.entries(newRowData).map(([colId, val]) => ({
@@ -694,7 +713,7 @@ export class TableRenderer {
 
     // Add row count display
     const rowCount = this.data.rows.length;
-    const rowCountEl = container.createEl('div', { cls: 'json-table-row-count' });
+    const rowCountEl = wrapper.createEl('div', { cls: 'json-table-row-count' });
     rowCountEl.createSpan({ text: 'Rows: ', cls: 'json-table-row-count-label' });
     rowCountEl.createSpan({ text: rowCount.toString(), cls: 'json-table-row-count-value' });
   }

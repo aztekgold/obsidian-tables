@@ -20,7 +20,7 @@ $table-cell-height: 48px;
 
 .json-table-wrapper {
   overflow-x: auto;
-  padding-bottom: 1em;
+  padding-bottom: 0em;
 }
 
 /* ==========================================================================
@@ -121,14 +121,14 @@ div.json-table-btn--icon:hover {
 /* Standard button variant - 8px 12px padding */
 button.json-table-btn--standard,
 div.json-table-btn--standard {
-  padding: 8px 12px;
+  padding: 8px 12px !important;
   border-radius: 4px;
 }
 
 /* Hybrid button variant - no background unless hovered, 8px 12px padding */
 button.json-table-btn--hybrid,
 div.json-table-btn--hybrid {
-  padding: 8px 12px;
+  padding: 8px 12px !important;
   border-radius: 4px;
 }
 
@@ -184,7 +184,7 @@ div.json-table-btn--active:hover {
 }
 
 .json-table th {
-  padding: 8px !important; // important to override obsidian styles for inline tables
+  padding: 8px 12px !important; // important to override obsidian styles for inline tables
   background-color: var(--background-secondary) !important; // important to override obsidian styles for inline tables
   font-weight: 600;
   position: sticky;
@@ -258,7 +258,7 @@ div.json-table-btn--active:hover {
 
 /* Unified cell content container */
 .json-table-cell-content {
-  padding: 8px;
+  padding: 8px 12px;
   width: 100%;
   height: 100%;
   min-height: $table-cell-height;
@@ -271,7 +271,7 @@ input.json-table-input {
   width: 100%;
   height: 100%;
   min-height: $table-cell-height;
-  padding: 8px;
+  padding: 8px 12px;
   border: none;
   background: transparent;
   border-radius: 0;
@@ -316,7 +316,7 @@ input.json-table-input {
   width: 100%;
   height: 100%;
   min-height: $table-cell-height;
-  padding: 8px;
+  padding: 8px 12px;
   display: flex;
   align-items: center;
   cursor: pointer;
@@ -750,11 +750,10 @@ input.json-table-input {
 }
 
 .json-table-add-row {
-  padding-bottom: 0.65em;
+  padding: 1em 0;
   /* padding: 8px 16px; */
   /* background: var(--interactive-normal); */
   color: var(--text-normal);
-  border-bottom: 1px solid var(--background-modifier-border);
   cursor: pointer;
   font-size: 14px;
   transition: background 0.2s;
@@ -981,7 +980,8 @@ input.json-table-input {
 .json-table-controls {
   display: flex;
   gap: 16px;
-  margin: 1em 0;
+  margin: 0.875em 0;
+  font-size: 14px;
 }
 
 .json-table-header-buttons-container {
@@ -1352,6 +1352,7 @@ input.table-filename-input {
   align-items: center;
   gap: 6px;
 }
+
 /* --- Drag Handle --- */
 .json-table-drag-handle {
   cursor: grab;
@@ -1373,7 +1374,8 @@ input.table-filename-input {
 
 /* Ensure content wrapper allows pointer events on the handle */
 .json-table-header-content {
-  pointer-events: auto !important; /* Override previous setting if any */
+  pointer-events: auto !important;
+  /* Override previous setting if any */
 }
 
 /* --- Resize Handle Indicator --- */
@@ -1385,7 +1387,8 @@ input.table-filename-input {
 
 .json-table-resize-handle:hover,
 .json-table-header-cell:hover .json-table-resize-handle {
-  background-color: var(--interactive-accent); /* Show a line indicator */
+  background-color: var(--interactive-accent);
+  /* Show a line indicator */
   opacity: 0.5;
 }
 
@@ -1397,15 +1400,68 @@ input.table-filename-input {
 /* --- Refined Resize Handle Indicator --- */
 /* Only show when hovering the handle itself */
 .json-table-header-cell:hover .json-table-resize-handle {
-  background-color: transparent; /* Hide when just hovering the cell */
+  background-color: transparent;
+  /* Hide when just hovering the cell */
 }
 
 .json-table-resize-handle:hover {
-  background-color: var(--interactive-accent) !important; /* Show only on handle hover */
+  background-color: var(--interactive-accent) !important;
+  /* Show only on handle hover */
   opacity: 1 !important;
 }
 
 .json-table-resize-handle:active {
   background-color: var(--interactive-accent) !important;
   opacity: 1 !important;
+}
+
+/* --- UI Refinements --- */
+
+/* Add Row Wrapper */
+.json-table-add-row-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.875em 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+/* Reset Add Row padding since it's now on the wrapper */
+.json-table-add-row {
+  padding: 0;
+}
+
+/* Row Count */
+.json-table-row-count {
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Add View Button Size */
+.json-table-view-add-btn {
+  width: 30px;
+  /* Match Add Column button size */
+  height: 30px;
+  font-size: 18px;
+}
+
+/* Prevent Column Collapse */
+.json-table th,
+.json-table td {
+  min-width: 50px;
+  /* Ensure columns don't collapse too small */
+}
+
+/* Ensure last column doesn't collapse */
+.json-table th:last-child,
+.json-table td:last-child {
+  min-width: 80px;
+}
+
+.block-language-jsontable .edit-block-button {
+  display: none !important;
+  /* Hide edit code button for inline tables */
 }
