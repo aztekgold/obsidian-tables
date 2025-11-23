@@ -85,17 +85,8 @@ export class DropdownColumnEditor implements IColumnEditor {
           
           await view.saveTableData(data);
           
-          const currentPath = view.getFilePath();
-          if (currentPath) {
-            const file = view.app.vault.getAbstractFileByPath(currentPath);
-            if (file instanceof TFile) {
-              await view.renderContent(file);
-            } else {
-              console.error("Cannot re-render, file not found at path:", currentPath);
-            }
-          } else {
-            console.error("Cannot re-render, view has no file path set.");
-          }
+          // Re-render in memory to reflect changes immediately without reloading file
+          view.getRenderer()?.render();
           
           renderOptionsList();
         });

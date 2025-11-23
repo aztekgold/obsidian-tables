@@ -79,6 +79,8 @@ export class DropdownRenderer implements ICellRenderer {
     // 1. Render tag with "x" button if value exists
     this.renderTags(newWrapper, value, column, handleRemove);
 
+    let clickOutside: (e: MouseEvent) => void;
+
     // 2. Show the popup with available options
     const popup = this.showDropdownPopup(
       newWrapper,
@@ -88,13 +90,16 @@ export class DropdownRenderer implements ICellRenderer {
         // For dropdown (single select), clicking replaces the current value
         value = selectedValue;
         onChange(selectedValue); // Trigger save
-        // Re-render the edit state with new value
-        this.renderEdit(app, newWrapper, selectedValue, column, onChange);
+        
+        // Close popup and return to display mode
+        if (clickOutside) document.removeEventListener('click', clickOutside, true);
+        popup.remove();
+        this.renderDisplay(app, newWrapper, selectedValue, column, onChange);
       }
     );
 
     // 3. Set up the "click outside" listener to close edit mode
-    const clickOutside = (e: MouseEvent) => {
+    clickOutside = (e: MouseEvent) => {
       if (
         !newWrapper.contains(e.target as Node) &&
         !popup.contains(e.target as Node)

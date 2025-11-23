@@ -80,6 +80,7 @@ export class JsonFileHandler implements ITableFileHandler {
 
       const jsonString = JSON.stringify(data, null, 2); // Pretty print
       await this.app.vault.modify(file, jsonString);
+      console.log(`Successfully Saved ${file.name}`);
     } catch (e) {
       console.error(`Error saving JSON file ${file.path}:`, e);
       throw new Error(`Failed to save file: ${(e as Error).message}`);

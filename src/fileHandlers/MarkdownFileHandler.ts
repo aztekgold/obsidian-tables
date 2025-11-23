@@ -135,6 +135,7 @@ export class MarkdownFileHandler implements ITableFileHandler {
 
       // 5. Write the updated content back to the file
       await this.app.vault.modify(file, newContent);
+      console.log(`Successfully Saved ${file.name}`);
 
     } catch (e) {
       console.error(`Error saving Markdown file ${file.path}:`, e);

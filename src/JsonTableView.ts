@@ -19,6 +19,7 @@ export class JsonTableView extends ItemView {
   private settings: JsonTableSettings = DEFAULT_SETTINGS;
   // Keep track of the file associated via state
   private currentFilePath: string | null = null;
+  navigation = true;
 
   public getFilePath(): string | null {
         return this.currentFilePath;
