@@ -25,8 +25,8 @@ import { FilterHandler } from './FilterHandler';
 
 // Import Icons
 import {
-    ICON_NAMES,
-    createIconElement
+  ICON_NAMES,
+  createIconElement
 } from './icons'; // Adjust path if needed
 
 // Map column types to their icon names
@@ -90,21 +90,21 @@ export class TableRenderer {
 
   private renderRenameInput() {
     const renameContainer = this.container.createDiv({ cls: 'json-table-rename-container' });
-    
+
     // Get the current file name without extension
     const currentFilePath = this.view.getFilePath();
     if (!currentFilePath) return;
-    
+
     const fileName = currentFilePath.substring(currentFilePath.lastIndexOf('/') + 1);
     const nameWithoutExt = fileName.replace(/\.(table\.json|table\.md)$/, '');
-    
+
     const renameInput = renameContainer.createEl('input', {
       type: 'text',
       cls: 'json-table-rename-input',
       value: nameWithoutExt,
       placeholder: 'Table name'
     });
-    
+
     // Handle blur event for renaming
     renameInput.addEventListener('blur', async () => {
       const newName = renameInput.value.trim();
@@ -120,7 +120,7 @@ export class TableRenderer {
         renameInput.value = nameWithoutExt;
       }
     });
-    
+
     // Handle Enter key
     renameInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
@@ -141,7 +141,7 @@ export class TableRenderer {
     const existingWrapper = this.container.querySelector('.json-table-wrapper') as HTMLElement;
     const scrollLeft = existingWrapper?.scrollLeft ?? 0;
     const scrollTop = existingWrapper?.scrollTop ?? 0;
-    
+
     this.container.empty(); // Clear everything before re-rendering
 
     // Render file rename input at the top
@@ -164,16 +164,16 @@ export class TableRenderer {
 
     // Filter Button
     const filterButton = controlsContainer.createEl('button', {
-        cls: 'json-table-btn json-table-btn--standard json-table-filter-button',
+      cls: 'json-table-btn json-table-btn--standard json-table-filter-button',
     });
     const filterIcon = createIconElement(ICON_NAMES.filter, 16, 'icon-filter');
     filterButton.appendChild(filterIcon);
     filterButton.appendText(' Filter');
     if (this.filterHandler.hasActiveFilters()) {
-        filterButton.addClass('json-table-btn--active');
+      filterButton.addClass('json-table-btn--active');
     }
     filterButton.addEventListener('click', () => {
-        this.filterHandler.showFilterPopup(filterButton);
+      this.filterHandler.showFilterPopup(filterButton);
     });
 
 
@@ -197,7 +197,7 @@ export class TableRenderer {
 
     // Render Add Row button
     this.renderAddRowButton(this.container);
-    
+
     // Restore scroll position after rendering
     // Use requestAnimationFrame for better timing with DOM updates
     requestAnimationFrame(() => {
@@ -250,28 +250,28 @@ export class TableRenderer {
 
       // Drag and Drop Listeners
       th.addEventListener('dragstart', (e) => { /* ... drag start logic ... */
-         if ((e.target as HTMLElement).classList.contains('json-table-resize-handle')) { e.preventDefault(); return; }
-         if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; draggedColumnIndex = colIndex; th.classList.add('is-dragging'); }
+        if ((e.target as HTMLElement).classList.contains('json-table-resize-handle')) { e.preventDefault(); return; }
+        if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; draggedColumnIndex = colIndex; th.classList.add('is-dragging'); }
       });
       th.addEventListener('dragover', (e) => { /* ... drag over logic ... */
-          e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; th.classList.add('is-dragover');
+        e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; th.classList.add('is-dragover');
       });
       th.addEventListener('dragleave', () => th.classList.remove('is-dragover'));
       th.addEventListener('drop', (e) => { /* ... drop logic ... */
-          e.preventDefault(); th.classList.remove('is-dragover'); if (draggedColumnIndex === null) return;
-          const targetColumnIndex = colIndex; if (draggedColumnIndex === targetColumnIndex) return;
-          const draggedColumn = this.data.columns.splice(draggedColumnIndex, 1)[0]; this.data.columns.splice(targetColumnIndex, 0, draggedColumn);
-          this.view.saveTableData(this.data); this.render();
+        e.preventDefault(); th.classList.remove('is-dragover'); if (draggedColumnIndex === null) return;
+        const targetColumnIndex = colIndex; if (draggedColumnIndex === targetColumnIndex) return;
+        const draggedColumn = this.data.columns.splice(draggedColumnIndex, 1)[0]; this.data.columns.splice(targetColumnIndex, 0, draggedColumn);
+        this.view.saveTableData(this.data); this.render();
       });
       th.addEventListener('dragend', () => { /* ... drag end logic ... */
-          th.classList.remove('is-dragging'); draggedColumnIndex = null;
+        th.classList.remove('is-dragging'); draggedColumnIndex = null;
       });
 
       // Edit Column Click Listener
       th.addEventListener('click', (e) => { /* ... edit click logic ... */
-          if (this.isResizing) { this.isResizing = false; return; }
-          if ((e.target as HTMLElement).classList.contains('json-table-resize-handle')) { return; }
-          e.stopPropagation(); this.showEditColumnDialog(th, col, this.data, colIndex);
+        if (this.isResizing) { this.isResizing = false; return; }
+        if ((e.target as HTMLElement).classList.contains('json-table-resize-handle')) { return; }
+        e.stopPropagation(); this.showEditColumnDialog(th, col, this.data, colIndex);
       });
     }); // End data columns loop
 
@@ -291,9 +291,9 @@ export class TableRenderer {
     addColBtnDiv.appendChild(plusIcon);
     let isAddColPopupOpen = false;
     addColBtnDiv.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation(); if (isAddColPopupOpen) return;
-        isAddColPopupOpen = true;
-        this.showAddColumnDialog(buttonsTh, addColBtnDiv, this.data, () => { isAddColPopupOpen = false; });
+      e.preventDefault(); e.stopPropagation(); if (isAddColPopupOpen) return;
+      isAddColPopupOpen = true;
+      this.showAddColumnDialog(buttonsTh, addColBtnDiv, this.data, () => { isAddColPopupOpen = false; });
     });
   }
 
@@ -301,11 +301,11 @@ export class TableRenderer {
 
   private renderBody(table: HTMLTableElement, rowsToRender: CellData[][]) { // Accept filtered rows
     const tbody = table.createEl('tbody');
-    
+
     // Build row index map once before loop - O(N) instead of O(N²)
     const rowIndexMap = new Map<CellData[], number>();
     this.data.rows.forEach((row, idx) => rowIndexMap.set(row, idx));
-    
+
     rowsToRender.forEach((row) => { // Iterate over filtered rows
       const tr = tbody.createEl('tr', { cls: 'json-table-row' });
 
@@ -328,7 +328,7 @@ export class TableRenderer {
           await this.view.saveTableData(this.data);
           this.render(); // Re-render
         } else {
-           console.error("Could not find original row index for deletion while filtered.");
+          console.error("Could not find original row index for deletion while filtered.");
         }
       });
       // Add empty cell below the combined buttons header if it wasn't the delete cell
@@ -355,9 +355,9 @@ export class TableRenderer {
 
         await this.view.saveTableData(data);
         // Re-render if sort/filter might change
-         if (this.sortHandler.getCurrentSortRules().some(rule => rule.columnId === col.id) || this.filterHandler.hasActiveFilters()) {
-            this.render();
-         }
+        if (this.sortHandler.getCurrentSortRules().some(rule => rule.columnId === col.id) || this.filterHandler.hasActiveFilters()) {
+          this.render();
+        }
       };
       renderer.render(this.view.app, td, value, col, onCellChange);
     });
@@ -366,35 +366,41 @@ export class TableRenderer {
   // --- Add Row Button ---
 
   private renderAddRowButton(container: Element) {
-      const addRowBtn = container.createEl('div', { cls: 'json-table-add-row' }); // Use div
-      const content = addRowBtn.createDiv({ cls: 'json-table-btn json-table-btn--hybrid' });
-      const plusIcon = createIconElement(ICON_NAMES.plus, 16);
-      content.appendChild(plusIcon);
-      content.createSpan({ text: 'Add row', cls: 'json-table-add-row-text' });
+    const addRowBtn = container.createEl('div', { cls: 'json-table-add-row' }); // Use div
+    const content = addRowBtn.createDiv({ cls: 'json-table-btn json-table-btn--hybrid' });
+    const plusIcon = createIconElement(ICON_NAMES.plus, 16);
+    content.appendChild(plusIcon);
+    content.createSpan({ text: 'Add row', cls: 'json-table-add-row-text' });
 
-      addRowBtn.addEventListener('click', async () => {
-          let newRowData: Record<string, string> = {};
-          this.data.columns.forEach(col => {
-              newRowData[col.id] = col.type === 'checkbox' ? 'false' : ''; // Default values
-          });
-
-          // Pre-populate based on filter
-          const activeFilters = this.filterHandler.getCurrentFilterRules();
-          activeFilters.forEach(rule => {
-              if (rule.operator === 'equals' && rule.value && newRowData.hasOwnProperty(rule.columnId)) {
-                  newRowData[rule.columnId] = rule.value;
-              }
-              // TODO: Add logic for other operators if applicable for pre-population
-          });
-
-          const newRow: CellData[] = Object.entries(newRowData).map(([colId, val]) => ({
-              column: colId, value: val
-          }));
-
-          this.data.rows.push(newRow); // Add to unfiltered data
-          await this.view.saveTableData(this.data);
-          this.render(); // Re-render applies filters/sort
+    addRowBtn.addEventListener('click', async () => {
+      let newRowData: Record<string, string> = {};
+      this.data.columns.forEach(col => {
+        newRowData[col.id] = col.type === 'checkbox' ? 'false' : ''; // Default values
       });
+
+      // Pre-populate based on filter
+      const activeFilters = this.filterHandler.getCurrentFilterRules();
+      activeFilters.forEach(rule => {
+        if (rule.operator === 'equals' && rule.value && newRowData.hasOwnProperty(rule.columnId)) {
+          newRowData[rule.columnId] = rule.value;
+        }
+        // TODO: Add logic for other operators if applicable for pre-population
+      });
+
+      const newRow: CellData[] = Object.entries(newRowData).map(([colId, val]) => ({
+        column: colId, value: val
+      }));
+
+      this.data.rows.push(newRow); // Add to unfiltered data
+      await this.view.saveTableData(this.data);
+      this.render(); // Re-render applies filters/sort
+    });
+
+    // Add row count display
+    const rowCount = this.data.rows.length;
+    const rowCountEl = container.createEl('div', { cls: 'json-table-row-count' });
+    rowCountEl.createSpan({ text: 'Rows: ', cls: 'json-table-row-count-label' });
+    rowCountEl.createSpan({ text: rowCount.toString(), cls: 'json-table-row-count-value' });
   }
 
 
@@ -408,16 +414,16 @@ export class TableRenderer {
     if (!colElement) { this.isResizing = false; return; }
     const startX = e.clientX; const startWidth = colElement.offsetWidth;
     const onMouseMove = (moveE: MouseEvent) => {
-        // Update width dynamically during resize
-        const newWidth = startWidth + (moveE.clientX - startX);
-        if (newWidth > 40) colElement.style.width = `${newWidth}px`;
+      // Update width dynamically during resize
+      const newWidth = startWidth + (moveE.clientX - startX);
+      if (newWidth > 40) colElement.style.width = `${newWidth}px`;
     };
     const onMouseUp = () => {
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-        const finalWidth = colElement.offsetWidth; column.width = finalWidth;
-        this.view.saveTableData(this.data);
-        setTimeout(() => { this.isResizing = false; }, 0);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      const finalWidth = colElement.offsetWidth; column.width = finalWidth;
+      this.view.saveTableData(this.data);
+      setTimeout(() => { this.isResizing = false; }, 0);
     };
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
@@ -431,53 +437,53 @@ export class TableRenderer {
     const popup = document.body.createEl('div', { cls: 'json-table-popup json-table-edit-column-popup' });
     // Position popup dynamically based on header cell location
     const rect = headerCell.getBoundingClientRect();
-    popup.style.top = `${rect.bottom + 5}px`; 
+    popup.style.top = `${rect.bottom + 5}px`;
     popup.style.left = `${rect.left}px`;
-    
+
     // Create wrapper for flex layout
     const wrapper = popup.createEl('div', { cls: 'json-table-popup-wrapper' });
-    
+
     const nameInput = wrapper.createEl('input', { type: 'text', cls: 'json-table-edit-input', value: column.name, placeholder: 'Column name' });
     const editorContainer = wrapper.createEl('div', { cls: 'json-table-column-editor-container' });
     let editor = this.columnEditors.get(column.type) || this.columnEditors.get('text');
     if (editor) editor.render(editorContainer, column, this.data, this.view);
-    
+
     // Delete Column Button
     const deleteBtn = wrapper.createEl('button', { cls: 'json-table-btn json-table-btn--hybrid json-table-btn---delete-column' });
     const deleteIcon = createIconElement(ICON_NAMES.trash, 16);
     deleteBtn.appendChild(deleteIcon);
     deleteBtn.appendText('Delete Column');
-    
+
     nameInput.focus(); nameInput.select();
 
     const closePopup = () => { popup.remove(); document.removeEventListener('click', clickOutside); };
     const saveColumnName = async () => {
-        const newName = nameInput.value.trim();
-        let nameChanged = false;
-        if (newName && newName !== column.name) { column.name = newName; nameChanged = true; }
-        if (nameChanged) {
-            await this.view.saveTableData(data);
-             // Update header text non-destructively
-            const contentWrapper = headerCell.querySelector('.json-table-header-content');
-            const textNode = contentWrapper ? Array.from(contentWrapper.childNodes).find(node => node.nodeType === Node.TEXT_NODE) : null;
-            if (textNode) { textNode.textContent = newName; }
-            else { console.warn("Could not find text node to update header name."); }
-            this.render(); // Re-render needed for sort/filter popups
-        }
-        closePopup();
+      const newName = nameInput.value.trim();
+      let nameChanged = false;
+      if (newName && newName !== column.name) { column.name = newName; nameChanged = true; }
+      if (nameChanged) {
+        await this.view.saveTableData(data);
+        // Update header text non-destructively
+        const contentWrapper = headerCell.querySelector('.json-table-header-content');
+        const textNode = contentWrapper ? Array.from(contentWrapper.childNodes).find(node => node.nodeType === Node.TEXT_NODE) : null;
+        if (textNode) { textNode.textContent = newName; }
+        else { console.warn("Could not find text node to update header name."); }
+        this.render(); // Re-render needed for sort/filter popups
+      }
+      closePopup();
     };
     const deleteColumn = async () => { /* ... delete logic ... */
-        data.columns.splice(colIndex, 1);
-        data.rows.forEach((row) => { const i = row.findIndex(c => c.column === column.id); if (i !== -1) row.splice(i, 1); });
-        await this.view.saveTableData(data); this.render(); closePopup();
+      data.columns.splice(colIndex, 1);
+      data.rows.forEach((row) => { const i = row.findIndex(c => c.column === column.id); if (i !== -1) row.splice(i, 1); });
+      await this.view.saveTableData(data); this.render(); closePopup();
     };
 
     // Listeners
     deleteBtn.addEventListener('mousedown', (e) => e.preventDefault());
     deleteBtn.addEventListener('click', async (e) => { e.stopPropagation(); e.preventDefault(); document.removeEventListener('click', clickOutside); await deleteColumn(); });
     nameInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); saveColumnName(); }
-        else if (e.key === 'Escape') { e.preventDefault(); closePopup(); }
+      if (e.key === 'Enter') { e.preventDefault(); saveColumnName(); }
+      else if (e.key === 'Escape') { e.preventDefault(); closePopup(); }
     });
     const clickOutside = (e: MouseEvent) => { if (!popup.contains(e.target as Node) && !headerCell.contains(e.target as Node)) { saveColumnName(); } };
     setTimeout(() => { document.addEventListener('click', clickOutside); }, 100);
@@ -500,48 +506,48 @@ export class TableRenderer {
     const typeButtonsContainer = wrapper.createEl('div', { cls: 'json-table-type-buttons' });
 
     const types = [ /* ... type definitions ... */
-        { type: 'text' as const, name: 'Text', icon: ICON_NAMES.text },
-        { type: 'checkbox' as const, name: 'Checkbox', icon: ICON_NAMES.checkbox },
-        { type: 'dropdown' as const, name: 'Dropdown', icon: ICON_NAMES.dropdown },
-        { type: 'multiselect' as const, name: 'Multi-select', icon: ICON_NAMES.multiselect },
-        { type: 'notelink' as const, name: 'Note Link', icon: ICON_NAMES.link },
-        { type: 'date' as const, name: 'Date', icon: ICON_NAMES.date },
+      { type: 'text' as const, name: 'Text', icon: ICON_NAMES.text },
+      { type: 'checkbox' as const, name: 'Checkbox', icon: ICON_NAMES.checkbox },
+      { type: 'dropdown' as const, name: 'Dropdown', icon: ICON_NAMES.dropdown },
+      { type: 'multiselect' as const, name: 'Multi-select', icon: ICON_NAMES.multiselect },
+      { type: 'notelink' as const, name: 'Note Link', icon: ICON_NAMES.link },
+      { type: 'date' as const, name: 'Date', icon: ICON_NAMES.date },
     ];
     const defaultDropdownOptions = [ /* ... default options ... */
-        { value: 'To Do', style: 'red' }, { value: 'In Progress', style: 'blue' }, { value: 'Done', style: 'green' }
+      { value: 'To Do', style: 'red' }, { value: 'In Progress', style: 'blue' }, { value: 'Done', style: 'green' }
     ];
 
     types.forEach(({ type, name, icon }) => {
-        const btnDiv = typeButtonsContainer.createEl('div', { cls: 'json-table-btn json-table-btn--hybrid', attr: { role: 'button', tabindex: 0 } });
-        const iconEl = createIconElement(icon, 16, `icon-type-${type}`);
-        if (iconEl) btnDiv.appendChild(iconEl);
-        btnDiv.appendText(name);
-        const addAction = () => {
-            let extraProps = {};
-            if (type === 'dropdown' || type === 'multiselect') extraProps = { typeOptions: { options: defaultDropdownOptions } };
-            if (type === 'date') extraProps = { dateFormat: 'YYYY/MM/DD' };
-            addColumn(type, name, extraProps);
-        };
-        btnDiv.addEventListener('click', addAction);
-        btnDiv.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); addAction(); } });
+      const btnDiv = typeButtonsContainer.createEl('div', { cls: 'json-table-btn json-table-btn--hybrid', attr: { role: 'button', tabindex: 0 } });
+      const iconEl = createIconElement(icon, 16, `icon-type-${type}`);
+      if (iconEl) btnDiv.appendChild(iconEl);
+      btnDiv.appendText(name);
+      const addAction = () => {
+        let extraProps = {};
+        if (type === 'dropdown' || type === 'multiselect') extraProps = { typeOptions: { options: defaultDropdownOptions } };
+        if (type === 'date') extraProps = { dateFormat: 'YYYY/MM/DD' };
+        addColumn(type, name, extraProps);
+      };
+      btnDiv.addEventListener('click', addAction);
+      btnDiv.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); addAction(); } });
     });
 
     // Helpers
     const closePopup = () => { popup.remove(); buttonDiv.removeClass('is-dimmed'); document.removeEventListener('click', clickOutside); document.removeEventListener('keydown', handleEscape); onClose(); };
     const addColumn = async (columnType: string, typeName: string, extraProps: Record<string, any> = {}) => {
-        let columnName = nameInputPopup.value.trim() || typeName;
-        const columnId = 'col_' + Date.now();
-        data.columns.push({ id: columnId, name: columnName, type: columnType, width: 150, ...extraProps });
-        data.rows.forEach(row => row.push({ column: columnId, value: '' }));
-        await this.view.saveTableData(data);
-        this.render();
-        closePopup();
+      let columnName = nameInputPopup.value.trim() || typeName;
+      const columnId = 'col_' + Date.now();
+      data.columns.push({ id: columnId, name: columnName, type: columnType, width: 150, ...extraProps });
+      data.rows.forEach(row => row.push({ column: columnId, value: '' }));
+      await this.view.saveTableData(data);
+      this.render();
+      closePopup();
     };
 
     // Listeners
     const clickOutside = (e: MouseEvent) => { if (!popup.contains(e.target as Node) && !buttonDiv.contains(e.target as Node)) { closePopup(); } };
     const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') { closePopup(); } };
-    nameInputPopup.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); addColumn('text', 'Text', {}); } });
+    nameInputPopup.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addColumn('text', 'Text', {}); } });
     setTimeout(() => { document.addEventListener('click', clickOutside); document.addEventListener('keydown', handleEscape); }, 100);
   }
 

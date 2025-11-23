@@ -160,35 +160,40 @@ div.json-table-btn--active:hover {
 .json-table {
   /* Reverted to your settings: */
   min-width: 100%;
-  width: min-content; 
+  width: min-content;
   table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.9em;
   background: var(--background-primary);
   color: var(--text-normal);
+  margin-block-start: 0 !important; // important to override obsidian styles for inline tables
+  margin-block-end: 0 !important; // important to override obsidian styles for inline tables
 }
 
 .json-table th,
 .json-table td {
-  padding: 0;
+  padding: 0 !important; // important to override obsidian styles for inline tables
   min-width: 150px;
   height: $table-cell-height;
   text-align: left;
-  border: 1px solid var(--background-modifier-border);
+  border: 1px solid var(--background-modifier-border) !important; // important to override obsidian styles for inline tables
   color: var(--text-normal);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; /* Default for simple text */
+  text-overflow: ellipsis;
+  vertical-align: middle !important; // important to override obsidian styles for inline tables
+  /* Default for simple text */
 }
 
 .json-table th {
-  padding: 12px 16px;
-  background-color: var(--background-secondary);
+  padding: 8px !important; // important to override obsidian styles for inline tables
+  background-color: var(--background-secondary) !important; // important to override obsidian styles for inline tables
   font-weight: 600;
   position: sticky;
   top: 0;
   z-index: 10;
-  position: relative; /* For resize handle */
+  position: relative;
+  /* For resize handle */
 }
 
 .json-table tbody tr:nth-child(even) {
@@ -600,6 +605,7 @@ input.json-table-input {
   padding: 0 8px;
   line-height: 1;
 }
+
 .json-table-edit-option-delete:hover {
   color: var(--text-error);
 }
@@ -639,7 +645,8 @@ input.json-table-input {
 
 /* Your style for dropdown options */
 .json-table-dropdown-option {
-  padding: 8px 10px; /* Use the roomier padding */
+  padding: 8px 10px;
+  /* Use the roomier padding */
   border-radius: 4px;
   cursor: pointer;
 }
@@ -661,8 +668,9 @@ input.json-table-input {
   border-radius: 2px;
   cursor: pointer;
 }
+
 .json-table-multiselect-tag-remove:hover {
-  background-color: rgba(0,0,0,0.2);
+  background-color: rgba(0, 0, 0, 0.2);
   color: var(--text-error);
 }
 
@@ -675,8 +683,10 @@ input.json-table-input {
 .json-table-multiselect.is-editing .json-table-dropdown-tag {
   display: inline-flex;
   align-items: center;
-  padding: 4px 2px 4px 8px; /* Tighter padding for the 'x' */
+  padding: 4px 2px 4px 8px;
+  /* Tighter padding for the 'x' */
 }
+
 /* ==========================================================================
    Color Palette (Dropdown Tags) - YOUR COLORS
    ========================================================================== */
@@ -685,14 +695,17 @@ input.json-table-input {
   background-color: var(--background-modifier-hover);
   color: white;
 }
+
 .dropdown-tag--red {
   background-color: rgba(255, 100, 100, 0.2);
   color: white;
 }
+
 .dropdown-tag--blue {
   background-color: rgba(100, 100, 255, 0.2);
   color: white;
 }
+
 .dropdown-tag--green {
   background-color: rgba(100, 255, 100, 0.2);
   color: white;
@@ -755,6 +768,21 @@ input.json-table-input {
   background: var(--interactive-active);
 }
 
+.json-table-row-count {
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.json-table-row-count-label {
+  color: var(--text-muted);
+}
+
+.json-table-row-count-value {
+  font-weight: bold;
+  color: var(--text-normal);
+}
+
 .json-table-error {
   color: var(--text-error);
   padding: 1em;
@@ -769,6 +797,7 @@ input.json-table-input {
   margin-top: 16px;
   background: var(--background-secondary);
 }
+
 .json-table-error .json-table-add-row:hover {
   background: var(--background-modifier-hover);
 }
@@ -791,26 +820,31 @@ input.json-table-input {
 }
 
 .json-table-header-cell .json-table-icon {
-  width: 14px; /* Slightly smaller in header */
+  width: 14px;
+  /* Slightly smaller in header */
   height: 14px;
-  flex-shrink: 0; /* Prevent icon from shrinking */
-  color: var(--text-muted); /* Make header icons less prominent */
+  flex-shrink: 0;
+  /* Prevent icon from shrinking */
+  color: var(--text-muted);
+  /* Make header icons less prominent */
 }
 
 /* Ensure the resize handle doesn't overlap */
 .json-table-resize-handle {
   /* Make sure it's positioned relative to the right edge */
-  right: -2px; 
+  right: -2px;
 }
 
 
 .json-table-header-content {
   display: flex;
   align-items: center;
-  gap: 6px; /* Space between icon and text */
+  gap: 6px;
+  /* Space between icon and text */
   /* This prevents the wrapper from interfering with the resize handle */
-  position: relative; 
-  z-index: 1; /* Ensure content is below the handle */
+  position: relative;
+  z-index: 1;
+  /* Ensure content is below the handle */
 }
 
 .json-table-header-content .json-table-icon {
@@ -824,7 +858,8 @@ input.json-table-input {
 
 /* Add cursor style to the header cell */
 .json-table-header-cell {
-  cursor: grab; /* Indicate draggable */
+  cursor: grab;
+  /* Indicate draggable */
   user-select: none;
   /* Keep other styles */
 }
@@ -854,7 +889,8 @@ input.json-table-input {
   position: relative;
   z-index: 1;
   /* width: 100%; REMOVE this if it causes issues */
-  pointer-events: none; /* Make content non-interactive for drag */
+  pointer-events: none;
+  /* Make content non-interactive for drag */
 }
 
 /* Keep resize handle interactive */
@@ -866,7 +902,8 @@ input.json-table-input {
   width: 5px;
   cursor: col-resize;
   z-index: 10;
-  pointer-events: auto; /* Ensure handle is clickable */
+  pointer-events: auto;
+  /* Ensure handle is clickable */
 }
 
 /* styles.css */
@@ -875,12 +912,14 @@ input.json-table-input {
 .json-table-editor-setting {
   display: flex;
   align-items: center;
-  gap: 8px; /* Space between checkbox and label */
+  gap: 8px;
+  /* Space between checkbox and label */
   padding: 4px 0;
 }
 
 .json-table-editor-setting input[type="checkbox"] {
-  margin: 0; /* Remove default margin */
+  margin: 0;
+  /* Remove default margin */
   width: 1.1em;
   height: 1.1em;
   cursor: pointer;
@@ -891,6 +930,7 @@ input.json-table-input {
   color: var(--text-normal);
   cursor: pointer;
 }
+
 /* Reset pointer-events for header text/icon if needed for other interactions (like tooltips) */
 /* .json-table-header-content * { pointer-events: auto; } */
 
@@ -918,14 +958,16 @@ input.json-table-input {
 .flatpickr-calendar {
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   border-radius: 4px;
   /* Adjust colors to match Obsidian theme */
 }
+
 .flatpickr-day.selected {
   background: var(--interactive-accent);
   border-color: var(--interactive-accent);
 }
+
 .flatpickr-day:hover {
   background: var(--background-modifier-hover);
 }
@@ -970,8 +1012,10 @@ input.json-table-input {
 
 /* Specific style for the delete button */
 .json-table-delete-row-btn:hover {
-  color: var(--text-error); /* Red on hover for delete */
-  background-color: rgba(255, 100, 100, 0.1); /* Faint red background */
+  color: var(--text-error);
+  /* Red on hover for delete */
+  background-color: rgba(255, 100, 100, 0.1);
+  /* Faint red background */
 }
 
 .json-table-row-button .json-table-icon {
@@ -980,9 +1024,9 @@ input.json-table-input {
 }
 
 /* Ensure alternating row color applies correctly if needed */
-.json-table tbody tr:nth-child(even) .json-table-buttons-cell {
-    background-color: var(--background-primary-alt);
-}
+// .json-table tbody tr:nth-child(even) .json-table-buttons-cell {
+//   background-color: var(--background-primary-alt);
+// }
 
 /* styles.scss or styles.css */
 
@@ -1099,28 +1143,28 @@ input.json-table-input {
 }
 
 .table-filename-container {
-    border-bottom: 1px solid var(--background-modifier-border);
+  border-bottom: 1px solid var(--background-modifier-border);
 }
 
 input.table-filename-input {
-    font-size: 1.5em;
-    font-weight: bold;
-    border-radius: 0;
-    border: none;
-    outline: none;
-    background: transparent;
-    width: 100%;
-    padding: 8px 12px;
-    margin-bottom: 12px;
-    box-sizing: border-box;
+  font-size: 1.5em;
+  font-weight: bold;
+  border-radius: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  box-sizing: border-box;
 }
 
 .table-filename-input:hover {
-    background: var(--background-modifier-hover);
-    border-radius: 4px;
+  background: var(--background-modifier-hover);
+  border-radius: 4px;
 }
 
 .table-filename-input.is-focused {
-    background: var(--background-modifier-border);
-    border-radius: 4px;
+  background: var(--background-modifier-border);
+  border-radius: 4px;
 }
