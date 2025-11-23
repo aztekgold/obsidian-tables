@@ -328,19 +328,12 @@ export class TableRenderer {
     // Properties Button (Visibility)
     const propsButton = controlsContainer.createEl('button', {
       cls: 'json-table-btn json-table-btn--standard json-table-props-button',
-      attr: { 'aria-label': 'Table properties' }
+      attr: { 'aria-label': 'Column visibility' }
     });
-    // Use an icon for properties/visibility - 'eye' or 'settings'
-    // Let's use 'eye' if available, or 'more-vertical' as a fallback if 'eye' isn't defined in ICON_NAMES yet.
-    // Assuming ICON_NAMES doesn't have 'eye' yet, I might need to add it or use a generic one.
-    // Let's use a generic icon or text for now, or check icons.ts.
-    // Actually, I'll use 'eye' and if it fails I'll fix it.
-    // Wait, I should check icons.ts first to be safe.
-    // But to save steps, I'll use a text label "Properties" with a placeholder icon if needed.
-    // Let's check icons.ts quickly.
-    const propsIcon = createIconElement(ICON_NAMES.moreVertical, 16, 'icon-props'); // Use moreVertical as "Properties"
+
+    const propsIcon = createIconElement(ICON_NAMES.eye, 16, 'icon-props');
     propsButton.appendChild(propsIcon);
-    propsButton.appendText(' Properties');
+    propsButton.appendText(' Show/Hide'); // Updated text
     propsButton.addEventListener('click', () => {
       this.showPropertyVisibilityPopup(propsButton);
     });
@@ -392,10 +385,11 @@ export class TableRenderer {
     const visibleColumns = this.getVisibleColumns();
 
     // Render col for each visible column
-    visibleColumns.forEach(col => {
+    visibleColumns.forEach((col, index) => {
       const colEl = this.colGroup!.createEl('col');
       colEl.style.width = col.width ? `${col.width}px` : '150px';
-      // No data-col-index needed here, it's for the header cells
+      // Add data-col-index for resizing logic
+      colEl.setAttribute('data-col-index', index.toString());
     });
 
     // Render col for the "Add Column" button area (fixed width)
@@ -570,6 +564,16 @@ export class TableRenderer {
         this.render();
       });
 
+      // Add Icon before name
+      const iconName = TYPE_ICONS[col.type];
+      if (iconName) {
+        const iconEl = createIconElement(iconName, 14, 'json-table-props-icon');
+        // Add some margin to the icon
+        iconEl.style.marginRight = '6px';
+        iconEl.style.display = 'inline-flex';
+        label.appendChild(iconEl);
+      }
+
       label.createSpan({ text: col.name });
     });
 
@@ -668,8 +672,13 @@ export class TableRenderer {
       // Pre-populate based on filter
       const activeFilters = this.filterHandler.getCurrentFilterRules();
       activeFilters.forEach(rule => {
-        if (rule.operator === 'equals' && rule.value && newRowData.hasOwnProperty(rule.columnId)) {
-          newRowData[rule.columnId] = rule.value;
+        if (rule.operator === 'equals' && newRowData.hasOwnProperty(rule.columnId)) {
+          // Handle boolean values explicitly
+          if (typeof rule.value === 'boolean') {
+            newRowData[rule.columnId] = rule.value ? 'true' : 'false';
+          } else if (rule.value) {
+            newRowData[rule.columnId] = rule.value.toString();
+          }
         }
         // TODO: Add logic for other operators if applicable for pre-population
       });
@@ -697,7 +706,16 @@ export class TableRenderer {
     if (!this.colGroup) return;
     this.isResizing = true;
     e.preventDefault(); e.stopPropagation();
-    const colElement = this.colGroup.querySelector(`col[data-col-index="${colIndex}"]`) as HTMLTableColElement | null;
+
+    // Find the visible index of the column being resized
+    // The colIndex passed here is the REAL index in data.columns (from renderHeader)
+    // We need the VISIBLE index to find the matching <col> element
+    const visibleColumns = this.getVisibleColumns();
+    const visibleIndex = visibleColumns.findIndex(c => c.id === column.id);
+
+    if (visibleIndex === -1) { this.isResizing = false; return; }
+
+    const colElement = this.colGroup.querySelector(`col[data-col-index="${visibleIndex}"]`) as HTMLTableColElement | null;
     if (!colElement) { this.isResizing = false; return; }
     const startX = e.clientX; const startWidth = colElement.offsetWidth;
     const onMouseMove = (moveE: MouseEvent) => {

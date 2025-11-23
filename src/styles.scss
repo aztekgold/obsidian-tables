@@ -1352,3 +1352,60 @@ input.table-filename-input {
   align-items: center;
   gap: 6px;
 }
+/* --- Drag Handle --- */
+.json-table-drag-handle {
+  cursor: grab;
+  color: var(--text-muted);
+  opacity: 0.5;
+  margin-right: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.json-table-drag-handle:hover {
+  opacity: 1;
+  color: var(--text-normal);
+}
+
+.json-table-header-cell:hover .json-table-drag-handle {
+  opacity: 0.8;
+}
+
+/* Ensure content wrapper allows pointer events on the handle */
+.json-table-header-content {
+  pointer-events: auto !important; /* Override previous setting if any */
+}
+
+/* --- Resize Handle Indicator --- */
+.json-table-resize-handle {
+  /* Ensure it's visible on hover */
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+}
+
+.json-table-resize-handle:hover,
+.json-table-header-cell:hover .json-table-resize-handle {
+  background-color: var(--interactive-accent); /* Show a line indicator */
+  opacity: 0.5;
+}
+
+.json-table-resize-handle:active {
+  background-color: var(--interactive-accent);
+  opacity: 1;
+}
+
+/* --- Refined Resize Handle Indicator --- */
+/* Only show when hovering the handle itself */
+.json-table-header-cell:hover .json-table-resize-handle {
+  background-color: transparent; /* Hide when just hovering the cell */
+}
+
+.json-table-resize-handle:hover {
+  background-color: var(--interactive-accent) !important; /* Show only on handle hover */
+  opacity: 1 !important;
+}
+
+.json-table-resize-handle:active {
+  background-color: var(--interactive-accent) !important;
+  opacity: 1 !important;
+}

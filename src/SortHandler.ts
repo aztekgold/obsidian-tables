@@ -52,8 +52,8 @@ export class SortHandler {
         const popup = document.body.createEl('div', { cls: 'json-table-popup json-table-sort-popup' });
         // Position popup dynamically based on button location
         const rect = button.getBoundingClientRect();
-        popup.style.top = `${rect.bottom + 5} px`;
-        popup.style.left = `${rect.left} px`;
+        popup.style.top = `${rect.bottom + 5}px`;
+        popup.style.left = `${rect.left}px`;
 
         const currentRules = this.getCurrentSortRules();
         const currentSort = currentRules.length > 0 ? currentRules[0] : { columnId: null, direction: 'asc' };

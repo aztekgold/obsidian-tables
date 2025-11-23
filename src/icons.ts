@@ -19,6 +19,7 @@ export const ICON_NAMES = {
   trash: 'trash-2',
   gripVertical: 'grip-vertical',
   table: 'table',
+  eye: 'eye', // Added eye icon
 } as const;
 
 /**
@@ -31,14 +32,14 @@ export const ICON_NAMES = {
 export function createIconElement(iconName: string, size: number = 16, className?: string): HTMLElement {
   const iconContainer = document.createElement('span');
   iconContainer.classList.add('json-table-icon');
-  
+
   if (className) {
     iconContainer.classList.add(className);
   }
-  
+
   // Set the icon using Obsidian's utility (only takes 2 params)
   setIcon(iconContainer, iconName);
-  
+
   // Always set custom size to ensure consistency
   const svg = iconContainer.querySelector('svg');
   if (svg) {
@@ -47,6 +48,6 @@ export function createIconElement(iconName: string, size: number = 16, className
     // Also set stroke width for better appearance at smaller sizes
     svg.setAttribute('stroke-width', '2');
   }
-  
+
   return iconContainer;
 }
