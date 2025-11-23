@@ -1,5 +1,5 @@
 // src/FilterHandler.ts
-import { TableData, ColumnDef, FilterRule, FilterOperator, CellData } from './types'; // Adjust path if needed
+import { TableData, ColumnDef, FilterRule, FilterOperator, CellData, ViewDef } from './types'; // Adjust path if needed
 import { JsonTableView } from './JsonTableView'; // Adjust path if needed
 import { ICON_NAMES, createIconElement } from './icons'; // Adjust path if needed
 
@@ -10,31 +10,33 @@ export class FilterHandler {
   constructor(
     private data: TableData,
     private triggerRender: () => void,
-    private view: JsonTableView // Pass view for saving
+    private view: JsonTableView, // Pass view for saving
+    private getActiveView: () => ViewDef // Callback to get the current active view
   ) {
     // Ensure default view and filter array exist
-    if (!this.data.views?.[0]?.filter) {
-      if (!this.data.views?.[0]) {
-        this.data.views = [{ id: 'default_' + Date.now(), name: 'Default', sort: [], filter: [] }];
-      } else {
-        this.data.views[0].filter = [];
-      }
+    if (!this.data.views || !Array.isArray(this.data.views) || this.data.views.length === 0) {
+      console.warn("No views array found in data, creating default view.");
+      this.data.views = [{ id: 'default_' + Date.now(), name: 'Default', sort: [], filter: [] }];
     }
+    // Ensure the active view has a filter array
+    const activeView = this.getActiveView();
+    if (activeView && !activeView.filter) activeView.filter = [];
   }
 
   // --- Helper Methods for Filter State ---
 
-  /** Gets the current filter rules from the first view definition */
+  /** Gets the current filter rules from the active view definition */
   public getCurrentFilterRules(): FilterRule[] { // Made public if needed elsewhere
-    return this.data.views?.[0]?.filter || [];
+    return this.getActiveView()?.filter || [];
   }
 
-  /** Updates the filter rules in the first view definition */
+  /** Updates the filter rules in the active view definition */
   private setCurrentFilterRules(rules: FilterRule[]): void {
-    if (this.data.views?.[0]) {
-      this.data.views[0].filter = rules;
+    const activeView = this.getActiveView();
+    if (activeView) {
+      activeView.filter = rules;
     } else {
-      console.error("Cannot set filter rules: No view definition found.");
+      console.error("Cannot set filter rules: No active view found.");
     }
   }
 
@@ -57,7 +59,7 @@ export class FilterHandler {
 
     // --- Content ---
     const content = popup.createEl('div', { cls: 'json-table-popup-content' });
-    
+
     // Container where filter rows will be rendered
     const filtersContainer = content.createDiv({ cls: 'json-table-filters-list' });
 
@@ -75,8 +77,8 @@ export class FilterHandler {
     addFilterButton.addEventListener('click', () => {
       const defaultColumnId = this.data.columns[0]?.id;
       if (!defaultColumnId) {
-          console.warn("Cannot add filter: No columns exist.");
-          return;
+        console.warn("Cannot add filter: No columns exist.");
+        return;
       }
 
       const newRule: FilterRule = {
@@ -119,19 +121,19 @@ export class FilterHandler {
 
   /** Helper to rebuild the filter rows UI within the popup */
   private rebuildFilterListUI(filtersContainer: HTMLElement, popupElement: HTMLElement) {
-      filtersContainer.empty(); // Clear previous filter rows
-      const currentRules = this.getCurrentFilterRules();
+    filtersContainer.empty(); // Clear previous filter rows
+    const currentRules = this.getCurrentFilterRules();
 
-      if (currentRules.length === 0) {
-        filtersContainer.createDiv({ text: 'No filters applied', cls: 'json-table-filter-empty' });
-      } else {
-        currentRules.forEach((rule, index) => {
-          // Pass the container where rows should be added
-          this.renderFilterRow(filtersContainer, rule, index);
-        });
-      }
-      // Note: The "Add Filter" button is outside this container in showFilterPopup,
-      // so it doesn't need to be re-added here.
+    if (currentRules.length === 0) {
+      filtersContainer.createDiv({ text: 'No filters applied', cls: 'json-table-filter-empty' });
+    } else {
+      currentRules.forEach((rule, index) => {
+        // Pass the container where rows should be added
+        this.renderFilterRow(filtersContainer, rule, index);
+      });
+    }
+    // Note: The "Add Filter" button is outside this container in showFilterPopup,
+    // so it doesn't need to be re-added here.
   }
 
   /** Renders a single row in the filter popup */
@@ -191,13 +193,13 @@ export class FilterHandler {
       rule.value = valueInput.value;
       this.applyFiltersAndRerender();
     });
-     // Optional: Apply on Enter key as well
-     valueInput.addEventListener('keydown', (e) => {
-         if (e.key === 'Enter') {
-             rule.value = valueInput.value;
-             this.applyFiltersAndRerender();
-         }
-     });
+    // Optional: Apply on Enter key as well
+    valueInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        rule.value = valueInput.value;
+        this.applyFiltersAndRerender();
+      }
+    });
 
 
     // Delete Button
@@ -217,10 +219,10 @@ export class FilterHandler {
       const parentPopup = container.closest('.json-table-filter-popup');
       const filtersListContainer = parentPopup?.querySelector('.json-table-filters-list');
       if (filtersListContainer && parentPopup) { // Ensure both exist
-          // Rebuild the list content
-          this.rebuildFilterListUI(filtersListContainer as HTMLElement, parentPopup as HTMLElement);
+        // Rebuild the list content
+        this.rebuildFilterListUI(filtersListContainer as HTMLElement, parentPopup as HTMLElement);
       } else {
-          console.error("Could not find filter list container/popup to re-render after delete.");
+        console.error("Could not find filter list container/popup to re-render after delete.");
       }
     });
   } // End renderFilterRow
@@ -231,11 +233,11 @@ export class FilterHandler {
   private async applyFiltersAndRerender(): Promise<void> {
     // setCurrentFilterRules was already called by UI event handlers updating the rule object directly
     try {
-        await this.view.saveTableData(this.data); // Save the updated filter rules
-        this.triggerRender(); // Re-render the table UI
+      await this.view.saveTableData(this.data); // Save the updated filter rules
+      this.triggerRender(); // Re-render the table UI
     } catch (error) {
-         console.error("Error saving data after filter change:", error);
-         // Optionally notify user
+      console.error("Error saving data after filter change:", error);
+      // Optionally notify user
     }
   }
 
@@ -278,9 +280,9 @@ export class FilterHandler {
           case 'isNotEmpty':
             return cellValue !== '';
           case 'equals':
-             return cellValueLower === filterValueLower; // Case-insensitive equals
+            return cellValueLower === filterValueLower; // Case-insensitive equals
           case 'notEqual':
-             return cellValueLower !== filterValueLower; // Case-insensitive not equal
+            return cellValueLower !== filterValueLower; // Case-insensitive not equal
           default:
             console.warn(`Unknown filter operator: ${rule.operator}`);
             return true; // Don't filter out row if operator is unknown
@@ -289,9 +291,9 @@ export class FilterHandler {
     }); // End this.data.rows.filter
   } // End getFilteredRows
 
-   /** Checks if any filters are currently active */
-   public hasActiveFilters(): boolean {
-       return this.getCurrentFilterRules().length > 0;
-   }
+  /** Checks if any filters are currently active */
+  public hasActiveFilters(): boolean {
+    return this.getCurrentFilterRules().length > 0;
+  }
 
 } // End FilterHandler class

@@ -29,8 +29,6 @@ $table-cell-height: 48px;
 
 .json-table-rename-container {
   margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--background-modifier-border);
 }
 
 input.json-table-rename-input {
@@ -365,6 +363,14 @@ input.json-table-input {
   height: 100%;
   box-sizing: border-box;
   min-height: $table-cell-height;
+}
+
+.json-table-notelink-wrapper .internal-link {
+  color: var(--interactive-accent);
+}
+
+.json-table-notelink-wrapper .internal-link:hover {
+  color: var(--interactive-hover);
 }
 
 /* This rule applies styles ONLY in display mode */
@@ -975,7 +981,7 @@ input.json-table-input {
 .json-table-controls {
   display: flex;
   gap: 16px;
-  margin-bottom: 1em;
+  margin: 1em 0;
 }
 
 .json-table-header-buttons-container {
@@ -1167,4 +1173,182 @@ input.table-filename-input {
 .table-filename-input.is-focused {
   background: var(--background-modifier-border);
   border-radius: 4px;
+}
+
+/* --- View Tabs --- */
+.json-table-view-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 0;
+  overflow-x: auto;
+}
+
+.json-table-view-tab {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  border-bottom: none;
+  transition: background-color 0.1s ease, color 0.1s ease;
+  user-select: none;
+  position: relative;
+  top: 1px;
+  /* Overlap border */
+}
+
+.json-table-view-tab:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.json-table-view-tab.is-active {
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border);
+  border-bottom-color: var(--background-primary);
+  font-weight: 500;
+  z-index: 1;
+}
+
+.json-table-view-name {
+  margin-right: 4px;
+}
+
+.json-table-view-rename-input {
+  padding: 2px 4px;
+  font-size: 13px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 2px;
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+  width: 100px;
+}
+
+.json-table-view-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.1s ease, background-color 0.1s ease;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.json-table-view-tab:hover .json-table-view-delete {
+  opacity: 0.6;
+}
+
+.json-table-view-delete:hover {
+  opacity: 1 !important;
+  background-color: var(--background-modifier-error);
+  color: var(--text-on-accent);
+}
+
+.json-table-view-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 16px;
+  margin-left: 4px;
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.json-table-view-add-btn:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* --- Inline Title Style --- */
+.json-table-rename-input.inline-title {
+  font-size: var(--inline-title-size, var(--h1-size));
+  font-weight: var(--inline-title-weight, var(--h1-weight));
+  color: var(--inline-title-color, var(--h1-color));
+  line-height: var(--inline-title-line-height, var(--h1-line-height));
+  letter-spacing: -0.015em;
+  margin-bottom: 24px;
+  /* Match standard Obsidian spacing */
+  padding: 0;
+  border: none;
+  background: transparent;
+  width: 100%;
+}
+
+.json-table-rename-input.inline-title:focus {
+  box-shadow: none;
+  border: none;
+}
+
+/* --- Properties Popup --- */
+.json-table-props-popup {
+  width: 200px;
+  padding: 12px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  z-index: 1000;
+  position: fixed;
+  /* Fixed to viewport, positioned via JS */
+}
+
+.json-table-props-popup h3 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.json-table-props-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.json-table-props-item {
+  display: flex;
+  align-items: center;
+}
+
+.json-table-props-item label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-normal);
+  width: 100%;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.json-table-props-item label:hover {
+  background: var(--background-modifier-hover);
+}
+
+.json-table-props-item input[type="checkbox"] {
+  margin: 0;
+}
+
+.json-table-props-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }

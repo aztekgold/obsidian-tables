@@ -1,7 +1,8 @@
 // src/TableRenderer.ts
 
-import { TableData, ColumnDef, CellData } from './types'; // Adjust path if needed
+import { TableData, ColumnDef, CellData, ViewDef } from './types'; // Adjust path if needed
 import { JsonTableView } from './JsonTableView'; // Adjust path if needed
+import { Notice } from 'obsidian';
 
 // Import cell renderers
 import { ICellRenderer } from './renderers/ICellRenderer';
@@ -49,22 +50,87 @@ export class TableRenderer {
   private colGroup: HTMLTableColElement | null = null;
   private sortHandler: SortHandler;
   private filterHandler: FilterHandler; // Add FilterHandler instance
+  private activeViewId: string; // Track the currently active view
+  private isInline: boolean; // Flag to indicate if this is an inline table
 
   constructor(
     private container: Element,
     private data: TableData,
-    private view: JsonTableView
+    private view: JsonTableView,
+    isInline: boolean = false // Default to false
   ) {
+    this.isInline = isInline;
+
+    // Ensure views exist
+    if (!this.data.views || this.data.views.length === 0) {
+      this.data.views = [{ id: 'default_' + Date.now(), name: 'Default', sort: [], filter: [] }];
+    }
+    // Set active view to the first one by default
+    this.activeViewId = this.data.views[0].id;
+
     // Init registries
     this.cellRenderers = new Map();
     this.registerRenderers();
     this.columnEditors = new Map();
     this.registerColumnEditors();
 
-    // Instantiate Handlers
-    this.sortHandler = new SortHandler(this.data, () => this.render(), this.view);
-    this.filterHandler = new FilterHandler(this.data, () => this.render(), this.view);
+    // Instantiate Handlers - Pass a callback to get the ACTIVE view
+    this.sortHandler = new SortHandler(this.data, () => this.render(), this.view, () => this.getActiveView());
+    this.filterHandler = new FilterHandler(this.data, () => this.render(), this.view, () => this.getActiveView());
   }
+
+  // --- View Management Helpers ---
+
+  private getActiveView(): ViewDef {
+    return this.data.views.find(v => v.id === this.activeViewId) || this.data.views[0];
+  }
+
+  private setActiveView(viewId: string) {
+    this.activeViewId = viewId;
+    this.render();
+  }
+
+  private createNewView() {
+    const newViewId = 'view_' + Date.now();
+    const newViewName = `View ${this.data.views.length + 1}`;
+    this.data.views.push({
+      id: newViewId,
+      name: newViewName,
+      sort: [],
+      filter: []
+    });
+    this.activeViewId = newViewId;
+    this.view.saveTableData(this.data);
+    this.render();
+  }
+
+  private deleteView(viewId: string) {
+    if (this.data.views.length <= 1) {
+      new Notice("Cannot delete the last view.");
+      return;
+    }
+
+    const index = this.data.views.findIndex(v => v.id === viewId);
+    if (index !== -1) {
+      this.data.views.splice(index, 1);
+      // If we deleted the active view, switch to the first one
+      if (this.activeViewId === viewId) {
+        this.activeViewId = this.data.views[0].id;
+      }
+      this.view.saveTableData(this.data);
+      this.render();
+    }
+  }
+
+  private renameView(viewId: string, newName: string) {
+    const view = this.data.views.find(v => v.id === viewId);
+    if (view) {
+      view.name = newName;
+      this.view.saveTableData(this.data);
+      this.render(); // Re-render to update tab name
+    }
+  }
+
 
   // --- Registration ---
 
@@ -89,6 +155,9 @@ export class TableRenderer {
   // --- Rename Input Rendering ---
 
   private renderRenameInput() {
+    // If inline, do NOT render the title/rename input
+    if (this.isInline) return;
+
     const renameContainer = this.container.createDiv({ cls: 'json-table-rename-container' });
 
     // Get the current file name without extension
@@ -100,7 +169,7 @@ export class TableRenderer {
 
     const renameInput = renameContainer.createEl('input', {
       type: 'text',
-      cls: 'json-table-rename-input',
+      cls: 'json-table-rename-input inline-title', // Add inline-title class
       value: nameWithoutExt,
       placeholder: 'Table name'
     });
@@ -134,6 +203,81 @@ export class TableRenderer {
     });
   }
 
+  // --- View Tabs Rendering ---
+
+  private renderViewTabs() {
+    const tabsContainer = this.container.createDiv({ cls: 'json-table-view-tabs' });
+
+    this.data.views.forEach(view => {
+      const tab = tabsContainer.createDiv({
+        cls: `json-table-view-tab ${view.id === this.activeViewId ? 'is-active' : ''}`
+      });
+
+      // View Name (Editable on double click)
+      const nameSpan = tab.createSpan({ text: view.name, cls: 'json-table-view-name' });
+
+      // Click to switch view
+      tab.addEventListener('click', () => {
+        if (this.activeViewId !== view.id) {
+          this.setActiveView(view.id);
+        }
+      });
+
+      // Double click to rename
+      tab.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        const input = tab.createEl('input', {
+          type: 'text',
+          value: view.name,
+          cls: 'json-table-view-rename-input'
+        });
+        nameSpan.hide();
+        input.focus();
+        input.select();
+
+        const saveName = () => {
+          const newName = input.value.trim();
+          if (newName) {
+            this.renameView(view.id, newName);
+          } else {
+            nameSpan.show();
+            input.remove();
+          }
+        };
+
+        input.addEventListener('blur', saveName);
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            input.blur();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            nameSpan.show();
+            input.remove();
+          }
+        });
+      });
+
+      // Delete button (only if more than 1 view)
+      if (this.data.views.length > 1) {
+        const deleteBtn = tab.createDiv({ cls: 'json-table-view-delete' });
+        deleteBtn.innerHTML = '&times;';
+        deleteBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          // Confirm deletion?
+          this.deleteView(view.id);
+        });
+      }
+    });
+
+    // Add View Button
+    const addBtn = tabsContainer.createDiv({ cls: 'json-table-view-add-btn', attr: { title: 'Add View' } });
+    addBtn.innerHTML = '+';
+    addBtn.addEventListener('click', () => {
+      this.createNewView();
+    });
+  }
+
   // --- Main Render ---
 
   public render() {
@@ -146,6 +290,11 @@ export class TableRenderer {
 
     // Render file rename input at the top
     this.renderRenameInput();
+
+
+
+    // Render View Tabs
+    this.renderViewTabs();
 
     // Render controls (Sort & Filter buttons)
     const controlsContainer = this.container.createDiv({ cls: 'json-table-controls' });
@@ -174,6 +323,26 @@ export class TableRenderer {
     }
     filterButton.addEventListener('click', () => {
       this.filterHandler.showFilterPopup(filterButton);
+    });
+
+    // Properties Button (Visibility)
+    const propsButton = controlsContainer.createEl('button', {
+      cls: 'json-table-btn json-table-btn--standard json-table-props-button',
+      attr: { 'aria-label': 'Table properties' }
+    });
+    // Use an icon for properties/visibility - 'eye' or 'settings'
+    // Let's use 'eye' if available, or 'more-vertical' as a fallback if 'eye' isn't defined in ICON_NAMES yet.
+    // Assuming ICON_NAMES doesn't have 'eye' yet, I might need to add it or use a generic one.
+    // Let's use a generic icon or text for now, or check icons.ts.
+    // Actually, I'll use 'eye' and if it fails I'll fix it.
+    // Wait, I should check icons.ts first to be safe.
+    // But to save steps, I'll use a text label "Properties" with a placeholder icon if needed.
+    // Let's check icons.ts quickly.
+    const propsIcon = createIconElement(ICON_NAMES.moreVertical, 16, 'icon-props'); // Use moreVertical as "Properties"
+    propsButton.appendChild(propsIcon);
+    propsButton.appendText(' Properties');
+    propsButton.addEventListener('click', () => {
+      this.showPropertyVisibilityPopup(propsButton);
     });
 
 
@@ -206,22 +375,32 @@ export class TableRenderer {
     });
   }
 
-  // --- Column Group Rendering ---
+  // --- Helper for Visible Columns ---
+
+  private getVisibleColumns(): ColumnDef[] {
+    const activeView = this.getActiveView();
+    const hiddenCols = activeView.hiddenColumns || [];
+    return this.data.columns.filter(col => !hiddenCols.includes(col.id));
+  }
+
+  // --- Table Structure Rendering ---
+
   private renderColGroup() {
     if (!this.colGroup) return;
-    const colGroupEl = this.colGroup;
-    colGroupEl.empty();
+    this.colGroup.empty();
 
-    this.data.columns.forEach((colDef, index) => {
-      const col = colGroupEl.createEl('col');
-      // Width must be set via JS for user-resizable columns
-      col.style.width = colDef.width ? `${colDef.width}px` : `150px`;
-      col.setAttribute('data-col-index', index.toString());
+    const visibleColumns = this.getVisibleColumns();
+
+    // Render col for each visible column
+    visibleColumns.forEach(col => {
+      const colEl = this.colGroup!.createEl('col');
+      colEl.style.width = col.width ? `${col.width}px` : '150px';
+      // No data-col-index needed here, it's for the header cells
     });
 
-    // Add a <col> for the combined buttons column
-    const buttonsCol = colGroupEl.createEl('col');
-    buttonsCol.addClass('json-table-buttons-col');
+    // Render col for the "Add Column" button area (fixed width)
+    const addColEl = this.colGroup.createEl('col');
+    addColEl.style.width = '40px';
   }
 
   // --- Header Rendering ---
@@ -229,13 +408,17 @@ export class TableRenderer {
   private renderHeader(table: HTMLTableElement) {
     const thead = table.createEl('thead');
     const headerRow = thead.createEl('tr');
-    let draggedColumnIndex: number | null = null;
+    const visibleColumns = this.getVisibleColumns();
+    let draggedColumnId: string | null = null; // Track ID instead of index
 
     // Render Data Columns
-    this.data.columns.forEach((col, colIndex) => {
+    visibleColumns.forEach((col, visibleIndex) => {
+      const realIndex = this.data.columns.findIndex(c => c.id === col.id);
       const th = headerRow.createEl('th', { cls: 'json-table-header-cell' });
       th.draggable = true;
-      th.setAttribute('data-col-index', colIndex.toString());
+      // We can keep data-col-index as visible index for CSS/layout purposes if needed, 
+      // but for logic we should use IDs or lookups.
+      th.setAttribute('data-col-index', visibleIndex.toString());
 
       const contentWrapper = th.createEl('div', { cls: 'json-table-header-content' });
       const iconSvg = TYPE_ICONS[col.type];
@@ -246,34 +429,74 @@ export class TableRenderer {
       contentWrapper.appendText(col.name);
 
       const resizeHandle = th.createEl('div', { cls: 'json-table-resize-handle' });
-      resizeHandle.addEventListener('mousedown', (e) => { this.onResizeStart(e, col, colIndex); });
+      resizeHandle.addEventListener('mousedown', (e) => { this.onResizeStart(e, col, realIndex); });
 
       // Drag and Drop Listeners
-      th.addEventListener('dragstart', (e) => { /* ... drag start logic ... */
-        if ((e.target as HTMLElement).classList.contains('json-table-resize-handle')) { e.preventDefault(); return; }
-        if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; draggedColumnIndex = colIndex; th.classList.add('is-dragging'); }
+      th.addEventListener('dragstart', (e) => {
+        if ((e.target as HTMLElement).classList.contains('json-table-resize-handle')) {
+          e.preventDefault();
+          return;
+        }
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          draggedColumnId = col.id; // Store ID
+          th.classList.add('is-dragging');
+        }
       });
-      th.addEventListener('dragover', (e) => { /* ... drag over logic ... */
-        e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; th.classList.add('is-dragover');
+
+      th.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer) {
+          e.dataTransfer.dropEffect = 'move';
+        }
+        th.classList.add('is-dragover');
       });
-      th.addEventListener('dragleave', () => th.classList.remove('is-dragover'));
-      th.addEventListener('drop', (e) => { /* ... drop logic ... */
-        e.preventDefault(); th.classList.remove('is-dragover'); if (draggedColumnIndex === null) return;
-        const targetColumnIndex = colIndex; if (draggedColumnIndex === targetColumnIndex) return;
-        const draggedColumn = this.data.columns.splice(draggedColumnIndex, 1)[0]; this.data.columns.splice(targetColumnIndex, 0, draggedColumn);
-        this.view.saveTableData(this.data); this.render();
+
+      th.addEventListener('dragleave', () => {
+        th.classList.remove('is-dragover');
       });
-      th.addEventListener('dragend', () => { /* ... drag end logic ... */
-        th.classList.remove('is-dragging'); draggedColumnIndex = null;
+
+      th.addEventListener('drop', (e) => {
+        e.preventDefault();
+        th.classList.remove('is-dragover');
+        if (!draggedColumnId) return;
+
+        const targetColumnId = col.id;
+        if (draggedColumnId === targetColumnId) return;
+
+        // Find real indices
+        const fromIndex = this.data.columns.findIndex(c => c.id === draggedColumnId);
+        const toIndex = this.data.columns.findIndex(c => c.id === targetColumnId);
+
+        if (fromIndex === -1 || toIndex === -1) return;
+
+        // Move the column in the data array
+        const draggedColumn = this.data.columns.splice(fromIndex, 1)[0];
+        this.data.columns.splice(toIndex, 0, draggedColumn);
+
+        this.view.saveTableData(this.data);
+        this.render();
+      });
+
+      th.addEventListener('dragend', () => {
+        th.classList.remove('is-dragging');
+        draggedColumnId = null;
       });
 
       // Edit Column Click Listener
-      th.addEventListener('click', (e) => { /* ... edit click logic ... */
-        if (this.isResizing) { this.isResizing = false; return; }
-        if ((e.target as HTMLElement).classList.contains('json-table-resize-handle')) { return; }
-        e.stopPropagation(); this.showEditColumnDialog(th, col, this.data, colIndex);
+      th.addEventListener('click', (e) => {
+        if (this.isResizing) {
+          this.isResizing = false;
+          return;
+        }
+        if ((e.target as HTMLElement).classList.contains('json-table-resize-handle')) {
+          return;
+        }
+        e.stopPropagation();
+        // Pass the REAL index to the edit dialog
+        this.showEditColumnDialog(th, col, this.data, realIndex);
       });
-    }); // End data columns loop
+    }); // End visible columns loop
 
     // Render Combined Header Cell for Buttons
     const buttonsTh = headerRow.createEl('th', { cls: 'json-table-header-sticky json-table-buttons-th' });
@@ -297,6 +520,70 @@ export class TableRenderer {
     });
   }
 
+  // --- Properties / Visibility Popup ---
+
+  private showPropertyVisibilityPopup(button: HTMLElement) {
+    // Remove existing popup if any
+    const existingPopup = document.querySelector('.json-table-props-popup');
+    if (existingPopup) {
+      existingPopup.remove();
+      return;
+    }
+
+    const popup = document.body.createEl('div', { cls: 'json-table-popup json-table-props-popup' });
+    const rect = button.getBoundingClientRect();
+    popup.style.top = `${rect.bottom + 5}px`;
+    popup.style.left = `${rect.left}px`;
+
+    // Header
+    popup.createEl('h3', { text: 'Column Visibility' });
+
+    const list = popup.createEl('div', { cls: 'json-table-props-list' });
+    const activeView = this.getActiveView();
+    // Ensure hiddenColumns array exists
+    if (!activeView.hiddenColumns) {
+      activeView.hiddenColumns = [];
+    }
+
+    this.data.columns.forEach(col => {
+      const item = list.createEl('div', { cls: 'json-table-props-item' });
+
+      // Label
+      const label = item.createEl('label');
+
+      // Checkbox
+      const checkbox = label.createEl('input', { type: 'checkbox' });
+      const isHidden = activeView.hiddenColumns!.includes(col.id);
+      checkbox.checked = !isHidden; // Checked means visible
+
+      checkbox.addEventListener('change', async () => {
+        if (checkbox.checked) {
+          // Make visible: remove from hiddenColumns
+          activeView.hiddenColumns = activeView.hiddenColumns!.filter(id => id !== col.id);
+        } else {
+          // Make hidden: add to hiddenColumns
+          if (!activeView.hiddenColumns!.includes(col.id)) {
+            activeView.hiddenColumns!.push(col.id);
+          }
+        }
+        await this.view.saveTableData(this.data);
+        this.render();
+      });
+
+      label.createSpan({ text: col.name });
+    });
+
+    // Close on click outside
+    const closePopup = (e: MouseEvent) => {
+      if (!popup.contains(e.target as Node) && e.target !== button) {
+        popup.remove();
+        document.removeEventListener('click', closePopup);
+      }
+    };
+    // Delay adding listener to avoid immediate close
+    setTimeout(() => document.addEventListener('click', closePopup), 0);
+  }
+
   // --- Body Rendering ---
 
   private renderBody(table: HTMLTableElement, rowsToRender: CellData[][]) { // Accept filtered rows
@@ -312,7 +599,7 @@ export class TableRenderer {
       // Fast O(1) lookup instead of O(N) findIndex
       const originalRowIndex = rowIndexMap.get(row) ?? -1;
 
-      this.renderRow(tr, row, this.data.columns, originalRowIndex, this.data); // Pass original index
+      this.renderRow(tr, row, this.getVisibleColumns(), originalRowIndex, this.data); // Pass visible columns
 
       // Render delete cell
       const deleteCell = tr.createEl('td', { cls: 'json-table-row-actions-cell' }); // Sticky cell for actions

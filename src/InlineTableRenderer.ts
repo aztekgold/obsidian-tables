@@ -12,8 +12,8 @@ import { App, TFile } from 'obsidian';
 export class InlineTableRenderer extends MarkdownRenderChild {
   private renderer: TableRenderer | null = null;
   private data: TableData | null = null;
-  private tableViewId: string; // Store the view ID to uniquely identify this table instance
-  private originalSourceHash: string; // Store a hash of original source as fallback for duplicate IDs
+  private tableViewId: string = ''; // Store the view ID to uniquely identify this table instance
+  private originalSourceHash: string = ''; // Store a hash of original source as fallback for duplicate IDs
 
   constructor(
     containerEl: HTMLElement,
@@ -37,7 +37,7 @@ export class InlineTableRenderer extends MarkdownRenderChild {
 
       // Store the view ID immediately - this uniquely identifies this table instance
       this.tableViewId = this.data.views?.[0]?.id || '';
-      
+
       if (!this.tableViewId) {
         console.error('Inline table missing view ID - cannot uniquely identify this table');
         this.containerEl.createDiv({ text: 'Invalid table: missing view ID.', cls: 'json-table-error' });
@@ -67,14 +67,14 @@ export class InlineTableRenderer extends MarkdownRenderChild {
 
       // Create and render the table
       this.containerEl.addClass('json-table-inline-container');
-      this.renderer = new TableRenderer(this.containerEl, this.data, mockView);
+      this.renderer = new TableRenderer(this.containerEl, this.data, mockView, true); // isInline = true
       this.renderer.render();
 
     } catch (error) {
       console.error('Error rendering inline table:', error);
-      this.containerEl.createDiv({ 
-        text: `Error parsing table JSON: ${(error as Error).message}`, 
-        cls: 'json-table-error' 
+      this.containerEl.createDiv({
+        text: `Error parsing table JSON: ${(error as Error).message}`,
+        cls: 'json-table-error'
       });
     }
   }
@@ -97,7 +97,7 @@ export class InlineTableRenderer extends MarkdownRenderChild {
 
       // Read the current file content
       let content = await this.app.vault.read(this.file);
-      
+
       // Find and replace the SPECIFIC code block that matches this instance's view ID
       const codeBlockRegex = /```jsontable\s*\n([\s\S]*?)\n```/g;
       const jsonString = JSON.stringify(data, null, 2);
@@ -106,24 +106,24 @@ export class InlineTableRenderer extends MarkdownRenderChild {
       // Find the code block that matches this instance's view ID
       let match;
       let foundMatch = false;
-      
+
       // Collect all matches first to handle duplicate view IDs
-      const matches: Array<{match: RegExpExecArray, parsed: TableData, hash: string}> = [];
+      const matches: Array<{ match: RegExpExecArray, parsed: TableData, hash: string }> = [];
       codeBlockRegex.lastIndex = 0;
-      
+
       while ((match = codeBlockRegex.exec(content)) !== null) {
         const matchedContent = match[1].trim();
-        
+
         try {
           const parsedMatch = JSON.parse(matchedContent);
           const matchViewId = parsedMatch.views?.[0]?.id;
-          
+
           if (matchViewId === this.tableViewId) {
             // Calculate hash for this match
             const matchFirstColId = parsedMatch.columns?.[0]?.id || '';
             const matchFirstColName = parsedMatch.columns?.[0]?.name || '';
             const matchHash = `${matchFirstColId}:${matchFirstColName}`;
-            
+
             matches.push({ match, parsed: parsedMatch, hash: matchHash });
           }
         } catch (e) {
@@ -135,7 +135,7 @@ export class InlineTableRenderer extends MarkdownRenderChild {
       // If multiple matches found (duplicate view IDs), match by hash
       // Otherwise, match by view ID only
       let targetMatch: RegExpExecArray | null = null;
-      
+
       if (matches.length === 1) {
         // Unique match by view ID
         targetMatch = matches[0].match;

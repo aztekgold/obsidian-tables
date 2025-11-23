@@ -22,7 +22,7 @@ export class JsonTableView extends ItemView {
   navigation = true;
 
   public getFilePath(): string | null {
-        return this.currentFilePath;
+    return this.currentFilePath;
   }
 
   public getRenderer(): TableRenderer | null {
@@ -43,15 +43,15 @@ export class JsonTableView extends ItemView {
     // Get basename from path stored in state if file object isn't ready
     const path = this.currentFilePath;
     if (path) {
-        // Basic basename extraction from path
-        const base = path.substring(path.lastIndexOf('/') + 1);
-        return base.replace(/\.(table\.json|table\.md)$/, '') || 'Table';
+      // Basic basename extraction from path
+      const base = path.substring(path.lastIndexOf('/') + 1);
+      return base.replace(/\.(table\.json|table\.md)$/, '') || 'Table';
     }
     return 'Table';
   }
 
   getIcon(): string {
-      return 'table'; // Provide an icon for ItemView
+    return 'table'; // Provide an icon for ItemView
   }
 
   // --- Settings ---
@@ -60,17 +60,17 @@ export class JsonTableView extends ItemView {
     this.settings = settings;
     // If view is active, re-evaluate and re-render if necessary
     if (this.currentFilePath && this.app.workspace.activeLeaf === this.leaf) {
-        this.loadFileAndRender(this.currentFilePath); // Reload based on path
+      this.loadFileAndRender(this.currentFilePath); // Reload based on path
     }
   }
 
   // --- State Management (Replaces FileView's file handling) ---
 
-async setState(state: any, result: ViewStateResult): Promise<void> {
-    
+  async setState(state: any, result: ViewStateResult): Promise<void> {
+
     const newFilePath = state.file || null;
     const fileChanged = newFilePath !== this.currentFilePath;
-    
+
     this.currentFilePath = newFilePath;
 
     // Call parent setState
@@ -80,15 +80,15 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
     // 1. The file path has changed, OR
     // 2. We don't have data loaded yet
     if (this.currentFilePath && (fileChanged || !this.data)) {
-        await this.loadFileAndRender(this.currentFilePath);
+      await this.loadFileAndRender(this.currentFilePath);
     } else if (!this.currentFilePath) {
-        const container = this.containerEl.children[1];
-        if (container) {
-            this.showError(container, "No file specified in view state.", false);
-        }
+      const container = this.containerEl.children[1];
+      if (container) {
+        this.showError(container, "No file specified in view state.", false);
+      }
     } else {
     }
-}
+  }
 
   getState(): any {
     // Save the current file path
@@ -101,16 +101,16 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
 
   /** Loads the file based on path and triggers rendering */
   async loadFileAndRender(filePath: string) {
-      const file = this.app.vault.getAbstractFileByPath(filePath);
+    const file = this.app.vault.getAbstractFileByPath(filePath);
 
-      if (file instanceof TFile) {
-          this.selectFileHandler(file); // Select handler based on actual file
-          await this.renderContent(file); // Render using the TFile
-      } else {
-          console.error(`File not found or is a folder: ${filePath}`);
-          this.showError(this.containerEl.children[1], `Cannot load table: File not found at "${filePath}".`, false);
-          this.clearView(); // Clear previous content if file is invalid
-      }
+    if (file instanceof TFile) {
+      this.selectFileHandler(file); // Select handler based on actual file
+      await this.renderContent(file); // Render using the TFile
+    } else {
+      console.error(`File not found or is a folder: ${filePath}`);
+      this.showError(this.containerEl.children[1], `Cannot load table: File not found at "${filePath}".`, false);
+      this.clearView(); // Clear previous content if file is invalid
+    }
   }
 
 
@@ -118,21 +118,21 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
 
   /** Selects the appropriate file handler based on file extension and settings */
   private selectFileHandler(file: TFile) {
-      const useMarkdown = this.settings.tableRenderer === 'default';
-      const isMarkdownTableFile = file.name.endsWith('.table.md');
-      const isJsonTableFile = file.name.endsWith('.table.json');
+    const useMarkdown = this.settings.tableRenderer === 'default';
+    const isMarkdownTableFile = file.name.endsWith('.table.md');
+    const isJsonTableFile = file.name.endsWith('.table.json');
 
-      this.fileHandler = null; // Reset
+    this.fileHandler = null; // Reset
 
-      if (isMarkdownTableFile) {
-          if (useMarkdown) {
-              this.fileHandler = new MarkdownFileHandler(this.app);
-          } else {
-          }
-      } else if (isJsonTableFile) {
-          this.fileHandler = new JsonFileHandler(this.app);
+    if (isMarkdownTableFile) {
+      if (useMarkdown) {
+        this.fileHandler = new MarkdownFileHandler(this.app);
       } else {
       }
+    } else if (isJsonTableFile) {
+      this.fileHandler = new JsonFileHandler(this.app);
+    } else {
+    }
   }
 
   // --- Rendering Logic ---
@@ -148,19 +148,19 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
 
     // Ensure handler is selected (should be called before renderContent now)
     if (!this.fileHandler) {
-       this.selectFileHandler(file); // Try selecting again just in case
+      this.selectFileHandler(file); // Try selecting again just in case
     }
 
     // Check validity based on selected handler and settings
     if (!this.fileHandler || !this.checkIfHandlerIsValid(file)) {
       console.warn(`renderContent: No valid file handler for ${file.path} with current settings.`);
       // ... (Error handling logic - unchanged) ...
-       const useMarkdown = this.settings.tableRenderer === 'default';
-       if (file.name.endsWith('.table.md') && !useMarkdown) {
-           this.showError(container, "Set 'Table Renderer' to 'Default' in settings to view this file.", false);
-       } else {
-           this.showError(container, "This file is not recognized as a valid table type or requires different settings.", true);
-       }
+      const useMarkdown = this.settings.tableRenderer === 'default';
+      if (file.name.endsWith('.table.md') && !useMarkdown) {
+        this.showError(container, "Set 'Table Renderer' to 'Default' in settings to view this file.", false);
+      } else {
+        this.showError(container, "This file is not recognized as a valid table type or requires different settings.", true);
+      }
       return;
     }
 
@@ -172,7 +172,7 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
         throw new Error('Invalid table data structure received.');
       }
 
-      this.renderer = new TableRenderer(container, this.data, this);
+      this.renderer = new TableRenderer(container, this.data, this, false); // isInline = false
       this.renderer.render();
 
     } catch (e) {
@@ -185,36 +185,36 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
   // --- Saving Logic ---
 
   async saveTableData(dataToSave: TableData) {
-      // Use the file path stored in state to get the TFile object
-      if (!this.currentFilePath) {
-          console.error("Cannot save: No file path associated with the view.");
-          this.app.workspace.trigger('notice', 'Error: Cannot save, no file loaded.');
-          return;
-      }
-      const file = this.app.vault.getAbstractFileByPath(this.currentFilePath);
+    // Use the file path stored in state to get the TFile object
+    if (!this.currentFilePath) {
+      console.error("Cannot save: No file path associated with the view.");
+      this.app.workspace.trigger('notice', 'Error: Cannot save, no file loaded.');
+      return;
+    }
+    const file = this.app.vault.getAbstractFileByPath(this.currentFilePath);
 
-      if (!(file instanceof TFile)) {
-            console.error(`Cannot save: File not found at path "${this.currentFilePath}".`);
-            this.app.workspace.trigger('notice', 'Error: File to save not found.');
-            return;
-      }
+    if (!(file instanceof TFile)) {
+      console.error(`Cannot save: File not found at path "${this.currentFilePath}".`);
+      this.app.workspace.trigger('notice', 'Error: File to save not found.');
+      return;
+    }
 
-      // Handler should be selected based on the file type
-      this.selectFileHandler(file); // Ensure handler matches current file
+    // Handler should be selected based on the file type
+    this.selectFileHandler(file); // Ensure handler matches current file
 
-      if (!this.fileHandler || !dataToSave || !this.checkIfHandlerIsValid(file)) {
-        console.error('Cannot save: No valid handler, data, or settings mismatch.', { file: file, handler: this.fileHandler, data: dataToSave });
-        this.app.workspace.trigger('notice', 'Error: Could not save table data.');
-        return;
-      }
+    if (!this.fileHandler || !dataToSave || !this.checkIfHandlerIsValid(file)) {
+      console.error('Cannot save: No valid handler, data, or settings mismatch.', { file: file, handler: this.fileHandler, data: dataToSave });
+      this.app.workspace.trigger('notice', 'Error: Could not save table data.');
+      return;
+    }
 
-      try {
-        await this.fileHandler.save(file, dataToSave);
-        this.data = dataToSave; // Keep internal data in sync
-      } catch (e) {
-        console.error('Error saving table data:', e);
-        this.app.workspace.trigger('notice', `Error saving table: ${(e as Error).message}`);
-      }
+    try {
+      await this.fileHandler.save(file, dataToSave);
+      this.data = dataToSave; // Keep internal data in sync
+    } catch (e) {
+      console.error('Error saving table data:', e);
+      this.app.workspace.trigger('notice', `Error saving table: ${(e as Error).message}`);
+    }
   }
 
   // --- Lifecycle Methods ---
@@ -223,9 +223,9 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
   async onOpen() {
     // If state includes a file path, ensure it's loaded and rendered
     if (this.currentFilePath && !this.renderer) {
-        await this.loadFileAndRender(this.currentFilePath);
+      await this.loadFileAndRender(this.currentFilePath);
     } else if (!this.currentFilePath) {
-         this.showError(this.containerEl.children[1], "No file loaded.", false);
+      this.showError(this.containerEl.children[1], "No file loaded.", false);
     }
   }
 
@@ -251,19 +251,19 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
     // Extract directory and full filename from current path
     const currentDir = currentFile.parent?.path || '';
     const currentFileName = currentFile.name;
-    
+
     // Determine the file type (.table.json or .table.md)
     const isTableJson = currentFileName.endsWith('.table.json');
     const isTableMd = currentFileName.endsWith('.table.md');
-    
+
     if (!isTableJson && !isTableMd) {
       console.error(`Cannot rename: File "${currentFileName}" is not a recognized table file type.`);
       return false;
     }
-    
+
     // Clean the new name (remove any existing extension)
     const cleanName = newName.replace(/\.(table\.json|table\.md)$/, '');
-    
+
     // Preserve the .table part of the extension
     const fileExtension = isTableJson ? '.table.json' : '.table.md';
     const newFileName = `${cleanName}${fileExtension}`;
@@ -278,10 +278,10 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
     try {
       // Use Obsidian's vault rename method
       await this.app.vault.rename(currentFile, newPath);
-      
+
       // Update our internal path reference
       this.currentFilePath = newPath;
-      
+
       return true;
     } catch (error) {
       console.error('Error renaming file:', error);
@@ -292,51 +292,51 @@ async setState(state: any, result: ViewStateResult): Promise<void> {
   // --- Utility ---
 
   private clearView() {
-      this.containerEl.children[1]?.empty(); // Safely empty container
-      this.renderer = null;
-      this.fileHandler = null;
-      this.data = null;
-      this.currentFilePath = null; // Clear associated path
+    this.containerEl.children[1]?.empty(); // Safely empty container
+    this.renderer = null;
+    this.fileHandler = null;
+    this.data = null;
+    this.currentFilePath = null; // Clear associated path
   }
 
-   /** Checks if the currently selected handler is valid for the file and settings */
-   private checkIfHandlerIsValid(file: TFile): boolean {
-       const useMarkdown = this.settings.tableRenderer === 'default';
-       const isMarkdownTableFile = file.name.endsWith('.table.md');
-       const isJsonTableFile = file.name.endsWith('.table.json');
+  /** Checks if the currently selected handler is valid for the file and settings */
+  private checkIfHandlerIsValid(file: TFile): boolean {
+    const useMarkdown = this.settings.tableRenderer === 'default';
+    const isMarkdownTableFile = file.name.endsWith('.table.md');
+    const isJsonTableFile = file.name.endsWith('.table.json');
 
-       if (isMarkdownTableFile) {
-           return useMarkdown;
-       } else if (isJsonTableFile) {
-           return true; // Always allow reading JSON
-       }
-       return false; // Not a recognized table file
-   }
+    if (isMarkdownTableFile) {
+      return useMarkdown;
+    } else if (isJsonTableFile) {
+      return true; // Always allow reading JSON
+    }
+    return false; // Not a recognized table file
+  }
 
-   private showError(container: Element | null, message: string, showOpenAsText = false) {
-       // ... (showError implementation - unchanged, but ensure it uses this.currentFilePath) ...
-        if (!container) return;
-        container.empty();
-        container.addClass('json-table-view-container');
-        const errorDiv = container.createEl('div', { cls: 'json-table-error' });
-        errorDiv.createEl('p', { text: message });
+  private showError(container: Element | null, message: string, showOpenAsText = false) {
+    // ... (showError implementation - unchanged, but ensure it uses this.currentFilePath) ...
+    if (!container) return;
+    container.empty();
+    container.addClass('json-table-view-container');
+    const errorDiv = container.createEl('div', { cls: 'json-table-error' });
+    errorDiv.createEl('p', { text: message });
 
-        const filePathToShow = this.currentFilePath; // Use path from state
+    const filePathToShow = this.currentFilePath; // Use path from state
 
-        if (showOpenAsText && filePathToShow) {
-            const openAsTextBtn = errorDiv.createEl('button', {
-              text: 'Open as raw text',
-              cls: 'json-table-add-row'
-            });
-            openAsTextBtn.addEventListener('click', () => {
-              if (this.leaf) {
-                  this.leaf.setViewState({
-                    type: 'plaintext',
-                    state: { file: filePathToShow } // Pass file path
-                  });
-              }
-            });
+    if (showOpenAsText && filePathToShow) {
+      const openAsTextBtn = errorDiv.createEl('button', {
+        text: 'Open as raw text',
+        cls: 'json-table-add-row'
+      });
+      openAsTextBtn.addEventListener('click', () => {
+        if (this.leaf) {
+          this.leaf.setViewState({
+            type: 'plaintext',
+            state: { file: filePathToShow } // Pass file path
+          });
         }
-   }
+      });
+    }
+  }
 
 } // End JsonTableView class
