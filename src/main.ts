@@ -36,21 +36,21 @@ import {
 export default class JsonTablePlugin extends Plugin {
     settings: JsonTableSettings; // Store settings
 
-    
+
     // --- Monkey Patching to prevent flash ---
     patchSetViewState() {
         const plugin = this;
         // @ts-ignore
         const originalSetViewState = WorkspaceLeaf.prototype.setViewState;
-        
+
         // @ts-ignore
-        this.register(function() {
-             // @ts-ignore
+        this.register(function () {
+            // @ts-ignore
             WorkspaceLeaf.prototype.setViewState = originalSetViewState;
         });
 
         // @ts-ignore
-        WorkspaceLeaf.prototype.setViewState = async function(viewState, eState) {
+        WorkspaceLeaf.prototype.setViewState = async function (viewState, eState) {
             // Check if we are trying to open a markdown file
             if (viewState.type === 'markdown' && viewState.state && viewState.state.file) {
                 const filePath = viewState.state.file;
@@ -95,11 +95,11 @@ export default class JsonTablePlugin extends Plugin {
         this.registerMarkdownCodeBlockProcessor('jsontable', (source, el, ctx) => {
             // Get the current file from the context
             const file = ctx.sourcePath ? this.app.vault.getAbstractFileByPath(ctx.sourcePath) : null;
-            
+
             if (!(file instanceof TFile)) {
-                el.createDiv({ 
-                    text: 'Inline table: Could not determine source file.', 
-                    cls: 'json-table-error' 
+                el.createDiv({
+                    text: 'Inline table: Could not determine source file.',
+                    cls: 'json-table-error'
                 });
                 return;
             }
@@ -151,20 +151,20 @@ export default class JsonTablePlugin extends Plugin {
         );
         // files-menu listener for folder context
         this.registerEvent(
-          this.app.workspace.on('files-menu', (menu, files) => {
-            // Check if the right-click target is a single item, and that item is NOT a TFile
-            if (files.length === 1 && !(files[0] instanceof TFile)) {
-                 const targetFolder = files[0]; // It's the folder itself
-                 menu.addItem((item) => {
-                    item
-                        .setTitle('New table')
-                        .setIcon('table')
-                        .onClick(async () => {
-                            await this.createNewTable(targetFolder); // Pass the TAbstractFile (folder)
-                        });
-                });
-            }
-          })
+            this.app.workspace.on('files-menu', (menu, files) => {
+                // Check if the right-click target is a single item, and that item is NOT a TFile
+                if (files.length === 1 && !(files[0] instanceof TFile)) {
+                    const targetFolder = files[0]; // It's the folder itself
+                    menu.addItem((item) => {
+                        item
+                            .setTitle('New table')
+                            .setIcon('table')
+                            .onClick(async () => {
+                                await this.createNewTable(targetFolder); // Pass the TAbstractFile (folder)
+                            });
+                    });
+                }
+            })
         );
 
 
@@ -234,119 +234,119 @@ export default class JsonTablePlugin extends Plugin {
         );
         // --- End Link Listeners ---
 
-    // --- Add File Open Listener for dynamic MD switching ---
-    this.registerEvent(
-        this.app.workspace.on('file-open', async (file) => { // Keep async
+        // --- Add File Open Listener for dynamic MD switching ---
+        this.registerEvent(
+            this.app.workspace.on('file-open', async (file) => { // Keep async
 
-            if (!file) return;
+                if (!file) return;
 
-            // Handle regular .md files when on a table view - switch to markdown view
-            if (file.name.endsWith('.md') && !file.name.endsWith('.table.md')) {
-                // Check if currently on a table view
-                const activeTableView = this.app.workspace.getActiveViewOfType(JsonTableView);
-                if (activeTableView) {
-                    // Check if file is already open in a markdown leaf
-                    const markdownLeaves = this.app.workspace.getLeavesOfType('markdown');
-                    for (const leaf of markdownLeaves) {
-                        const viewState = leaf.getViewState();
-                        if (viewState.state?.file === file.path) {
-                            // Already open - just focus it
-                            this.app.workspace.setActiveLeaf(leaf, { focus: true });
-                            return;
+                // Handle regular .md files when on a table view - switch to markdown view
+                if (file.name.endsWith('.md') && !file.name.endsWith('.table.md')) {
+                    // Check if currently on a table view
+                    const activeTableView = this.app.workspace.getActiveViewOfType(JsonTableView);
+                    if (activeTableView) {
+                        // Check if file is already open in a markdown leaf
+                        const markdownLeaves = this.app.workspace.getLeavesOfType('markdown');
+                        for (const leaf of markdownLeaves) {
+                            const viewState = leaf.getViewState();
+                            if (viewState.state?.file === file.path) {
+                                // Already open - just focus it
+                                this.app.workspace.setActiveLeaf(leaf, { focus: true });
+                                return;
+                            }
+                        }
+
+                        // Not open anywhere - switch current table leaf to markdown view
+                        try {
+                            await activeTableView.leaf.setViewState({
+                                type: 'markdown',
+                                state: { file: file.path }
+                            }, { focus: true });
+                            return; // Handled
+                        } catch (err) {
+                            console.error("file-open: Error switching table view to markdown:", err);
+                            // Fall through to let Obsidian handle it
                         }
                     }
-                    
-                    // Not open anywhere - switch current table leaf to markdown view
-                    try {
-                        await activeTableView.leaf.setViewState({
-                            type: 'markdown',
-                            state: { file: file.path }
-                        }, { focus: true });
-                        return; // Handled
-                    } catch (err) {
-                        console.error("file-open: Error switching table view to markdown:", err);
-                        // Fall through to let Obsidian handle it
-                    }
-                }
-                // If not on table view, let Obsidian handle normally
-                return;
-            }
-
-            // Handle .table.md files
-            // 1. Check Setting and File Type
-            if (this.settings.tableRenderer !== 'default' || !file.name.endsWith('.table.md')) {
-                return;
-            }
-
-            // 2. Check Frontmatter
-            let hasTableFrontmatter = false;
-            try {
-                 const content = await this.app.vault.read(file);
-                 hasTableFrontmatter = /^---\s*\n[\s\S]*?json-table-plugin:\s*true[\s\S]*?\n---/.test(content);
-            } catch (readErr) {
-                 console.error("file-open: Error reading file content:", readErr);
-                 return;
-            }
-
-            if (!hasTableFrontmatter) {
-                return;
-            }
-
-            // 3. Find the Correct Leaf - check multiple sources
-            let targetLeaf: WorkspaceLeaf | null = null;
-            
-            // First: Check if file is already open in a table view
-            const tableLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_JSON_TABLE);
-            for (const leaf of tableLeaves) {
-                const viewState = leaf.getViewState();
-                if (viewState.state?.file === file.path) {
-                    // Already open in table view - just focus it
-                    this.app.workspace.setActiveLeaf(leaf, { focus: true });
-                    
-                    // Check if we have a duplicate leaf (the one that just opened as markdown)
-                    // and close it if it's different from the existing table leaf
-                    const activeLeaf = this.app.workspace.activeLeaf;
-                    if (activeLeaf && activeLeaf !== leaf) {
-                        activeLeaf.detach();
-                    }
+                    // If not on table view, let Obsidian handle normally
                     return;
                 }
-            }
 
-            // Second: Check for markdown leaves with this file
-            const markdownLeaves = this.app.workspace.getLeavesOfType('markdown');
-            for (const leaf of markdownLeaves) {
-                const viewState = leaf.getViewState();
-                if (viewState.state?.file === file.path) {
-                    targetLeaf = leaf;
-                    break;
+                // Handle .table.md files
+                // 1. Check Setting and File Type
+                if (this.settings.tableRenderer !== 'default' || !file.name.endsWith('.table.md')) {
+                    return;
                 }
-            }
 
-            // Third: If no existing leaf found, reuse current active leaf if it's a table view
-            if (!targetLeaf) {
-                const activeLeaf = this.app.workspace.getActiveViewOfType(JsonTableView)?.leaf;
-                if (activeLeaf) {
-                    // Reuse the current table view leaf to switch to the new file
-                    targetLeaf = activeLeaf;
-                }
-            }
-
-            // 4. Perform the View Switch
-            if (targetLeaf) {
+                // 2. Check Frontmatter
+                let hasTableFrontmatter = false;
                 try {
-                    await targetLeaf.setViewState({
-                        type: VIEW_TYPE_JSON_TABLE,
-                        state: { file: file.path }
-                    }, { focus: true });
-                } catch (err) {
-                    console.error("file-open: Error during setViewState:", err);
+                    const content = await this.app.vault.read(file);
+                    hasTableFrontmatter = /^---\s*\n[\s\S]*?json-table-plugin:\s*true[\s\S]*?\n---/.test(content);
+                } catch (readErr) {
+                    console.error("file-open: Error reading file content:", readErr);
+                    return;
                 }
-            }
-            // If no targetLeaf found, let Obsidian handle normally (will open in new tab)
-        })
-    );
-    // --- End File Open Listener ---
+
+                if (!hasTableFrontmatter) {
+                    return;
+                }
+
+                // 3. Find the Correct Leaf - check multiple sources
+                let targetLeaf: WorkspaceLeaf | null = null;
+
+                // First: Check if file is already open in a table view
+                const tableLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_JSON_TABLE);
+                for (const leaf of tableLeaves) {
+                    const viewState = leaf.getViewState();
+                    if (viewState.state?.file === file.path) {
+                        // Already open in table view - just focus it
+                        this.app.workspace.setActiveLeaf(leaf, { focus: true });
+
+                        // Check if we have a duplicate leaf (the one that just opened as markdown)
+                        // and close it if it's different from the existing table leaf
+                        const activeLeaf = this.app.workspace.activeLeaf;
+                        if (activeLeaf && activeLeaf !== leaf) {
+                            activeLeaf.detach();
+                        }
+                        return;
+                    }
+                }
+
+                // Second: Check for markdown leaves with this file
+                const markdownLeaves = this.app.workspace.getLeavesOfType('markdown');
+                for (const leaf of markdownLeaves) {
+                    const viewState = leaf.getViewState();
+                    if (viewState.state?.file === file.path) {
+                        targetLeaf = leaf;
+                        break;
+                    }
+                }
+
+                // Third: If no existing leaf found, reuse current active leaf if it's a table view
+                if (!targetLeaf) {
+                    const activeLeaf = this.app.workspace.getActiveViewOfType(JsonTableView)?.leaf;
+                    if (activeLeaf) {
+                        // Reuse the current table view leaf to switch to the new file
+                        targetLeaf = activeLeaf;
+                    }
+                }
+
+                // 4. Perform the View Switch
+                if (targetLeaf) {
+                    try {
+                        await targetLeaf.setViewState({
+                            type: VIEW_TYPE_JSON_TABLE,
+                            state: { file: file.path }
+                        }, { focus: true });
+                    } catch (err) {
+                        console.error("file-open: Error during setViewState:", err);
+                    }
+                }
+                // If no targetLeaf found, let Obsidian handle normally (will open in new tab)
+            })
+        );
+        // --- End File Open Listener ---
     } // --- End onload ---
 
     onunload() {
@@ -383,22 +383,22 @@ export default class JsonTablePlugin extends Plugin {
 
 
     // --- File Creation ---
-    
+
     /** Returns a skeleton table structure as JSON string */
     getSkeletonTableJSON(): string {
         const colId1 = "col_" + Date.now() + "_1";
         const colId2 = "col_" + Date.now() + "_2";
         const skeletonTable: TableData = {
             columns: [{
-                id: colId1, 
-                name: "Column 1", 
-                type: "text", 
+                id: colId1,
+                name: "Column 1",
+                type: "text",
                 width: 150,
                 typeOptions: {}
             }, {
-                id: colId2, 
-                name: "Column 2", 
-                type: "text", 
+                id: colId2,
+                name: "Column 2",
+                type: "text",
                 width: 150,
                 typeOptions: {}
             }],
@@ -406,9 +406,9 @@ export default class JsonTablePlugin extends Plugin {
                 [{ column: colId1, value: "" }, { column: colId2, value: "" }]
             ],
             views: [{
-                id: 'default_' + Date.now(), 
-                name: 'Default', 
-                sort: [], 
+                id: 'default_' + Date.now(),
+                name: 'Default',
+                sort: [],
                 filter: []
             }]
         };
@@ -492,6 +492,8 @@ export default class JsonTablePlugin extends Plugin {
         // Create and open the file
         try {
             const file = await this.app.vault.create(filePath, fileContent);
+            // Add a small delay to ensure file is fully written before opening
+            await new Promise(resolve => setTimeout(resolve, 100));
             // Open in the current leaf or a new one
             const leaf = this.app.workspace.getLeaf('tab'); // Open in a new tab for clarity
             await leaf.openFile(file);
@@ -521,7 +523,7 @@ export default class JsonTablePlugin extends Plugin {
             try {
                 // Read file content
                 const text = await file.text();
-                
+
                 // Parse CSV
                 const result = this.parseCSV(text);
                 if (!result) {
@@ -542,7 +544,7 @@ export default class JsonTablePlugin extends Plugin {
                 // Create table file
                 await this.createTableFromCSV(targetFolder, file.name, result);
                 new Notice('CSV imported successfully!');
-                
+
             } catch (error) {
                 console.error('Error importing CSV:', error);
                 new Notice('Error importing CSV file. Check console for details.');
@@ -567,7 +569,7 @@ export default class JsonTablePlugin extends Plugin {
 
             // Parse header row
             const headers = this.parseCSVLine(lines[0]);
-            
+
             // Parse data rows
             const rows: string[][] = [];
             for (let i = 1; i < lines.length; i++) {
@@ -621,13 +623,13 @@ export default class JsonTablePlugin extends Plugin {
     /** Create table file from CSV data */
     async createTableFromCSV(targetFolder: TAbstractFile, csvFileName: string, csvData: { columns: string[], rows: string[][] }) {
         const folderPath = targetFolder.path === '.' ? '' : targetFolder.path;
-        
+
         // Generate safe filename from CSV filename
         const baseName = csvFileName.replace(/\.csv$/i, '').replace(/[^a-zA-Z0-9-_]/g, '_');
         const extension = this.settings.tableRenderer === 'default' ? '.table.md' : '.table.json';
         let fileName = `${baseName}${extension}`;
         let filePath = folderPath ? `${folderPath}/${fileName}` : fileName;
-        
+
         // Handle duplicates
         let counter = 1;
         while (await this.app.vault.adapter.exists(filePath)) {
