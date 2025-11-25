@@ -1210,7 +1210,7 @@ input.table-filename-input {
 
 .json-table-view-tab.is-active {
   background-color: var(--background-primary);
-  color: var(--text-normal);
+  color: var(--interactive-accent);
   border-color: var(--background-modifier-border);
   border-bottom-color: var(--background-primary);
   font-weight: 500;
@@ -1465,4 +1465,74 @@ input.table-filename-input {
 .block-language-jsontable .edit-block-button {
   display: none !important;
   /* Hide edit code button for inline tables */
+}
+
+/* ==========================================================================
+   Embed Container
+   ==========================================================================*/
+/* Embed Container */
+.json-table-embed-container {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border: none;
+  /* Remove border as requested */
+  padding: 0;
+  /* Remove padding as requested, or keep minimal */
+  background-color: var(--background-primary);
+  border-radius: 4px;
+  margin-bottom: 1em;
+}
+
+.json-table-embed-title {
+  margin: 0;
+  padding-bottom: 1.5em;
+  font-size: 1.1em;
+  /* H3-ish size */
+  display: flex;
+  align-items: center;
+}
+
+.json-table-embed-title a {
+  color: var(--text-normal);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.json-table-embed-title a:hover {
+  text-decoration: underline;
+  color: var(--text-accent);
+}
+
+/* Add a link icon via pseudo-element */
+.json-table-embed-title a::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6'/%3E%3Cpath d='M10 14 21 3'/%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6'/%3E%3Cpath d='M10 14 21 3'/%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3C/svg%3E");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  opacity: 0.7;
+}
+
+/* Hide default Obsidian embed for table files in Live Preview */
+/* Note: This relies on the src attribute ending with the extension */
+.markdown-source-view.mod-cm6 .internal-embed[src$=".table.json"],
+.markdown-source-view.mod-cm6 .internal-embed[src$=".table.md"],
+.markdown-source-view.mod-cm6 .internal-embed[src$=".table"] {
+  display: none !important;
+}
+
+/* Ensure the embed element itself behaves like a block for our table */
+.internal-embed.json-table-embed-container {
+  display: block;
+  width: 100%;
+  max-width: 100%;
 }

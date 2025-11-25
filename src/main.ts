@@ -32,6 +32,12 @@ import {
 import {
     InlineTableRenderer
 } from './InlineTableRenderer';
+import {
+    EmbedTableRenderer
+} from './EmbedTableRenderer';
+import {
+    tableEmbedExtension
+} from './livePreviewExtension';
 
 export default class JsonTablePlugin extends Plugin {
     settings: JsonTableSettings; // Store settings
@@ -108,6 +114,33 @@ export default class JsonTablePlugin extends Plugin {
             const renderer = new InlineTableRenderer(el, source, this.app, file);
             ctx.addChild(renderer);
         });
+
+        // Register markdown post processor for embeds
+        this.registerMarkdownPostProcessor((element, context) => {
+            const embeds = element.querySelectorAll('.internal-embed');
+
+            embeds.forEach((embed) => {
+                const src = embed.getAttribute('src');
+
+                if (!src) return;
+
+                // Resolve the file using metadata cache first
+                // This handles cases where src doesn't have the extension (e.g. [[MyTable.table]])
+                const file = this.app.metadataCache.getFirstLinkpathDest(src, context.sourcePath);
+
+                if (file instanceof TFile && (file.name.endsWith('.table.json') || file.name.endsWith('.table.md'))) {
+                    // Clear the default content (raw JSON or link)
+                    embed.empty();
+
+                    // Create and mount the renderer
+                    const renderer = new EmbedTableRenderer(embed as HTMLElement, this.app, file);
+                    context.addChild(renderer);
+                }
+            });
+        });
+
+        // Register Editor Extension for Live Preview
+        this.registerEditorExtension(tableEmbedExtension(this.app));
 
         // --- Context Menus ---
         // For right-clicking on folders in the file explorer

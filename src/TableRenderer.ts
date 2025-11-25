@@ -394,7 +394,7 @@ export class TableRenderer {
 
     // Render col for the "Add Column" button area (fixed width)
     const addColEl = this.colGroup.createEl('col');
-    addColEl.style.width = '40px';
+    addColEl.style.width = '100px';
   }
 
   // --- Header Rendering ---
