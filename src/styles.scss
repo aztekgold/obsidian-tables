@@ -345,7 +345,7 @@ input.json-table-input {
 
 /* Your tag styling */
 .json-table-dropdown-tag {
-  padding: 4px;
+  padding: 4px 6px;
   border-radius: 4px;
   font-size: 13px;
   font-weight: 500;
@@ -605,15 +605,25 @@ input.json-table-input {
   background: none;
   border: none;
   color: var(--text-muted);
-  font-size: 1.4em;
+  font-size: 1.2em;
   font-weight: bold;
   cursor: pointer;
-  padding: 0 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  /* Circle */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   line-height: 1;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .json-table-edit-option-delete:hover {
   color: var(--text-error);
+  background-color: var(--background-modifier-hover);
+  /* Add hover background */
 }
 
 /* Container for the "Add new option" UI */
@@ -694,40 +704,192 @@ input.json-table-input {
 }
 
 /* ==========================================================================
-   Color Palette (Dropdown Tags) - YOUR COLORS
+   Color Palette (Dropdown Tags) - Tailwind Colors
    ========================================================================== */
 
+/* Default (Gray-200 equivalent) */
 .dropdown-tag--default {
   background-color: var(--background-modifier-hover);
-  color: white;
+  color: var(--text-normal);
 }
 
+/* Obsidian Accent */
+.dropdown-tag--accent {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+/* Red (Red-500) */
 .dropdown-tag--red {
-  background-color: rgba(255, 100, 100, 0.2);
-  color: white;
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  // border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-.dropdown-tag--blue {
-  background-color: rgba(100, 100, 255, 0.2);
-  color: white;
+/* Orange (Orange-500) */
+.dropdown-tag--orange {
+  background-color: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+  // border: 1px solid rgba(249, 115, 22, 0.3);
 }
 
+/* Yellow (Yellow-500) */
+.dropdown-tag--yellow {
+  background-color: rgba(234, 179, 8, 0.2);
+  color: #eab308;
+  // border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+/* Green (Green-500) */
 .dropdown-tag--green {
-  background-color: rgba(100, 255, 100, 0.2);
-  color: white;
+  background-color: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  // border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
-/* Hover/select states */
-.json-table-dropdown-option:hover .dropdown-tag--blue {
-  background-color: rgba(100, 100, 255, 0.3);
+/* Blue (Blue-500) */
+.dropdown-tag--blue {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+  // border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* Indigo (Indigo-500) */
+.dropdown-tag--indigo {
+  background-color: rgba(99, 102, 241, 0.2);
+  color: #6366f1;
+  // border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+/* Violet (Violet-500) */
+.dropdown-tag--violet {
+  background-color: rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
+  // border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+/* Pink (Pink-500) */
+.dropdown-tag--pink {
+  background-color: rgba(236, 72, 153, 0.2);
+  color: #ec4899;
+  // border: 1px solid rgba(236, 72, 153, 0.3);
+}
+
+/* Hover/select states - slightly darker background */
+.json-table-dropdown-option:hover .dropdown-tag--red {
+  background-color: rgba(239, 68, 68, 0.3);
+}
+
+.json-table-dropdown-option:hover .dropdown-tag--orange {
+  background-color: rgba(249, 115, 22, 0.3);
+}
+
+.json-table-dropdown-option:hover .dropdown-tag--yellow {
+  background-color: rgba(234, 179, 8, 0.3);
 }
 
 .json-table-dropdown-option:hover .dropdown-tag--green {
-  background-color: rgba(100, 255, 100, 0.3);
+  background-color: rgba(34, 197, 94, 0.3);
 }
 
-.json-table-dropdown-option:hover .dropdown-tag--red {
-  background-color: rgba(255, 100, 100, 0.3);
+.json-table-dropdown-option:hover .dropdown-tag--blue {
+  background-color: rgba(59, 130, 246, 0.3);
+}
+
+.json-table-dropdown-option:hover .dropdown-tag--indigo {
+  background-color: rgba(99, 102, 241, 0.3);
+}
+
+.json-table-dropdown-option:hover .dropdown-tag--violet {
+  background-color: rgba(139, 92, 246, 0.3);
+}
+
+.json-table-dropdown-option:hover .dropdown-tag--pink {
+  background-color: rgba(236, 72, 153, 0.3);
+}
+
+.json-table-dropdown-option:hover .dropdown-tag--accent {
+  opacity: 0.9;
+}
+
+.json-table-dropdown-option:hover .dropdown-tag--default {
+  background-color: var(--background-modifier-hover);
+}
+
+/* Color Picker UI */
+.json-table-color-picker {
+  display: flex;
+  gap: 8px;
+  /* Increased gap */
+  margin-top: 8px;
+  /* More space above */
+  padding: 4px 0;
+  /* Add some padding */
+}
+
+.json-table-color-circle {
+  width: 20px;
+  /* Slightly larger */
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 1px solid transparent;
+  opacity: 0.7;
+  transition: transform 0.1s, opacity 0.1s;
+}
+
+.json-table-color-circle:hover {
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+.json-table-color-circle.is-selected {
+  border-color: var(--text-normal);
+  opacity: 1;
+  transform: scale(1.1);
+  box-shadow: 0 0 0 1px var(--background-primary), 0 0 0 2px var(--text-normal);
+}
+
+/* Color circle backgrounds */
+.color-circle--default {
+  background-color: var(--background-modifier-hover);
+  border: 1px solid var(--background-modifier-border);
+}
+
+.color-circle--accent {
+  background-color: var(--interactive-accent);
+}
+
+.color-circle--red {
+  background-color: #ef4444;
+}
+
+.color-circle--orange {
+  background-color: #f97316;
+}
+
+.color-circle--yellow {
+  background-color: #eab308;
+}
+
+.color-circle--green {
+  background-color: #22c55e;
+}
+
+.color-circle--blue {
+  background-color: #3b82f6;
+}
+
+.color-circle--indigo {
+  background-color: #6366f1;
+}
+
+.color-circle--violet {
+  background-color: #8b5cf6;
+}
+
+.color-circle--pink {
+  background-color: #ec4899;
 }
 
 

@@ -27,6 +27,9 @@ export class DropdownColumnEditor implements IColumnEditor {
     // Container to hold the list of options
     const optionsListContainer = container.createEl('div', { cls: 'json-table-edit-options-list' });
 
+    const colors = ['default', 'accent', 'red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'pink'];
+    let editingOptionIndex: number | null = null;
+
     // --- Helper function to render the list ---
     const renderOptionsList = () => {
       optionsListContainer.empty();
@@ -35,61 +38,214 @@ export class DropdownColumnEditor implements IColumnEditor {
       typeOpts.options!.forEach((option, index) => {
         const optionRow = optionsListContainer.createEl('div', { cls: 'json-table-edit-option' });
 
-        // The colored tag
-        const tag = optionRow.createEl('span', {
-          text: option.value,
-          cls: 'json-table-dropdown-tag'
-        });
-        if (option.style) {
-          tag.addClass(`dropdown-tag--${option.style}`);
-        }
+        // Wrapper for content
+        const contentWrapper = optionRow.createDiv({ cls: 'json-table-edit-option-content' });
+        contentWrapper.style.display = 'flex';
+        contentWrapper.style.flexDirection = 'column';
+        contentWrapper.style.width = '100%';
+        contentWrapper.style.gap = '4px';
 
-        // The delete button
-        const deleteOptBtn = optionRow.createEl('button', {
-          text: '×',
-          cls: 'json-table-edit-option-delete',
-          attr: { 'title': 'Delete option' }
-        });
+        const isEditing = editingOptionIndex === index;
 
-        deleteOptBtn.addEventListener('mousedown', e => e.preventDefault());
+        if (isEditing) {
+          // --- EDIT STATE ---
 
-        deleteOptBtn.addEventListener('click', async () => {
-          // Get the option value before deleting
-          const deletedValue = option.value;
-          
-          // Remove the option
-          typeOpts.options!.splice(index, 1);
-          
-          // Clean up any cells that have this deleted value
-          // For dropdown: clear the cell value
-          // For multiselect: remove the value from comma-separated list
-          data.rows.forEach(row => {
-            row.forEach(cell => {
-              if (cell.column === column.id && cell.value) {
-                if (column.type === 'dropdown') {
-                  // Clear cell if it matches deleted value
-                  if (cell.value === deletedValue) {
-                    cell.value = '';
+          // Row 1: Input and Delete
+          const topRow = contentWrapper.createDiv();
+          topRow.style.display = 'flex';
+          topRow.style.alignItems = 'center';
+          topRow.style.gap = '8px';
+          topRow.style.width = '100%';
+
+          // Editable Input
+          const input = topRow.createEl('input', {
+            type: 'text',
+            value: option.value,
+            cls: 'json-table-edit-input'
+          });
+
+          // Focus input immediately
+          setTimeout(() => input.focus(), 0);
+
+          // Handle Rename
+          const handleRename = async () => {
+            const newValue = input.value.trim();
+            if (!newValue || newValue === option.value) {
+              // Just close edit mode if no change
+              editingOptionIndex = null;
+              renderOptionsList();
+              return;
+            }
+
+            // Check for duplicates
+            if (typeOpts.options!.find((o, i) => i !== index && o.value === newValue)) {
+              // Revert and close
+              editingOptionIndex = null;
+              renderOptionsList();
+              return;
+            }
+
+            const oldValue = option.value;
+            option.value = newValue;
+
+            // Update all cells
+            data.rows.forEach(row => {
+              row.forEach(cell => {
+                if (cell.column === column.id && cell.value) {
+                  if (column.type === 'dropdown') {
+                    if (cell.value === oldValue) cell.value = newValue;
+                  } else if (column.type === 'multiselect') {
+                    const values = cell.value.split(',').map(v => v.trim());
+                    const newValues = values.map(v => v === oldValue ? newValue : v);
+                    cell.value = newValues.join(',');
                   }
-                } else if (column.type === 'multiselect') {
-                  // Remove from comma-separated list and filter out empty values
-                  const values = cell.value
-                    .split(',')
-                    .map(v => v.trim())
-                    .filter(v => v && v !== deletedValue);
-                  cell.value = values.join(',');
                 }
-              }
+              });
+            });
+
+            await view.saveTableData(data);
+            view.getRenderer()?.render();
+
+            editingOptionIndex = null;
+            renderOptionsList();
+          };
+
+          input.addEventListener('blur', () => {
+            // Delay slightly to allow clicks on color picker or delete button to register
+            setTimeout(() => {
+              // Only save/close if we are still editing this index (and didn't click something else that handled it)
+              // Actually, blur is tricky with the color picker buttons. 
+              // Let's rely on Enter key or clicking outside/another option to close.
+              // But we need a way to save.
+              handleRename();
+            }, 150);
+          });
+
+          input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleRename();
+            } else if (e.key === 'Escape') {
+              editingOptionIndex = null;
+              renderOptionsList();
+            }
+          });
+
+          // The delete button
+          const deleteOptBtn = topRow.createEl('button', {
+            text: '×',
+            cls: 'json-table-edit-option-delete',
+            attr: { 'title': 'Delete option' }
+          });
+
+          deleteOptBtn.addEventListener('mousedown', e => e.preventDefault()); // Prevent blur
+          deleteOptBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const deletedValue = option.value;
+            typeOpts.options!.splice(index, 1);
+
+            data.rows.forEach(row => {
+              row.forEach(cell => {
+                if (cell.column === column.id && cell.value) {
+                  if (column.type === 'dropdown') {
+                    if (cell.value === deletedValue) cell.value = '';
+                  } else if (column.type === 'multiselect') {
+                    const values = cell.value.split(',').map(v => v.trim()).filter(v => v && v !== deletedValue);
+                    cell.value = values.join(',');
+                  }
+                }
+              });
+            });
+
+            await view.saveTableData(data);
+            view.getRenderer()?.render();
+            editingOptionIndex = null;
+            renderOptionsList();
+          });
+
+          // Row 2: Color Picker
+          const colorPicker = contentWrapper.createDiv({ cls: 'json-table-color-picker' });
+
+          colors.forEach(color => {
+            const circle = colorPicker.createDiv({
+              cls: `json-table-color-circle color-circle--${color}`
+            });
+
+            if ((option.style || 'default') === color) {
+              circle.addClass('is-selected');
+            }
+
+            circle.addEventListener('mousedown', e => e.preventDefault()); // Prevent input blur
+            circle.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              option.style = color;
+              await view.saveTableData(data);
+              view.getRenderer()?.render();
+              // Keep editing open to allow further changes or renaming
+              renderOptionsList();
             });
           });
-          
-          await view.saveTableData(data);
-          
-          // Re-render in memory to reflect changes immediately without reloading file
-          view.getRenderer()?.render();
-          
-          renderOptionsList();
-        });
+
+        } else {
+          // --- DISPLAY STATE ---
+          const displayRow = contentWrapper.createDiv();
+          displayRow.style.display = 'flex';
+          displayRow.style.alignItems = 'center';
+          displayRow.style.justifyContent = 'space-between';
+          displayRow.style.width = '100%';
+          displayRow.style.cursor = 'pointer';
+
+          // The colored tag
+          const tag = displayRow.createEl('span', {
+            text: option.value,
+            cls: 'json-table-dropdown-tag'
+          });
+          if (option.style) {
+            tag.addClass(`dropdown-tag--${option.style}`);
+          }
+
+          // Click to edit
+          displayRow.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            editingOptionIndex = index;
+            renderOptionsList();
+          });
+
+          // The delete button (also available in display mode for quick delete)
+          const deleteOptBtn = displayRow.createEl('button', {
+            text: '×',
+            cls: 'json-table-edit-option-delete',
+            attr: { 'title': 'Delete option' }
+          });
+
+          deleteOptBtn.addEventListener('mousedown', e => {
+            e.preventDefault();
+            e.stopPropagation(); // Prevent triggering edit mode on row
+          });
+          deleteOptBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const deletedValue = option.value;
+            typeOpts.options!.splice(index, 1);
+
+            data.rows.forEach(row => {
+              row.forEach(cell => {
+                if (cell.column === column.id && cell.value) {
+                  if (column.type === 'dropdown') {
+                    if (cell.value === deletedValue) cell.value = '';
+                  } else if (column.type === 'multiselect') {
+                    const values = cell.value.split(',').map(v => v.trim()).filter(v => v && v !== deletedValue);
+                    cell.value = values.join(',');
+                  }
+                }
+              });
+            });
+
+            await view.saveTableData(data);
+            view.getRenderer()?.render();
+            renderOptionsList();
+          });
+        }
       });
     };
     // --- End helper function ---

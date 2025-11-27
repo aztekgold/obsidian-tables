@@ -38,7 +38,16 @@ class TableEmbedWidget extends WidgetType {
         // Prevent click/mousedown from propagating to the editor and moving the cursor
         // This prevents the table from disappearing (due to cursor entering the embed range)
         container.addEventListener('mousedown', (e) => {
-            // Prevent the editor from getting focus/cursor placement
+            const target = e.target as HTMLElement;
+            // Allow inputs and textareas to receive focus
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+                // We still stop propagation to prevent the editor from handling it (which might move the cursor out)
+                // But we DON'T prevent default, so the input gets focus.
+                e.stopPropagation();
+                return;
+            }
+
+            // For everything else, prevent the editor from getting focus/cursor placement
             e.preventDefault();
             e.stopPropagation();
         });
