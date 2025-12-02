@@ -107,9 +107,11 @@ export type TableRenderer = 'default' | 'json';
 
 export interface JsonTableSettings {
   tableRenderer: TableRenderer; // 'default' uses .table.md, 'json' uses .table.json
+  enableBetaFeatures: boolean; // Toggle for experimental features like column dragging
 }
 
 // Default values for the plugin settings
 export const DEFAULT_SETTINGS: JsonTableSettings = {
-  tableRenderer: 'default' // Default to using .table.md files for compatibility
+  tableRenderer: 'default', // Default to using .table.md files for compatibility
+  enableBetaFeatures: false
 }

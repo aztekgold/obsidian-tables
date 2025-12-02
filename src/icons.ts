@@ -20,6 +20,8 @@ export const ICON_NAMES = {
   gripVertical: 'grip-vertical',
   table: 'table',
   eye: 'eye', // Added eye icon
+  settings: 'settings',
+  download: 'download',
 } as const;
 
 /**

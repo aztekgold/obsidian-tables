@@ -111,7 +111,7 @@ export default class JsonTablePlugin extends Plugin {
             }
 
             // Create and render the inline table
-            const renderer = new InlineTableRenderer(el, source, this.app, file);
+            const renderer = new InlineTableRenderer(el, source, this.app, file, this.settings);
             ctx.addChild(renderer);
         });
 
@@ -133,7 +133,7 @@ export default class JsonTablePlugin extends Plugin {
                     embed.empty();
 
                     // Create and mount the renderer
-                    const renderer = new EmbedTableRenderer(embed as HTMLElement, this.app, file);
+                    const renderer = new EmbedTableRenderer(embed as HTMLElement, this.app, file, this.settings);
                     context.addChild(renderer);
                 }
             });
@@ -871,6 +871,16 @@ class JsonTableSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                     // Prompt user to reload for the change to reliably affect extension handling
                     new Notice("Reload required for file handling changes to take full effect.", 7000);
+                }));
+
+        new Setting(containerEl)
+            .setName('Enable Beta Features')
+            .setDesc('Enable experimental features like column reordering via drag-and-drop. These features may be unstable.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableBetaFeatures)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableBetaFeatures = value;
+                    await this.plugin.saveSettings();
                 }));
 
         // Add more settings here later if needed

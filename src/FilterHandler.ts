@@ -1,6 +1,7 @@
 // src/FilterHandler.ts
 import { TableData, ColumnDef, FilterRule, FilterOperator, CellData, ViewDef } from './types'; // Adjust path if needed
 import { JsonTableView } from './JsonTableView'; // Adjust path if needed
+import { positionPopup } from './utils/popup'; // Adjust path if needed
 import { ICON_NAMES, createIconElement } from './icons'; // Adjust path if needed
 
 /**
@@ -49,9 +50,7 @@ export class FilterHandler {
 
     const popup = document.body.createEl('div', { cls: 'json-table-popup json-table-filter-popup' });
     // Position popup dynamically based on button location
-    const rect = button.getBoundingClientRect();
-    popup.style.top = `${rect.bottom + 5}px`;
-    popup.style.left = `${rect.left}px`;
+    positionPopup(popup, button);
 
     // --- Header ---
     const header = popup.createEl('div', { cls: 'json-table-popup-header' });
@@ -82,7 +81,7 @@ export class FilterHandler {
       }
 
       const newRule: FilterRule = {
-        id: `filter_${Date.now()}`,
+        id: `filter_${Date.now()} `,
         columnId: defaultColumnId,
         operator: 'contains',
         value: ''
@@ -284,7 +283,7 @@ export class FilterHandler {
           case 'notEqual':
             return cellValueLower !== filterValueLower; // Case-insensitive not equal
           default:
-            console.warn(`Unknown filter operator: ${rule.operator}`);
+            console.warn(`Unknown filter operator: ${rule.operator} `);
             return true; // Don't filter out row if operator is unknown
         }
       }); // End rules.every

@@ -1,6 +1,6 @@
 // src/TableRenderer.ts
 
-import { TableData, ColumnDef, CellData, ViewDef } from './types'; // Adjust path if needed
+import { TableData, ColumnDef, CellData, ViewDef, JsonTableSettings, DEFAULT_SETTINGS } from './types'; // Adjust path if needed
 import { JsonTableView } from './JsonTableView'; // Adjust path if needed
 import { Notice } from 'obsidian';
 
@@ -29,6 +29,7 @@ import {
   ICON_NAMES,
   createIconElement
 } from './icons'; // Adjust path if needed
+import { positionPopup } from './utils/popup';
 
 // Map column types to their icon names
 const TYPE_ICONS: Record<string, string> = {
@@ -52,14 +53,17 @@ export class TableRenderer {
   private filterHandler: FilterHandler; // Add FilterHandler instance
   private activeViewId: string; // Track the currently active view
   private isInline: boolean; // Flag to indicate if this is an inline table
+  private settings: JsonTableSettings;
 
   constructor(
     private container: Element,
     private data: TableData,
     private view: JsonTableView,
-    isInline: boolean = false // Default to false
+    isInline: boolean = false, // Default to false
+    settings: JsonTableSettings = DEFAULT_SETTINGS
   ) {
     this.isInline = isInline;
+    this.settings = settings;
 
     // Ensure views exist
     if (!this.data.views || this.data.views.length === 0) {
@@ -297,36 +301,55 @@ export class TableRenderer {
     this.renderViewTabs();
 
     // Render controls (Sort & Filter buttons)
+    // Render controls (Sort & Filter buttons)
     const controlsContainer = this.container.createDiv({ cls: 'json-table-controls' });
 
+    // Left controls group (Sort, Filter, Show/Hide)
+    const leftControls = controlsContainer.createDiv({ cls: 'json-table-controls-left' });
+
+    // Right controls group (Settings)
+    const rightControls = controlsContainer.createDiv({ cls: 'json-table-controls-right' });
+
     // Sort Button
-    const sortButton = controlsContainer.createEl('button', {
+    const sortButton = leftControls.createEl('button', {
       cls: 'json-table-btn json-table-btn--standard json-table-sort-button',
       attr: { 'aria-label': 'Sort table' }
     });
     const sortIcon = createIconElement(ICON_NAMES.sort, 16, 'icon-sort');
     sortButton.appendChild(sortIcon);
     sortButton.appendText(' Sort');
+
+    // Check active sort state
+    const activeSort = this.sortHandler.getCurrentSortRules();
+    const isSortActive = activeSort.length > 0 && activeSort[0].columnId !== null;
+    if (isSortActive) {
+      sortButton.addClass('json-table-btn--active');
+    }
+
     sortButton.addEventListener('click', () => {
       this.sortHandler.showSortPopup(sortButton);
     });
 
     // Filter Button
-    const filterButton = controlsContainer.createEl('button', {
+    const filterButton = leftControls.createEl('button', {
       cls: 'json-table-btn json-table-btn--standard json-table-filter-button',
+      attr: { 'aria-label': 'Filter table' }
     });
     const filterIcon = createIconElement(ICON_NAMES.filter, 16, 'icon-filter');
     filterButton.appendChild(filterIcon);
     filterButton.appendText(' Filter');
+
+    // Check active filter state
     if (this.filterHandler.hasActiveFilters()) {
       filterButton.addClass('json-table-btn--active');
     }
+
     filterButton.addEventListener('click', () => {
       this.filterHandler.showFilterPopup(filterButton);
     });
 
     // Properties Button (Visibility)
-    const propsButton = controlsContainer.createEl('button', {
+    const propsButton = leftControls.createEl('button', {
       cls: 'json-table-btn json-table-btn--standard json-table-props-button',
       attr: { 'aria-label': 'Column visibility' }
     });
@@ -336,6 +359,19 @@ export class TableRenderer {
     propsButton.appendText(' Show/Hide'); // Updated text
     propsButton.addEventListener('click', () => {
       this.showPropertyVisibilityPopup(propsButton);
+    });
+
+    // --- Settings Button (Updated) ---
+    const settingsButton = rightControls.createEl('button', {
+      cls: 'json-table-btn json-table-btn--icon json-table-settings-button', // Icon-only button style
+      attr: { 'aria-label': 'Table settings', title: 'Table settings' }
+    });
+    // Use 'moreVertical' icon (3 dots vertical)
+    const settingsIcon = createIconElement(ICON_NAMES.moreVertical, 16, 'icon-settings');
+    settingsButton.appendChild(settingsIcon);
+
+    settingsButton.addEventListener('click', () => {
+      this.showSettingsPopup(settingsButton);
     });
 
 
@@ -384,6 +420,17 @@ export class TableRenderer {
 
     const visibleColumns = this.getVisibleColumns();
 
+    // Check sort state
+    const activeSort = this.sortHandler.getCurrentSortRules();
+    const isSortActive = activeSort.length > 0 && activeSort[0].columnId !== null;
+
+    // Render col for Drag Handle (if not sorted AND beta features enabled AND not inline/embed)
+    if (!isSortActive && this.settings.enableBetaFeatures && !this.isInline) {
+      const dragCol = this.colGroup.createEl('col');
+      dragCol.style.width = '30px'; // Fixed width for drag handle
+      dragCol.addClass('json-table-drag-col');
+    }
+
     // Render col for each visible column
     visibleColumns.forEach((col, index) => {
       const colEl = this.colGroup!.createEl('col');
@@ -405,11 +452,23 @@ export class TableRenderer {
     const visibleColumns = this.getVisibleColumns();
     let draggedColumnId: string | null = null; // Track ID instead of index
 
+    // Check sort state
+    const activeSort = this.sortHandler.getCurrentSortRules();
+    const isSortActive = activeSort.length > 0 && activeSort[0].columnId !== null;
+
+    // Render Drag Handle Header (Empty)
+    if (!isSortActive && this.settings.enableBetaFeatures && !this.isInline) {
+      headerRow.createEl('th', { cls: 'json-table-header-cell json-table-drag-handle-header' });
+    }
+
     // Render Data Columns
     visibleColumns.forEach((col, visibleIndex) => {
       const realIndex = this.data.columns.findIndex(c => c.id === col.id);
       const th = headerRow.createEl('th', { cls: 'json-table-header-cell' });
+
+      // Enable drag for columns (Always enabled)
       th.draggable = true;
+
       // We can keep data-col-index as visible index for CSS/layout purposes if needed, 
       // but for logic we should use IDs or lookups.
       th.setAttribute('data-col-index', visibleIndex.toString());
@@ -425,7 +484,7 @@ export class TableRenderer {
       const resizeHandle = th.createEl('div', { cls: 'json-table-resize-handle' });
       resizeHandle.addEventListener('mousedown', (e) => { this.onResizeStart(e, col, realIndex); });
 
-      // Drag and Drop Listeners
+      // Drag and Drop Listeners (Column Reordering)
       th.addEventListener('dragstart', (e) => {
         if ((e.target as HTMLElement).classList.contains('json-table-resize-handle')) {
           e.preventDefault();
@@ -597,11 +656,92 @@ export class TableRenderer {
     const rowIndexMap = new Map<CellData[], number>();
     this.data.rows.forEach((row, idx) => rowIndexMap.set(row, idx));
 
+    // Check if sort is active
+    const activeSort = this.sortHandler.getCurrentSortRules();
+    const isSortActive = activeSort.length > 0 && activeSort[0].columnId !== null;
+    let draggedRowIndex: number | null = null;
+
     rowsToRender.forEach((row) => { // Iterate over filtered rows
       const tr = tbody.createEl('tr', { cls: 'json-table-row' });
 
       // Fast O(1) lookup instead of O(N) findIndex
       const originalRowIndex = rowIndexMap.get(row) ?? -1;
+
+      // --- Row Drag Handle Cell (Only if no sort active AND beta features enabled AND not inline/embed) ---
+      if (!isSortActive && this.settings.enableBetaFeatures && !this.isInline) {
+        tr.draggable = true;
+
+        // Create dedicated cell for the handle
+        const handleCell = tr.createEl('td', { cls: 'json-table-cell json-table-drag-handle-cell' });
+        const handleContent = handleCell.createEl('div', { cls: 'json-table-cell-content json-table-drag-handle-content' });
+
+        // Use 'gripVertical' as a grip handle
+        const icon = createIconElement(ICON_NAMES.gripVertical, 14, 'json-table-row-drag-icon');
+        handleContent.appendChild(icon);
+
+        // Drag Events on the TR (dragging the whole row)
+        tr.addEventListener('dragstart', (e) => {
+          draggedRowIndex = originalRowIndex;
+          tr.addClass('is-dragging');
+          if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            // e.dataTransfer.setDragImage(tr, 0, 0); // Optional: Custom drag image
+          }
+        });
+
+        tr.addEventListener('dragover', (e) => {
+          e.preventDefault(); // Allow drop
+          if (draggedRowIndex === null || draggedRowIndex === originalRowIndex) return;
+
+          if (draggedRowIndex < originalRowIndex) {
+            tr.addClass('is-dragover-bottom');
+            tr.removeClass('is-dragover-top');
+          } else {
+            tr.addClass('is-dragover-top');
+            tr.removeClass('is-dragover-bottom');
+          }
+
+          if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        });
+
+        tr.addEventListener('dragleave', () => {
+          tr.removeClass('is-dragover-top');
+          tr.removeClass('is-dragover-bottom');
+        });
+
+        tr.addEventListener('drop', async (e) => {
+          e.stopPropagation(); // Stop bubbling
+          tr.removeClass('is-dragover-top');
+          tr.removeClass('is-dragover-bottom');
+
+          // Capture and reset draggedRowIndex immediately to prevent double-firing
+          const currentIndex = draggedRowIndex;
+          draggedRowIndex = null;
+
+          if (currentIndex === null || currentIndex === originalRowIndex) return;
+
+          // Perform move
+          const movedRow = this.data.rows.splice(currentIndex, 1)[0];
+
+          // Insert at the target index.
+          // Note: If dragging down (currentIndex < originalRowIndex), the removal shifted 
+          // subsequent items (including the target) down by 1 index. 
+          // So inserting at originalRowIndex places it AFTER the original target.
+          // If dragging up (currentIndex > originalRowIndex), the target index is unaffected.
+          // Inserting at originalRowIndex places it BEFORE the original target.
+          this.data.rows.splice(originalRowIndex, 0, movedRow);
+
+          await this.view.saveTableData(this.data);
+          this.render();
+        });
+
+        tr.addEventListener('dragend', () => {
+          tr.removeClass('is-dragging');
+          tr.removeClass('is-dragover-top');
+          tr.removeClass('is-dragover-bottom');
+          draggedRowIndex = null;
+        });
+      }
 
       this.renderRow(tr, row, this.getVisibleColumns(), originalRowIndex, this.data); // Pass visible columns
 
@@ -760,9 +900,7 @@ export class TableRenderer {
     if (existingPopup) existingPopup.remove();
     const popup = document.body.createEl('div', { cls: 'json-table-popup json-table-edit-column-popup' });
     // Position popup dynamically based on header cell location
-    const rect = headerCell.getBoundingClientRect();
-    popup.style.top = `${rect.bottom + 5}px`;
-    popup.style.left = `${rect.left}px`;
+    positionPopup(popup, headerCell);
 
     // Create wrapper for flex layout
     const wrapper = popup.createEl('div', { cls: 'json-table-popup-wrapper' });
@@ -817,9 +955,7 @@ export class TableRenderer {
     buttonDiv.addClass('is-dimmed');
     const popup = document.body.createEl('div', { cls: 'json-table-popup json-table-column-popup' });
     // Position popup dynamically near the '+' button
-    const rect = buttonDiv.getBoundingClientRect();
-    popup.style.top = `${rect.top}px`;
-    popup.style.right = `${document.body.clientWidth - rect.right}px`;
+    positionPopup(popup, buttonDiv, { align: 'auto' });
 
     // Create wrapper for flex layout
     const wrapper = popup.createEl('div', { cls: 'json-table-popup-wrapper' });
@@ -873,6 +1009,167 @@ export class TableRenderer {
     const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') { closePopup(); } };
     nameInputPopup.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addColumn('text', 'Text', {}); } });
     setTimeout(() => { document.addEventListener('click', clickOutside); document.addEventListener('keydown', handleEscape); }, 100);
+  }
+
+  // --- Settings Popup ---
+
+  private showSettingsPopup(button: HTMLButtonElement) {
+    const existingPopup = document.querySelector('.json-table-settings-popup');
+    if (existingPopup) existingPopup.remove();
+
+    const popup = document.body.createEl('div', { cls: 'json-table-popup json-table-settings-popup' });
+
+    // Position using helper (align right for settings button)
+    positionPopup(popup, button, { align: 'right' });
+
+    // Header
+    const header = popup.createEl('div', { cls: 'json-table-popup-header' });
+    header.createEl('h3', { text: 'Settings', cls: 'json-table-popup-title' });
+
+    // Content
+    const content = popup.createEl('div', { cls: 'json-table-popup-content' });
+
+    // Export CSV Option (Raw Data)
+    const exportOption = content.createEl('div', { cls: 'json-table-popup-option' });
+    const exportBtn = exportOption.createEl('button', {
+      cls: 'json-table-btn json-table-btn--full-width',
+      text: ' Export Table as CSV' // Add space for icon
+    });
+    const exportIcon = createIconElement(ICON_NAMES.download, 16);
+    exportBtn.prepend(exportIcon);
+
+    exportBtn.addEventListener('click', () => {
+      this.exportToCsv();
+      closePopup();
+    });
+
+    // Export View CSV Option (Filtered & Sorted)
+    const exportViewOption = content.createEl('div', { cls: 'json-table-popup-option' });
+    const exportViewBtn = exportViewOption.createEl('button', {
+      cls: 'json-table-btn json-table-btn--full-width',
+      text: ' Export View to CSV' // Add space for icon
+    });
+    const exportViewIcon = createIconElement(ICON_NAMES.download, 16);
+    exportViewBtn.prepend(exportViewIcon);
+
+    exportViewBtn.addEventListener('click', () => {
+      this.exportViewToCsv();
+      closePopup();
+    });
+
+    // Close logic
+    const closePopup = () => {
+      popup.remove();
+      document.removeEventListener('click', clickOutside, true);
+    };
+
+    const clickOutside = (e: MouseEvent) => {
+      if (!popup.contains(e.target as Node) && !button.contains(e.target as Node)) {
+        closePopup();
+      }
+    };
+
+    setTimeout(() => {
+      document.addEventListener('click', clickOutside, true);
+    }, 0);
+  }
+
+  // --- Export Logic ---
+
+  private exportToCsv() {
+    // Export raw data (all columns, all rows, no sort/filter)
+    const columns = this.data.columns;
+    const rows = this.data.rows;
+    this.generateAndDownloadCsv(columns, rows, 'table_export');
+  }
+
+  private exportViewToCsv() {
+    // Export view data (visible columns, filtered & sorted rows)
+
+    // 1. Get Visible Columns
+    const visibleColumns = this.getVisibleColumns();
+
+    // 2. Get Filtered Rows
+    let rowsToExport = this.filterHandler.getFilteredRows();
+
+    // 3. Apply Sort (in-memory copy for export)
+    // Note: sortDataInMemory sorts this.data.rows in place. 
+    // We need to sort the filtered rows without affecting the main data if possible, 
+    // OR rely on the fact that the main data might already be sorted if we just rendered?
+    // Actually, sortDataInMemory sorts `this.data.rows`. `getFilteredRows` returns a new array (subset).
+    // The current implementation of `sortDataInMemory` sorts `this.data.rows`.
+    // If the table is currently rendered, `this.data.rows` IS sorted.
+    // However, `getFilteredRows` filters `this.data.rows`. 
+    // So if `this.data.rows` is sorted, `getFilteredRows` returns sorted rows (mostly, order preserved).
+    // Let's verify: `this.data.rows.filter(...)` preserves order.
+    // So if `this.data.rows` is already sorted by `sortHandler.sortDataInMemory()`, then `rowsToExport` is also sorted.
+    // BUT, `sortDataInMemory` might not have been called if we just loaded? 
+    // `render()` calls `sortHandler.sortDataInMemory()`.
+    // So if the user is seeing the table, it is sorted.
+
+    // However, to be safe and explicit (and not rely on side effects), let's manually sort the filtered rows copy.
+    // We can reuse the sort logic or just trust the current state.
+    // Given `sortDataInMemory` modifies `this.data.rows` in place, the source of `getFilteredRows` is already sorted.
+    // So `rowsToExport` should be in the correct order.
+
+    this.generateAndDownloadCsv(visibleColumns, rowsToExport, 'view_export');
+  }
+
+  private generateAndDownloadCsv(columns: any[], rows: any[][], defaultFilename: string) {
+    if (!columns || !rows) {
+      new Notice('No data to export.');
+      return;
+    }
+
+    // Build CSV Content
+    const csvRows: string[] = [];
+
+    // Header Row
+    const headerRow = columns.map(col => this.escapeCsvField(col.name)).join(',');
+    csvRows.push(headerRow);
+
+    // Data Rows
+    rows.forEach(row => {
+      const rowData = columns.map(col => {
+        const cell = row.find((c: any) => c.column === col.id);
+        return this.escapeCsvField(cell?.value || '');
+      });
+      csvRows.push(rowData.join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+
+    // Trigger Download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+
+    // Generate filename
+    const filename = this.view.getDisplayText() || defaultFilename;
+    // Append suffix if view export? Maybe not needed if user chooses filename.
+    // Let's just use the note name.
+    const suffix = defaultFilename === 'view_export' ? '_view' : '';
+    link.setAttribute('download', `${filename}${suffix}.csv`);
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  private escapeCsvField(field: string): string {
+    if (field === null || field === undefined) return '';
+    let stringField = String(field);
+
+    // Check if field contains comma, quote, or newline
+    if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+      // Escape double quotes by doubling them
+      stringField = stringField.replace(/"/g, '""');
+      // Wrap in double quotes
+      return `"${stringField}"`;
+    }
+    return stringField;
   }
 
 } // End of TableRenderer class

@@ -132,6 +132,13 @@ div.json-table-btn--hybrid {
   border-radius: 4px;
 }
 
+.json-table-btn--full-width {
+  width: 100%;
+  justify-content: flex-start;
+  /* Align icon/text to left */
+  padding: 8px 12px;
+}
+
 button.json-table-btn--hybrid:hover,
 div.json-table-btn--hybrid:hover {
   background: var(--background-modifier-hover);
@@ -201,6 +208,53 @@ div.json-table-btn--active:hover {
 .json-table tbody tr:hover {
   background-color: var(--background-modifier-hover);
 }
+
+/* Ensure relative positioning for absolute children */
+.json-table-row {
+  position: relative;
+}
+
+/* Drag Handle Cell */
+.json-table-drag-handle-cell {
+  width: 30px;
+  min-width: 30px;
+  padding: 0 !important;
+  cursor: grab;
+  background-color: var(--background-primary);
+  border-right: 1px solid var(--background-modifier-border);
+}
+
+.json-table-drag-handle-content {
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.json-table-drag-handle-content:hover {
+  color: var(--text-normal);
+  background-color: var(--background-modifier-hover);
+}
+
+/* Dragging State */
+.json-table-row.is-dragging {
+  opacity: 0.5;
+  background-color: var(--background-modifier-hover);
+}
+
+/* Drop Indicator (Line between rows) */
+.json-table-row.is-dragover-top {
+  box-shadow: inset 0 2px 0 0 var(--interactive-accent);
+}
+
+.json-table-row.is-dragover-bottom {
+  box-shadow: inset 0 -2px 0 0 var(--interactive-accent);
+}
+
+// Row dragging styles
+// .json-table th:first-child,
+// .json-table td:first-child {
+//   border: none !important;
+//   background: var(--background-primary);
+// }
 
 /* ==========================================================================
    Table Headers & Add Column
@@ -721,91 +775,91 @@ input.json-table-input {
 
 /* Red (Red-500) */
 .dropdown-tag--red {
-  background-color: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.6);
+  color: #ffffff;
   // border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 /* Orange (Orange-500) */
 .dropdown-tag--orange {
-  background-color: rgba(249, 115, 22, 0.2);
-  color: #f97316;
+  background-color: rgba(249, 115, 22, 0.6);
+  color: #ffffff;
   // border: 1px solid rgba(249, 115, 22, 0.3);
 }
 
 /* Yellow (Yellow-500) */
 .dropdown-tag--yellow {
-  background-color: rgba(234, 179, 8, 0.2);
-  color: #eab308;
+  background-color: rgba(234, 179, 8, 0.6);
+  color: #ffffff;
   // border: 1px solid rgba(234, 179, 8, 0.3);
 }
 
 /* Green (Green-500) */
 .dropdown-tag--green {
-  background-color: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
+  background-color: rgba(34, 197, 94, 0.6);
+  color: #ffffff;
   // border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 /* Blue (Blue-500) */
 .dropdown-tag--blue {
-  background-color: rgba(59, 130, 246, 0.2);
-  color: #3b82f6;
+  background-color: rgba(59, 130, 246, 0.6);
+  color: #ffffff;
   // border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 /* Indigo (Indigo-500) */
 .dropdown-tag--indigo {
-  background-color: rgba(99, 102, 241, 0.2);
-  color: #6366f1;
+  background-color: rgba(99, 102, 241, 0.6);
+  color: #ffffff;
   // border: 1px solid rgba(99, 102, 241, 0.3);
 }
 
 /* Violet (Violet-500) */
 .dropdown-tag--violet {
-  background-color: rgba(139, 92, 246, 0.2);
-  color: #8b5cf6;
+  background-color: rgba(139, 92, 246, 0.6);
+  color: #ffffff;
   // border: 1px solid rgba(139, 92, 246, 0.3);
 }
 
 /* Pink (Pink-500) */
 .dropdown-tag--pink {
-  background-color: rgba(236, 72, 153, 0.2);
-  color: #ec4899;
+  background-color: rgba(236, 72, 153, 0.6);
+  color: #ffffff;
   // border: 1px solid rgba(236, 72, 153, 0.3);
 }
 
 /* Hover/select states - slightly darker background */
 .json-table-dropdown-option:hover .dropdown-tag--red {
-  background-color: rgba(239, 68, 68, 0.3);
+  background-color: rgba(239, 68, 68, 0.8);
 }
 
 .json-table-dropdown-option:hover .dropdown-tag--orange {
-  background-color: rgba(249, 115, 22, 0.3);
+  background-color: rgba(249, 115, 22, 0.8);
 }
 
 .json-table-dropdown-option:hover .dropdown-tag--yellow {
-  background-color: rgba(234, 179, 8, 0.3);
+  background-color: rgba(234, 179, 8, 0.8);
 }
 
 .json-table-dropdown-option:hover .dropdown-tag--green {
-  background-color: rgba(34, 197, 94, 0.3);
+  background-color: rgba(34, 197, 94, 0.8);
 }
 
 .json-table-dropdown-option:hover .dropdown-tag--blue {
-  background-color: rgba(59, 130, 246, 0.3);
+  background-color: rgba(59, 130, 246, 0.8);
 }
 
 .json-table-dropdown-option:hover .dropdown-tag--indigo {
-  background-color: rgba(99, 102, 241, 0.3);
+  background-color: rgba(99, 102, 241, 0.8);
 }
 
 .json-table-dropdown-option:hover .dropdown-tag--violet {
-  background-color: rgba(139, 92, 246, 0.3);
+  background-color: rgba(139, 92, 246, 0.8);
 }
 
 .json-table-dropdown-option:hover .dropdown-tag--pink {
-  background-color: rgba(236, 72, 153, 0.3);
+  background-color: rgba(236, 72, 153, 0.8);
 }
 
 .json-table-dropdown-option:hover .dropdown-tag--accent {
@@ -1141,9 +1195,18 @@ input.json-table-input {
 
 .json-table-controls {
   display: flex;
-  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
   margin: 0.875em 0;
   font-size: 14px;
+  gap: 8px;
+}
+
+.json-table-controls-left,
+.json-table-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .json-table-header-buttons-container {

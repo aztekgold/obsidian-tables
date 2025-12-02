@@ -172,7 +172,7 @@ export class JsonTableView extends ItemView {
         throw new Error('Invalid table data structure received.');
       }
 
-      this.renderer = new TableRenderer(container, this.data, this, false); // isInline = false
+      this.renderer = new TableRenderer(container, this.data, this, false, this.settings); // isInline = false
       this.renderer.render();
 
     } catch (e) {
@@ -219,6 +219,8 @@ export class JsonTableView extends ItemView {
 
   // --- Lifecycle Methods ---
 
+  // --- Lifecycle Methods ---
+
   // Called when view is attached to DOM
   async onOpen() {
     // If state includes a file path, ensure it's loaded and rendered
@@ -226,6 +228,42 @@ export class JsonTableView extends ItemView {
       await this.loadFileAndRender(this.currentFilePath);
     } else if (!this.currentFilePath) {
       this.showError(this.containerEl.children[1], "No file loaded.", false);
+    }
+
+    // Register Vault Events for Rename/Delete
+    this.registerEvent(
+      this.app.vault.on('rename', (file, oldPath) => {
+        if (this.currentFilePath && oldPath === this.currentFilePath) {
+          // Update view state to reflect new path (persists across restarts)
+          // Note: We do NOT update this.currentFilePath here, so that setState detects the change
+          this.leaf.setViewState({
+            type: VIEW_TYPE_JSON_TABLE,
+            state: { file: file.path }
+          });
+          // Update title
+          this.updateTitle();
+        }
+      })
+    );
+
+    this.registerEvent(
+      this.app.vault.on('delete', (file) => {
+        if (this.currentFilePath && file.path === this.currentFilePath) {
+          // File deleted, close the view
+          this.leaf.detach();
+        }
+      })
+    );
+  }
+
+  updateTitle() {
+    // Force leaf to update its title
+    // @ts-ignore - updateTitle is protected/private in some versions but accessible
+    if (this.leaf.view === this) {
+      // Trigger a title update
+      this.app.workspace.requestSaveLayout(); // Indirectly triggers updates?
+      // Or just let Obsidian handle it via setViewState which we called.
+      // Actually setViewState should trigger a title update.
     }
   }
 

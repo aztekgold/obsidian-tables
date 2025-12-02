@@ -1,5 +1,5 @@
 import { MarkdownRenderChild, App, TFile, Notice } from 'obsidian';
-import { TableData } from './types';
+import { TableData, JsonTableSettings } from './types';
 import { TableRenderer } from './TableRenderer';
 import { JsonTableView } from './JsonTableView';
 import { MarkdownFileHandler } from './fileHandlers/MarkdownFileHandler';
@@ -12,7 +12,8 @@ export class EmbedTableRenderer extends MarkdownRenderChild {
     constructor(
         containerEl: HTMLElement,
         private app: App,
-        private file: TFile
+        private file: TFile,
+        private settings: JsonTableSettings
     ) {
         super(containerEl);
     }
@@ -77,7 +78,7 @@ export class EmbedTableRenderer extends MarkdownRenderChild {
             const tableContainer = this.containerEl.createDiv();
 
             // Render the table
-            this.renderer = new TableRenderer(tableContainer, this.data, mockView, true);
+            this.renderer = new TableRenderer(tableContainer, this.data, mockView, true, this.settings);
             this.renderer.render();
 
         } catch (error) {

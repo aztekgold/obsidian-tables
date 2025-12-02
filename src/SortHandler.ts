@@ -1,8 +1,9 @@
-
 // src/SortHandler.ts
 
 import { TableData, ColumnDef, SortRule, ViewDef } from './types'; // Ensure SortRule is exported from types.ts
 import { JsonTableView } from './JsonTableView';
+import { ICON_NAMES, createIconElement } from './icons';
+import { positionPopup } from './utils/popup';
 
 /**
  * Handles the state and UI logic for sorting the table based on view definitions.
@@ -51,9 +52,7 @@ export class SortHandler {
 
         const popup = document.body.createEl('div', { cls: 'json-table-popup json-table-sort-popup' });
         // Position popup dynamically based on button location
-        const rect = button.getBoundingClientRect();
-        popup.style.top = `${rect.bottom + 5}px`;
-        popup.style.left = `${rect.left}px`;
+        positionPopup(popup, button);
 
         const currentRules = this.getCurrentSortRules();
         const currentSort = currentRules.length > 0 ? currentRules[0] : { columnId: null, direction: 'asc' };
@@ -89,6 +88,32 @@ export class SortHandler {
 
         // --- Footer ---
         const footer = popup.createEl('div', { cls: 'json-table-popup-footer' });
+
+        // --- Delete/Clear Sort Button ---
+        if (currentSort.columnId !== null) {
+            const deleteButton = footer.createEl('button', {
+                cls: 'json-table-btn json-table-btn--icon',
+                attr: { 'aria-label': 'Clear sort', title: 'Clear sort' }
+            });
+            const trashIcon = createIconElement(ICON_NAMES.trash, 16);
+            deleteButton.appendChild(trashIcon);
+
+            deleteButton.addEventListener('click', async () => {
+                try {
+                    this.setCurrentSortRules([]); // Clear rules
+
+                    if (this.view && typeof this.view.saveTableData === 'function') {
+                        await this.view.saveTableData(this.data);
+                    }
+
+                    this.triggerRender();
+                    closePopup();
+                } catch (error) {
+                    console.error("Error clearing sort:", error);
+                    closePopup();
+                }
+            });
+        }
 
         // --- Apply Button ---
         const applyButton = footer.createEl('button', {
