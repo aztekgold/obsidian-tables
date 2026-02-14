@@ -3,6 +3,7 @@ import { TableData, ColumnDef, CellData, DEFAULT_SETTINGS, JsonTableSettings } f
 import { JsonTableView } from '../JsonTableView';
 import { AbstractTableRenderer, TYPE_ICONS } from './AbstractTableRenderer';
 import { createIconElement, ICON_NAMES } from '../icons';
+import { setIcon } from 'obsidian';
 
 export class HtmlTableRenderer extends AbstractTableRenderer {
     private colGroup: HTMLTableColElement | null = null;
@@ -91,6 +92,11 @@ export class HtmlTableRenderer extends AbstractTableRenderer {
             th.setAttribute('data-col-index', visibleIndex.toString());
 
             const contentWrapper = th.createEl('div', { cls: 'json-table-header-content' });
+
+            // Add drag handle (this was missing!)
+            const dragHandle = contentWrapper.createDiv({ cls: 'json-table-drag-handle' });
+            setIcon(dragHandle, ICON_NAMES.gripVertical);
+
             const iconSvg = TYPE_ICONS[col.type];
             if (iconSvg) {
                 const iconEl = createIconElement(iconSvg, 14, `icon-col-${col.type}`);
@@ -255,7 +261,11 @@ export class HtmlTableRenderer extends AbstractTableRenderer {
 
     private renderAddRowButton(container: Element) {
         const wrapper = container.createEl('div', { cls: 'json-table-add-row-wrapper' });
-        const addBtn = wrapper.createEl('button', { text: '+ Add row', cls: 'json-table-add-row' });
+        // Use standard button classes + icon
+        const addBtn = wrapper.createEl('button', { cls: 'json-table-btn json-table-btn--standard json-table-add-row-btn' });
+        const icon = createIconElement(ICON_NAMES.plus, 16);
+        addBtn.appendChild(icon);
+        addBtn.appendChild(document.createTextNode(' Add row'));
 
         const rowCountValue = this.data.rows.length;
         wrapper.createEl('div', {

@@ -543,61 +543,7 @@ div.json-table-btn--active:hover {
   margin-bottom: 0;
 }
 
-/* Sort popup specific styles */
-.json-table-sort-popup .json-table-popup-content {
-  display: flex;
-  gap: 12px;
-}
 
-.json-table-sort-popup .json-table-popup-select {
-  flex: 1;
-  margin-bottom: 0;
-}
-
-/* ==========================================================================
-   Popups: Add Column
-   ========================================================================== */
-
-.json-table-column-popup {
-  min-width: 200px;
-}
-
-.json-table-type-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* Legacy class - use .json-table-btn.json-table-btn--hybrid instead */
-.json-table-type-btn {
-  @extend .json-table-btn;
-  @extend .json-table-btn--hybrid;
-  width: 100%;
-  font-size: 14px;
-  text-align: left;
-  display: flex;
-  gap: 0.5em;
-  align-items: center;
-}
-
-.json-table-type-btn:active {
-  transform: scale(0.98);
-}
-
-.json-table-add-col-input {
-  width: 100%;
-  height: 100%;
-  padding: 8px;
-  background: var(--background-modifier-form-field);
-  border: 2px solid var(--interactive-accent);
-  color: var(--text-normal);
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  text-align: center;
-  outline: none;
-  box-sizing: border-box;
-}
 
 .json-table-add-col-input::placeholder {
   color: var(--text-muted);
@@ -1299,10 +1245,6 @@ div.json-table-btn--active:hover {
 .json-table-filter-button.is-active {
   @extend .json-table-btn--active;
 }
-
-
-
-
 
 .table-filename-container {
   border-bottom: 1px solid var(--background-modifier-border);

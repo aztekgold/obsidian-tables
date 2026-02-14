@@ -252,14 +252,13 @@ export class JsonTableView extends ItemView {
     this.registerEvent(
       this.app.vault.on('rename', (file, oldPath) => {
         if (this.currentFilePath && oldPath === this.currentFilePath) {
-          // Update view state to reflect new path (persists across restarts)
-          // Note: We do NOT update this.currentFilePath here, so that setState detects the change
+          // Update internal path first so setState doesn't trigger a full reload
+          this.currentFilePath = file.path;
+          // Persist the new path in the view state (survives restarts)
           this.leaf.setViewState({
             type: VIEW_TYPE_JSON_TABLE,
             state: { file: file.path }
           });
-          // Update title
-          this.updateTitle();
         }
       })
     );
@@ -333,10 +332,9 @@ export class JsonTableView extends ItemView {
 
     try {
       // Use Obsidian's vault rename method
+      // Note: Do NOT update currentFilePath here — the vault 'rename' event
+      // handler will detect the change and update it properly
       await this.app.vault.rename(currentFile, newPath);
-
-      // Update our internal path reference
-      this.currentFilePath = newPath;
 
       return true;
     } catch (error) {
@@ -352,7 +350,7 @@ export class JsonTableView extends ItemView {
     this.renderer = null;
     this.fileHandler = null;
     this.data = null;
-    this.currentFilePath = null; // Clear associated path
+    // Do NOT clear currentFilePath here — it defines the view's identity/state
   }
 
   /** Checks if the currently selected handler is valid for the file and settings */

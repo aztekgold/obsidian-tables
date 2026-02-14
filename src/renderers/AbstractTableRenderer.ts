@@ -472,16 +472,20 @@ export abstract class AbstractTableRenderer {
             const typeContainer = scrollContainer.createDiv({ cls: 'bases-toolbar-menu-container' });
 
             // Back button
-            const backItem = typeContainer.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item' });
+            const backSection = typeContainer.createDiv({ cls: 'bases-toolbar-section' });
+            const backItems = backSection.createDiv({ cls: 'bases-toolbar-items' });
+            const backItem = backItems.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item' });
             const backInfo = backItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
             const backIcon = backInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
             setIcon(backIcon, 'arrow-left');
             backInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Back' });
             backItem.addEventListener('click', () => {
-                // Re-create the main menu by closing and re-opening
                 cleanup();
                 this.showEditColumnDialog(headerCell, column, data, colIndex);
             });
+
+            // Divider after back
+            typeContainer.createEl('div', { cls: 'menu-separator' });
 
             // Type section
             const typeSection = typeContainer.createDiv({ cls: 'bases-toolbar-section' });
@@ -577,8 +581,10 @@ export abstract class AbstractTableRenderer {
         // Divider before delete
         menuContainer.createEl('div', { cls: 'menu-separator' });
 
-        // Delete Column (destructive)
-        const deleteItem = actionItems.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item mod-warning' });
+        // Delete Column (destructive) — in its own section for visual separation
+        const deleteSection = menuContainer.createDiv({ cls: 'bases-toolbar-section' });
+        const deleteItems = deleteSection.createDiv({ cls: 'bases-toolbar-items' });
+        const deleteItem = deleteItems.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item mod-warning' });
         const deleteInfo = deleteItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
         const deleteIcon = deleteInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
         setIcon(deleteIcon, ICON_NAMES.trash);

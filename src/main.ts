@@ -424,35 +424,30 @@ export default class JsonTablePlugin extends Plugin {
 
     // --- File Creation ---
 
-    /** Returns a skeleton table structure as JSON string */
-    getSkeletonTableJSON(): string {
-        const colId1 = "col_" + Date.now() + "_1";
-        const colId2 = "col_" + Date.now() + "_2";
-        const skeletonTable: TableData = {
+    /** Returns the default empty table structure */
+    getDefaultTableData(): TableData {
+        const colId1 = "col" + Date.now() + "_1";
+        const colId2 = "col" + Date.now() + "_2";
+        return {
             columns: [{
-                id: colId1,
-                name: "Column 1",
-                type: "text",
-                width: 150,
+                id: colId1, name: "Column 1", type: "text", width: 150,
                 typeOptions: {}
             }, {
-                id: colId2,
-                name: "Column 2",
-                type: "text",
-                width: 150,
+                id: colId2, name: "Column 2", type: "text", width: 150,
                 typeOptions: {}
             }],
             rows: [
                 [{ column: colId1, value: "" }, { column: colId2, value: "" }]
             ],
             views: [{
-                id: 'default_' + Date.now(),
-                name: 'Default',
-                sort: [],
-                filter: []
+                id: 'default_' + Date.now(), name: 'Default', sort: [], filter: []
             }]
         };
-        return JSON.stringify(skeletonTable, null, 2);
+    }
+
+    /** Returns a skeleton table structure as JSON string */
+    getSkeletonTableJSON(): string {
+        return JSON.stringify(this.getDefaultTableData(), null, 2);
     }
 
     /** Creates a new table file based on settings in the target folder */
@@ -463,28 +458,7 @@ export default class JsonTablePlugin extends Plugin {
             targetFolder = this.app.vault.getRoot();
         }
 
-        // Generate unique IDs for default columns/rows for consistency
-        const colId1 = "col" + Date.now() + "_1";
-        const colId2 = "col" + Date.now() + "_2";
-        // --- UPDATED Default table structure ---
-        const defaultTable: TableData = {
-            columns: [{
-                id: colId1, name: "Column 1", type: "text", width: 150,
-                typeOptions: {} // Add empty typeOptions
-            }, {
-                id: colId2, name: "Column 2", type: "text", width: 150,
-                typeOptions: {} // Add empty typeOptions
-            }],
-            rows: [
-                [{ column: colId1, value: "" }, { column: colId2, value: "" }]
-            ],
-            // Add the default views array
-            views: [{
-                id: 'default_' + Date.now(), name: 'Default', sort: [], filter: []
-                // hiddenColumns: [] // Add if/when implemented
-            }]
-        };
-        // --- END UPDATED Default structure ---
+        const defaultTable = this.getDefaultTableData();
 
         let fileName = '';
         let fileContent = '';
@@ -766,6 +740,8 @@ export default class JsonTablePlugin extends Plugin {
 
         // Process each potential table file
         for (const file of tableFiles) {
+            // Skip the file that was just renamed — it doesn't need link updates
+            if (file.path === newPath) continue;
             const handler = this.getHandlerForFile(file);
             // Skip if it's not a recognized table file type managed by a handler
             if (!handler) continue;
