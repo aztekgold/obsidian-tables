@@ -30,6 +30,9 @@ import {
     MarkdownFileHandler
 } from './fileHandlers/MarkdownFileHandler';
 import {
+    CsvFileHandler
+} from './fileHandlers/CsvFileHandler';
+import {
     InlineTableRenderer
 } from './InlineTableRenderer';
 import {
@@ -40,7 +43,7 @@ import {
 } from './livePreviewExtension';
 
 export default class JsonTablePlugin extends Plugin {
-    settings: JsonTableSettings; // Store settings
+    settings!: JsonTableSettings; // Store settings
 
 
     // --- Monkey Patching to prevent flash ---
@@ -393,6 +396,10 @@ export default class JsonTablePlugin extends Plugin {
         // extensions and let the JsonTableView decide if it can handle the specific file.
         this.registerExtensions(['table.md'], VIEW_TYPE_JSON_TABLE); // For direct open attempts of MD wrappers
         this.registerExtensions(['json'], VIEW_TYPE_JSON_TABLE);     // Catches .table.json and allows view to show errors for other .json
+
+        if (this.settings.enableCsvSupport) {
+            this.registerExtensions(['csv'], VIEW_TYPE_JSON_TABLE);
+        }
     }
 
 
@@ -735,6 +742,8 @@ export default class JsonTablePlugin extends Plugin {
             return new MarkdownFileHandler(this.app);
         } else if (file.name.endsWith('.table.json')) {
             return new JsonFileHandler(this.app);
+        } else if (file.name.endsWith('.csv') && this.settings.enableCsvSupport) {
+            return new CsvFileHandler(this.app);
         }
         return null; // Not one of our managed table files
     }
@@ -744,7 +753,12 @@ export default class JsonTablePlugin extends Plugin {
         // Get all files *once* for efficiency
         const allFiles = this.app.vault.getFiles();
         // Filter for potential table files
-        const tableFiles = allFiles.filter(f => f.name.endsWith('.table.json') || f.name.endsWith('.table.md'));
+        // Filter for potential table files
+        const tableFiles = allFiles.filter(f =>
+            f.name.endsWith('.table.json') ||
+            f.name.endsWith('.table.md') ||
+            (this.settings.enableCsvSupport && f.name.endsWith('.csv'))
+        );
 
         if (tableFiles.length === 0) {
             return;
@@ -796,7 +810,11 @@ export default class JsonTablePlugin extends Plugin {
     /** Scans all relevant table files and removes links pointing to the deletedPath */
     async removeLinksInAllTables(deletedPath: string) {
         const allFiles = this.app.vault.getFiles();
-        const tableFiles = allFiles.filter(f => f.name.endsWith('.table.json') || f.name.endsWith('.table.md'));
+        const tableFiles = allFiles.filter(f =>
+            f.name.endsWith('.table.json') ||
+            f.name.endsWith('.table.md') ||
+            (this.settings.enableCsvSupport && f.name.endsWith('.csv'))
+        );
 
         if (tableFiles.length === 0) {
             return;
@@ -874,6 +892,19 @@ class JsonTableSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
+            .setName('Renderer Type')
+            .setDesc('Choose between standard HTML table rendering or Div-based rendering (Beta). Div rendering may offer better resizing experience.')
+            .addDropdown(dropdown => dropdown
+                .addOption('table', 'Table Renderer (Standard)')
+                .addOption('div', 'Div Renderer (Beta)')
+                .setValue(this.plugin.settings.rendererType)
+                .onChange(async (value) => {
+                    this.plugin.settings.rendererType = value as 'table' | 'div';
+                    await this.plugin.saveSettings();
+                    // Reload active views? For now just save.
+                }));
+
+        new Setting(containerEl)
             .setName('Enable Beta Features')
             .setDesc('Enable experimental features like column reordering via drag-and-drop. These features may be unstable.')
             .addToggle(toggle => toggle
@@ -881,6 +912,17 @@ class JsonTableSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     this.plugin.settings.enableBetaFeatures = value;
                     await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('Enable CSV Support')
+            .setDesc('Allow opening and editing .csv files directly in the table view. Note: Original formatting like extra whitespace might not be preserved perfectly.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableCsvSupport)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableCsvSupport = value;
+                    await this.plugin.saveSettings();
+                    new Notice("Reload required for file extension changes to take full effect.", 7000);
                 }));
 
         // Add more settings here later if needed

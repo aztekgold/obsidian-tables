@@ -1,12 +1,13 @@
 import { MarkdownRenderChild, App, TFile, Notice } from 'obsidian';
 import { TableData, JsonTableSettings } from './types';
-import { TableRenderer } from './TableRenderer';
+import { HtmlTableRenderer } from './renderers/HtmlTableRenderer';
+import { AbstractTableRenderer } from './renderers/AbstractTableRenderer';
 import { JsonTableView } from './JsonTableView';
 import { MarkdownFileHandler } from './fileHandlers/MarkdownFileHandler';
 import { JsonFileHandler } from './fileHandlers/JsonFileHandler';
 
 export class EmbedTableRenderer extends MarkdownRenderChild {
-    private renderer: TableRenderer | null = null;
+    private renderer: AbstractTableRenderer | null = null;
     private data: TableData | null = null;
 
     constructor(
@@ -78,7 +79,7 @@ export class EmbedTableRenderer extends MarkdownRenderChild {
             const tableContainer = this.containerEl.createDiv();
 
             // Render the table
-            this.renderer = new TableRenderer(tableContainer, this.data, mockView, true, this.settings);
+            this.renderer = new HtmlTableRenderer(tableContainer, this.data, mockView, true, this.settings);
             this.renderer.render();
 
         } catch (error) {

@@ -321,26 +321,41 @@ div.json-table-btn--active:hover {
   align-items: center;
 }
 
-input.json-table-input {
-  width: 100%;
-  height: 100%;
-  min-height: $table-cell-height;
-  padding: 8px 12px;
+/* Unified Text Content (ContentEditable Span) */
+.json-table-text-span {
+  flex: 1;
+  /* Take up available space */
+  min-width: 0;
+  /* Allow shrinking for ellipsis */
+  outline: none;
   border: none;
   background: transparent;
-  border-radius: 0;
   color: var(--text-normal);
   font-family: inherit;
   font-size: inherit;
-  outline: none;
-  box-sizing: border-box;
-  display: block;
+  cursor: text;
+
+  /* Default: No wrap, ellipsis */
+  white-space: nowrap;
+  overflow: hidden;
   text-overflow: ellipsis;
+  display: block;
+  /* Behave like block for width */
 }
 
-.json-table-input:focus {
-  background: var(--background-modifier-form-field) !important;
-  box-shadow: inset 0 0 0 1px var(--interactive-accent) !important;
+.json-table-text-span.is-wrapped {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow: visible;
+  height: auto;
+}
+
+
+
+/* When the cell is focused (via span), maybe highlight the cell? */
+.json-table-cell-content:has(.json-table-text-span:focus) {
+  background: var(--background-modifier-form-field);
+  box-shadow: inset 0 0 0 1px var(--interactive-accent);
 }
 
 /* ==========================================================================
@@ -1286,92 +1301,8 @@ input.json-table-input {
 }
 
 
-/* --- Filter Popup --- */
-.json-table-filter-popup {
-  min-width: 400px;
-}
-
-.json-table-filters-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.json-table-filter-empty {
-  color: var(--text-muted);
-  font-style: italic;
-  padding: 20px;
-  text-align: center;
-}
-
-.json-table-filter-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Adjust select/input widths within the row */
-.json-table-filter-row .json-table-popup-select {
-  flex: 1;
-  min-width: 100px;
-  height: 36px;
-  line-height: 20px;
-  vertical-align: middle;
-}
-
-.json-table-filter-row .json-table-popup-input {
-  flex: 2;
-  padding: 8px 12px;
-  background: var(--background-modifier-form-field);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  color: var(--text-normal);
-  font-family: inherit;
-  font-size: 14px;
-  outline: none;
-  box-sizing: border-box;
-  height: 36px;
-  line-height: 20px;
-  vertical-align: middle;
-}
-
-.json-table-filter-row .json-table-popup-input:focus {
-  border-color: var(--interactive-accent);
-}
 
 
-/* Legacy class - use .json-table-btn.json-table-btn--icon instead */
-.json-table-delete-filter-button {
-  @extend .json-table-btn;
-  @extend .json-table-btn--icon;
-  padding: 4px;
-  color: var(--text-muted);
-}
-
-.json-table-delete-filter-button:hover {
-  color: var(--text-error);
-}
-
-.json-table-delete-filter-button .json-table-icon {
-  width: 14px;
-  height: 14px;
-}
-
-/* Legacy class - use .json-table-btn.json-table-btn--standard instead */
-.json-table-add-filter-button {
-  @extend .json-table-btn;
-  @extend .json-table-btn--standard;
-  background: var(--interactive-normal);
-  color: var(--text-on-accent);
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.json-table-add-filter-button:hover {
-  background: var(--interactive-hover);
-}
 
 .table-filename-container {
   border-bottom: 1px solid var(--background-modifier-border);
@@ -1519,64 +1450,7 @@ input.table-filename-input {
   border: none;
 }
 
-/* --- Properties Popup --- */
-.json-table-props-popup {
-  width: 200px;
-  padding: 12px;
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border-radius: 6px;
-  z-index: 1000;
-  position: fixed;
-  /* Fixed to viewport, positioned via JS */
-}
 
-.json-table-props-popup h3 {
-  margin: 0 0 8px 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-normal);
-}
-
-.json-table-props-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.json-table-props-item {
-  display: flex;
-  align-items: center;
-}
-
-.json-table-props-item label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--text-normal);
-  width: 100%;
-  padding: 4px;
-  border-radius: 4px;
-}
-
-.json-table-props-item label:hover {
-  background: var(--background-modifier-hover);
-}
-
-.json-table-props-item input[type="checkbox"] {
-  margin: 0;
-}
-
-.json-table-props-button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 
 /* --- Drag Handle --- */
 .json-table-drag-handle {
@@ -1760,4 +1634,138 @@ input.table-filename-input {
   display: block;
   width: 100%;
   max-width: 100%;
+}
+
+/* ==========================================================================
+   Div Renderer Styles
+   ========================================================================== */
+
+.json-table-div-wrapper {
+  overflow-x: auto;
+  padding-bottom: 0;
+  font-size: .9em;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.json-table-div-header-row {
+  display: flex;
+  flex-wrap: nowrap;
+  min-width: 100%;
+  width: fit-content;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.json-table-div-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 100%;
+  width: fit-content;
+}
+
+.json-table-div-row {
+  display: flex;
+  flex-wrap: nowrap;
+  position: relative;
+  min-width: 100%;
+  width: fit-content;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.json-table-div-row:last-child {
+  border-bottom: none;
+}
+
+.json-table-div-row:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.json-table-div-row:nth-child(2n) {
+  background-color: var(--background-primary-alt);
+}
+
+/* Cells */
+.json-table-div-header-cell,
+.json-table-div-cell {
+  flex: 1 1 0px;
+  min-width: 40px;
+  height: 48px;
+  border-right: 1px solid var(--background-modifier-border);
+  box-sizing: border-box;
+  position: relative;
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+}
+
+/* Header Cell Specifics */
+.json-table-div-header-cell {
+  background-color: var(--background-secondary);
+  font-weight: 600;
+  padding: 8px 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.json-table-div-header-cell.json-table-buttons-th {
+  position: sticky;
+  right: 0;
+  z-index: 11;
+  background-color: var(--background-secondary);
+  border-left: 1px solid var(--background-modifier-border);
+  border-right: none;
+  padding: 0;
+}
+
+/* Body Cell Specifics */
+.json-table-div-cell {
+  padding: 0 12px;
+}
+
+.json-table-div-cell .json-table-cell-content {
+  width: 100%;
+  height: 100%;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+}
+
+/* Drag Handle Cell */
+.json-table-div-cell.json-table-drag-handle-cell {
+  width: 30px !important;
+  min-width: 30px !important;
+  max-width: 30px !important;
+  justify-content: center;
+  background-color: var(--background-primary);
+  cursor: grab;
+  border-right: 1px solid var(--background-modifier-border);
+  padding: 0;
+}
+
+.json-table-div-header-cell.json-table-div-drag-handle-header {
+  width: 30px !important;
+  min-width: 30px !important;
+  border-right: 1px solid var(--background-modifier-border);
+  padding: 0;
+}
+
+/* Actions Cell */
+.json-table-div-cell.json-table-row-actions-cell {
+  width: 60px !important;
+  position: sticky;
+  right: 0;
+  z-index: 5;
+  background-color: inherit;
+  border-left: 1px solid var(--background-modifier-border);
+  border-right: none;
+  justify-content: center;
+  padding: 0;
 }

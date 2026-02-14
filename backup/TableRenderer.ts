@@ -905,10 +905,76 @@ export class TableRenderer {
     // Create wrapper for flex layout
     const wrapper = popup.createEl('div', { cls: 'json-table-popup-wrapper' });
 
+    // 1. Column Name Input
     const nameInput = wrapper.createEl('input', { type: 'text', cls: 'json-table-edit-input', value: column.name, placeholder: 'Column name' });
+
+    // 2. Column Type Selector
+    const typeContainer = wrapper.createEl('div', { cls: 'json-table-type-selector-container' });
+    typeContainer.createEl('span', { text: 'Type:', cls: 'json-table-label' });
+    const typeSelect = typeContainer.createEl('select', { cls: 'json-table-type-select' });
+
+    const types = [
+      { value: 'text', label: 'Text' },
+      { value: 'checkbox', label: 'Checkbox' },
+      { value: 'dropdown', label: 'Dropdown' },
+      { value: 'multiselect', label: 'Multi-select' },
+      { value: 'notelink', label: 'Note Link' },
+      { value: 'date', label: 'Date' }
+    ];
+
+    types.forEach(t => {
+      const option = typeSelect.createEl('option', { value: t.value, text: t.label });
+      if (column.type === t.value) option.selected = true;
+    });
+
+    // 3. Editor Container (Specific options like Dropdown values)
     const editorContainer = wrapper.createEl('div', { cls: 'json-table-column-editor-container' });
-    let editor = this.columnEditors.get(column.type) || this.columnEditors.get('text');
-    if (editor) editor.render(editorContainer, column, this.data, this.view);
+
+    // Helper to render the specific editor
+    const renderEditor = () => {
+      editorContainer.empty();
+      let editor = this.columnEditors.get(column.type) || this.columnEditors.get('text');
+      if (editor) editor.render(editorContainer, column, this.data, this.view);
+    };
+
+    // Initial render
+    renderEditor();
+
+    // Type Change Handler
+    typeSelect.addEventListener('change', async () => {
+      const newType = typeSelect.value;
+      if (newType === column.type) return;
+
+      // Update Type
+      column.type = newType;
+
+      // Handle Type Options Defaults
+      if (newType === 'dropdown' || newType === 'multiselect') {
+        // If switching from text/other to select, or between select types, ensure options exist
+        if (!column.typeOptions || !('options' in column.typeOptions)) {
+          // Add default options if none exist
+          column.typeOptions = {
+            options: [
+              { value: 'Option 1', style: 'grey' },
+              { value: 'Option 2', style: 'grey' },
+              { value: 'Option 3', style: 'grey' }
+            ]
+          };
+        }
+      } else if (newType === 'date') {
+        column.typeOptions = { dateFormat: 'YYYY/MM/DD' };
+      } else {
+        // For text, checkbox etc we can clear options or leave them as ignored debris
+        // Clearing is cleaner
+        column.typeOptions = {};
+      }
+
+      // Save and Re-render everything
+      await this.view.saveTableData(data);
+      renderEditor(); // Update the editor UI in popup
+      this.render(); // Update the main table UI (icons, cell renderers)
+    });
+
 
     // Delete Column Button
     const deleteBtn = wrapper.createEl('button', { cls: 'json-table-btn json-table-btn--hybrid json-table-btn---delete-column' });
@@ -919,25 +985,26 @@ export class TableRenderer {
     nameInput.focus(); nameInput.select();
 
     const closePopup = () => { popup.remove(); document.removeEventListener('click', clickOutside); };
+
+    // Save Name Logic
     const saveColumnName = async () => {
       const newName = nameInput.value.trim();
       let nameChanged = false;
       if (newName && newName !== column.name) { column.name = newName; nameChanged = true; }
       if (nameChanged) {
         await this.view.saveTableData(data);
-        // Update header text non-destructively
-        const contentWrapper = headerCell.querySelector('.json-table-header-content');
-        const textNode = contentWrapper ? Array.from(contentWrapper.childNodes).find(node => node.nodeType === Node.TEXT_NODE) : null;
-        if (textNode) { textNode.textContent = newName; }
-        else { console.warn("Could not find text node to update header name."); }
-        this.render(); // Re-render needed for sort/filter popups
+        // Look up the header cell again in case things moved/re-rendered (though safer to re-render)
+        this.render();
       }
       closePopup();
     };
-    const deleteColumn = async () => { /* ... delete logic ... */
+
+    const deleteColumn = async () => {
       data.columns.splice(colIndex, 1);
       data.rows.forEach((row) => { const i = row.findIndex(c => c.column === column.id); if (i !== -1) row.splice(i, 1); });
-      await this.view.saveTableData(data); this.render(); closePopup();
+      await this.view.saveTableData(data);
+      this.render();
+      closePopup();
     };
 
     // Listeners
@@ -947,7 +1014,13 @@ export class TableRenderer {
       if (e.key === 'Enter') { e.preventDefault(); saveColumnName(); }
       else if (e.key === 'Escape') { e.preventDefault(); closePopup(); }
     });
-    const clickOutside = (e: MouseEvent) => { if (!popup.contains(e.target as Node) && !headerCell.contains(e.target as Node)) { saveColumnName(); } };
+
+    const clickOutside = (e: MouseEvent) => {
+      // Important: Don't close if clicking inside the popup
+      if (!popup.contains(e.target as Node) && !headerCell.contains(e.target as Node)) {
+        saveColumnName();
+      }
+    };
     setTimeout(() => { document.addEventListener('click', clickOutside); }, 100);
   }
 

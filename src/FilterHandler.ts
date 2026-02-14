@@ -1,8 +1,9 @@
 // src/FilterHandler.ts
-import { TableData, ColumnDef, FilterRule, FilterOperator, CellData, ViewDef } from './types'; // Adjust path if needed
-import { JsonTableView } from './JsonTableView'; // Adjust path if needed
-import { positionPopup } from './utils/popup'; // Adjust path if needed
-import { ICON_NAMES, createIconElement } from './icons'; // Adjust path if needed
+import { TableData, ColumnDef, FilterRule, FilterOperator, CellData, ViewDef } from './types';
+import { JsonTableView } from './JsonTableView';
+import { ICON_NAMES } from './icons';
+import { setIcon } from 'obsidian';
+import { positionPopup } from './utils/popup';
 
 /**
  * Handles the state, UI, and logic for filtering table rows.
@@ -45,113 +46,120 @@ export class FilterHandler {
 
   /** Displays the popup UI for managing filters */
   public showFilterPopup(button: HTMLButtonElement): void {
-    const existingPopup = document.querySelector('.json-table-filter-popup');
-    if (existingPopup) existingPopup.remove();
+    // Remove any existing filter popup
+    document.querySelector('.json-table-filter-menu')?.remove();
 
-    const popup = document.body.createEl('div', { cls: 'json-table-popup json-table-filter-popup' });
-    // Position popup dynamically based on button location
-    positionPopup(popup, button);
+    const menuEl = document.createElement('div');
+    menuEl.addClass('menu');
+    menuEl.addClass('json-table-filter-menu');
+    menuEl.style.position = 'fixed';
+    menuEl.style.zIndex = '9999';
+    menuEl.style.minWidth = '340px';
 
-    // --- Header ---
-    const header = popup.createEl('div', { cls: 'json-table-popup-header' });
-    header.createEl('h3', { text: 'Filters', cls: 'json-table-popup-title' });
+    const scrollContainer = menuEl.createDiv({ cls: 'menu-scroll' });
 
-    // --- Content ---
-    const content = popup.createEl('div', { cls: 'json-table-popup-content' });
+    // --- Filter section ---
+    const filterSection = scrollContainer.createDiv({ cls: 'bases-toolbar-section' });
+    const sectionContent = filterSection.createDiv({ cls: 'bases-toolbar-section-content' });
+    const queryContainer = sectionContent.createDiv({ cls: 'bases-query-container' });
+    const filterGroup = queryContainer.createDiv({ cls: 'filter-group' });
 
-    // Container where filter rows will be rendered
-    const filtersContainer = content.createDiv({ cls: 'json-table-filters-list' });
+    // Filter rows container
+    const statementsContainer = filterGroup.createDiv({ cls: 'filter-group-statements' });
 
-    // Use helper for initial render and updates
-    this.rebuildFilterListUI(filtersContainer, popup);
+    // Render existing filter rows
+    this.rebuildFilterListUI(statementsContainer);
 
-    // --- Footer ---
-    const footer = popup.createEl('div', { cls: 'json-table-popup-footer' });
+    // --- Actions: Add filter ---
+    const actionsDiv = filterGroup.createDiv({ cls: 'filter-group-actions' });
+    const addFilterBtn = actionsDiv.createDiv({ cls: 'text-icon-button', attr: { tabindex: '0' } });
+    const addIcon = addFilterBtn.createSpan({ cls: 'text-button-icon' });
+    setIcon(addIcon, 'plus');
+    addFilterBtn.createSpan({ cls: 'text-button-label', text: 'Add filter' });
 
-    // --- "Add Filter" Button ---
-    const addFilterButton = footer.createEl('button', {
-      text: '+ Add Filter',
-      cls: 'json-table-btn json-table-btn--standard'
-    });
-    addFilterButton.addEventListener('click', () => {
+    addFilterBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       const defaultColumnId = this.data.columns[0]?.id;
-      if (!defaultColumnId) {
-        console.warn("Cannot add filter: No columns exist.");
-        return;
-      }
+      if (!defaultColumnId) return;
 
       const newRule: FilterRule = {
-        id: `filter_${Date.now()} `,
+        id: `filter_${Date.now()}`,
         columnId: defaultColumnId,
         operator: 'contains',
         value: ''
       };
       const currentRules = this.getCurrentFilterRules();
       currentRules.push(newRule);
-      this.setCurrentFilterRules(currentRules); // Update in memory
+      this.setCurrentFilterRules(currentRules);
 
-      // Rebuild the list UI to include the new empty rule
-      this.rebuildFilterListUI(filtersContainer, popup);
-
-      // Apply and save immediately
+      this.rebuildFilterListUI(statementsContainer);
       this.applyFiltersAndRerender();
     });
 
+    // Prevent closing on interaction
+    menuEl.addEventListener('click', (e) => e.stopPropagation());
+    menuEl.addEventListener('mousedown', (e) => e.stopPropagation());
 
-    // --- Close popup logic ---
-    const closePopup = () => {
-      popup.remove();
-      // Ensure listener is removed using capture phase flag
-      document.removeEventListener('click', clickOutside, true);
+    // Position and insert
+    document.body.appendChild(menuEl);
+    positionPopup(menuEl, button, { align: 'auto' });
+
+    const onOutsideClick = (ev: MouseEvent) => {
+      if (!menuEl.contains(ev.target as Node) && ev.target !== button) cleanup();
     };
-
-    const clickOutside = (e: MouseEvent) => {
-      // Close only if click is outside popup AND outside the original button
-      if (!popup.contains(e.target as Node) && !button.contains(e.target as Node)) {
-        closePopup();
-      }
+    const cleanup = () => {
+      menuEl.remove();
+      document.removeEventListener('click', onOutsideClick, true);
     };
-
-    // Use timeout (0ms) and capture phase ('true')
-    setTimeout(() => {
-      document.addEventListener('click', clickOutside, true);
-    }, 0);
+    setTimeout(() => document.addEventListener('click', onOutsideClick, true), 0);
   }
 
   /** Helper to rebuild the filter rows UI within the popup */
-  private rebuildFilterListUI(filtersContainer: HTMLElement, popupElement: HTMLElement) {
+  private rebuildFilterListUI(filtersContainer: HTMLElement) {
     filtersContainer.empty(); // Clear previous filter rows
     const currentRules = this.getCurrentFilterRules();
 
     if (currentRules.length === 0) {
       filtersContainer.createDiv({ text: 'No filters applied', cls: 'json-table-filter-empty' });
+      filtersContainer.style.padding = '4px 8px';
+      filtersContainer.style.color = 'var(--text-muted)';
+      filtersContainer.style.fontSize = 'var(--font-smallest)';
     } else {
+      filtersContainer.style.padding = '';
+      filtersContainer.style.color = '';
+      filtersContainer.style.fontSize = '';
       currentRules.forEach((rule, index) => {
-        // Pass the container where rows should be added
         this.renderFilterRow(filtersContainer, rule, index);
       });
     }
-    // Note: The "Add Filter" button is outside this container in showFilterPopup,
-    // so it doesn't need to be re-added here.
   }
 
   /** Renders a single row in the filter popup */
   private renderFilterRow(container: HTMLElement, rule: FilterRule, index: number): void {
-    const rowDiv = container.createDiv({ cls: 'json-table-filter-row' });
+    const rowDiv = container.createDiv({ cls: 'filter-row' });
+
+    // Conjunction label
+    rowDiv.createSpan({ cls: 'conjunction', text: index === 0 ? 'where' : 'and' });
+
+    // Filter statement wrapper
+    const statement = rowDiv.createDiv({ cls: 'filter-statement' });
+    const expression = statement.createDiv({ cls: 'filter-expression metadata-property' });
 
     // Column Select
-    const columnSelect = rowDiv.createEl('select', { cls: 'json-table-popup-select' });
+    const columnSelect = expression.createEl('select', { cls: 'dropdown' });
     this.data.columns.forEach(col => {
       const option = columnSelect.createEl('option', { text: col.name, value: col.id });
       if (col.id === rule.columnId) option.selected = true;
     });
+    columnSelect.addEventListener('click', (e) => e.stopPropagation());
+    columnSelect.addEventListener('mousedown', (e) => e.stopPropagation());
     columnSelect.addEventListener('change', () => {
       rule.columnId = columnSelect.value;
-      this.applyFiltersAndRerender(); // Apply immediately on change
+      this.applyFiltersAndRerender();
     });
 
     // Operator Select
-    const operatorSelect = rowDiv.createEl('select', { cls: 'json-table-popup-select' });
+    const operatorSelect = expression.createEl('select', { cls: 'dropdown' });
     const operators: { label: string; value: FilterOperator }[] = [
       { label: 'Contains', value: 'contains' },
       { label: 'Does not contain', value: 'doesNotContain' },
@@ -166,9 +174,10 @@ export class FilterHandler {
       const option = operatorSelect.createEl('option', { text: op.label, value: op.value });
       if (op.value === rule.operator) option.selected = true;
     });
+    operatorSelect.addEventListener('click', (e) => e.stopPropagation());
+    operatorSelect.addEventListener('mousedown', (e) => e.stopPropagation());
     operatorSelect.addEventListener('change', () => {
       rule.operator = operatorSelect.value as FilterOperator;
-      // Show/hide value input based on operator
       if (rule.operator === 'isEmpty' || rule.operator === 'isNotEmpty') {
         valueInput.addClass('is-hidden');
       } else {
@@ -178,53 +187,36 @@ export class FilterHandler {
     });
 
     // Value Input
-    const valueInput = rowDiv.createEl('input', {
+    const valueInput = expression.createEl('input', {
       type: 'text',
       value: rule.value || '',
-      cls: 'json-table-popup-input'
+      placeholder: 'Empty',
+      cls: 'metadata-input metadata-input-text'
     });
-    // Initial state
+    valueInput.addEventListener('click', (e) => e.stopPropagation());
+    valueInput.addEventListener('mousedown', (e) => e.stopPropagation());
     if (rule.operator === 'isEmpty' || rule.operator === 'isNotEmpty') {
       valueInput.addClass('is-hidden');
     }
-    // Apply on blur or change instead of input for less frequent updates? Your choice.
-    valueInput.addEventListener('blur', () => { // Changed from 'input'
+    valueInput.addEventListener('input', () => {
       rule.value = valueInput.value;
       this.applyFiltersAndRerender();
     });
-    // Optional: Apply on Enter key as well
-    valueInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        rule.value = valueInput.value;
-        this.applyFiltersAndRerender();
-      }
-    });
 
-
-    // Delete Button
-    const deleteButton = rowDiv.createEl('button', { cls: 'json-table-delete-filter-button' });
-    const trashIcon = createIconElement(ICON_NAMES.trash, 14);
-    deleteButton.appendChild(trashIcon);
-    deleteButton.addEventListener('click', async () => { // Make async
+    // Delete Button (row actions)
+    const rowActions = expression.createDiv({ cls: 'filter-row-actions' });
+    const deleteBtn = rowActions.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': 'Remove filter' } });
+    setIcon(deleteBtn, 'trash-2');
+    deleteBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
       const currentRules = this.getCurrentFilterRules();
-      currentRules.splice(index, 1); // Remove rule by index
-      this.setCurrentFilterRules(currentRules); // Update in-memory rules
-
-      // Save, re-render main table, THEN re-render popup list
-      await this.view.saveTableData(this.data); // Save the change
-      this.triggerRender(); // Re-render the main table (applies filter)
-
-      // Find the popup and re-render its filter list content
-      const parentPopup = container.closest('.json-table-filter-popup');
-      const filtersListContainer = parentPopup?.querySelector('.json-table-filters-list');
-      if (filtersListContainer && parentPopup) { // Ensure both exist
-        // Rebuild the list content
-        this.rebuildFilterListUI(filtersListContainer as HTMLElement, parentPopup as HTMLElement);
-      } else {
-        console.error("Could not find filter list container/popup to re-render after delete.");
-      }
+      currentRules.splice(index, 1);
+      this.setCurrentFilterRules(currentRules);
+      await this.view.saveTableData(this.data);
+      this.triggerRender();
+      this.rebuildFilterListUI(container);
     });
-  } // End renderFilterRow
+  }
 
   // --- Filtering Logic ---
 

@@ -19,9 +19,15 @@ export const ICON_NAMES = {
   trash: 'trash-2',
   gripVertical: 'grip-vertical',
   table: 'table',
-  eye: 'eye', // Added eye icon
+  eye: 'eye',
+  eyeOff: 'eye-off',
   settings: 'settings',
   download: 'download',
+  info: 'info',
+  check: 'check',
+  switch: 'repeat-2',
+  wrapText: 'wrap-text',
+  chevronRight: 'chevron-right',
 } as const;
 
 /**

@@ -1,7 +1,8 @@
 // src/InlineTableRenderer.ts
 import { MarkdownRenderChild, MarkdownView } from 'obsidian';
 import { TableData, ColumnDef, CellData, JsonTableSettings } from './types';
-import { TableRenderer } from './TableRenderer';
+import { HtmlTableRenderer } from './renderers/HtmlTableRenderer';
+import { AbstractTableRenderer } from './renderers/AbstractTableRenderer';
 import { JsonTableView } from './JsonTableView';
 import { App, TFile } from 'obsidian';
 
@@ -10,7 +11,7 @@ import { App, TFile } from 'obsidian';
  * This is a read-only view that embeds the table data from the code block itself.
  */
 export class InlineTableRenderer extends MarkdownRenderChild {
-  private renderer: TableRenderer | null = null;
+  private renderer: AbstractTableRenderer | null = null;
   private data: TableData | null = null;
   private tableViewId: string = ''; // Store the view ID to uniquely identify this table instance
   private originalSourceHash: string = ''; // Store a hash of original source as fallback for duplicate IDs
@@ -68,7 +69,7 @@ export class InlineTableRenderer extends MarkdownRenderChild {
 
       // Create and render the table
       this.containerEl.addClass('json-table-inline-container');
-      this.renderer = new TableRenderer(this.containerEl, this.data, mockView, true, this.settings); // isInline = true
+      this.renderer = new HtmlTableRenderer(this.containerEl, this.data, mockView, true, this.settings); // isInline = true
       this.renderer.render();
 
     } catch (error) {

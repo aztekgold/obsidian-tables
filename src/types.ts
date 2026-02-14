@@ -65,12 +65,18 @@ export interface NoteLinkTypeOptions {
   suggestAllFiles?: boolean;
 }
 
+// Options specific to Text columns
+export interface TextTypeOptions {
+  wrap?: boolean;
+}
+
 // Union type encompassing all possible type-specific options
 // Add other interfaces here if types like 'number' get options
 export type TypeOptions =
   | DateTypeOptions
   | SelectTypeOptions
   | NoteLinkTypeOptions
+  | TextTypeOptions
   | {}; // Empty object for types with no options (text, checkbox)
 
 // --- Core Data Structures ---
@@ -107,11 +113,15 @@ export type TableRenderer = 'default' | 'json';
 
 export interface JsonTableSettings {
   tableRenderer: TableRenderer; // 'default' uses .table.md, 'json' uses .table.json
+  rendererType: 'table' | 'div'; // 'table' uses <table>, 'div' uses <div>
   enableBetaFeatures: boolean; // Toggle for experimental features like column dragging
+  enableCsvSupport: boolean; // Toggle for opening/editing .csv files directly
 }
 
 // Default values for the plugin settings
 export const DEFAULT_SETTINGS: JsonTableSettings = {
   tableRenderer: 'default', // Default to using .table.md files for compatibility
-  enableBetaFeatures: false
+  rendererType: 'table',
+  enableBetaFeatures: false,
+  enableCsvSupport: false
 }

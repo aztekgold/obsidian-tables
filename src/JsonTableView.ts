@@ -1,10 +1,13 @@
 // src/JsonTableView.ts
 import { ItemView, WorkspaceLeaf, TFile, App, ViewStateResult } from 'obsidian'; // Changed base class, added ViewStateResult
 import { TableData, VIEW_TYPE_JSON_TABLE, JsonTableSettings, DEFAULT_SETTINGS } from './types';
-import { TableRenderer } from './TableRenderer';
+import { AbstractTableRenderer } from './renderers/AbstractTableRenderer';
+import { HtmlTableRenderer } from './renderers/HtmlTableRenderer';
+import { DivTableRenderer } from './renderers/DivTableRenderer';
 import { ITableFileHandler } from './fileHandlers/ITableFileHandler';
 import { JsonFileHandler } from './fileHandlers/JsonFileHandler';
 import { MarkdownFileHandler } from './fileHandlers/MarkdownFileHandler';
+import { CsvFileHandler } from './fileHandlers/CsvFileHandler';
 
 // Define the expected state structure
 interface JsonTableViewState {
@@ -13,7 +16,7 @@ interface JsonTableViewState {
 
 // Change base class from FileView to ItemView
 export class JsonTableView extends ItemView {
-  private renderer: TableRenderer | null = null;
+  private renderer: AbstractTableRenderer | null = null;
   private fileHandler: ITableFileHandler | null = null;
   public data: TableData | null = null;
   private settings: JsonTableSettings = DEFAULT_SETTINGS;
@@ -25,7 +28,7 @@ export class JsonTableView extends ItemView {
     return this.currentFilePath;
   }
 
-  public getRenderer(): TableRenderer | null {
+  public getRenderer(): AbstractTableRenderer | null {
     return this.renderer;
   }
 
@@ -131,6 +134,8 @@ export class JsonTableView extends ItemView {
       }
     } else if (isJsonTableFile) {
       this.fileHandler = new JsonFileHandler(this.app);
+    } else if (file.name.endsWith('.csv') && this.settings.enableCsvSupport) {
+      this.fileHandler = new CsvFileHandler(this.app);
     } else {
     }
   }
@@ -172,7 +177,12 @@ export class JsonTableView extends ItemView {
         throw new Error('Invalid table data structure received.');
       }
 
-      this.renderer = new TableRenderer(container, this.data, this, false, this.settings); // isInline = false
+
+      if (this.settings.rendererType === 'div') {
+        this.renderer = new DivTableRenderer(container, this.data, this, false, this.settings);
+      } else {
+        this.renderer = new HtmlTableRenderer(container, this.data, this, false, this.settings);
+      }
       this.renderer.render();
 
     } catch (e) {
@@ -209,6 +219,14 @@ export class JsonTableView extends ItemView {
     }
 
     try {
+      // If it's a CSV file, we do NOT save to disk (as per user request)
+      if (file.name.endsWith('.csv')) {
+        this.data = dataToSave; // Update internal memory only
+        // Optionally notify user that changes are not saved?
+        // For now, silent as requested "making changes does not save the document"
+        return;
+      }
+
       await this.fileHandler.save(file, dataToSave);
       this.data = dataToSave; // Keep internal data in sync
     } catch (e) {
@@ -347,6 +365,8 @@ export class JsonTableView extends ItemView {
       return useMarkdown;
     } else if (isJsonTableFile) {
       return true; // Always allow reading JSON
+    } else if (file.name.endsWith('.csv') && this.settings.enableCsvSupport) {
+      return true;
     }
     return false; // Not a recognized table file
   }

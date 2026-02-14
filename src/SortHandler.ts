@@ -1,8 +1,9 @@
 // src/SortHandler.ts
 
-import { TableData, ColumnDef, SortRule, ViewDef } from './types'; // Ensure SortRule is exported from types.ts
+import { TableData, ColumnDef, SortRule, ViewDef } from './types';
 import { JsonTableView } from './JsonTableView';
-import { ICON_NAMES, createIconElement } from './icons';
+import { ICON_NAMES } from './icons';
+import { setIcon } from 'obsidian';
 import { positionPopup } from './utils/popup';
 
 /**
@@ -47,128 +48,137 @@ export class SortHandler {
 
     /** Displays the popup UI for selecting sort options */
     public showSortPopup(button: HTMLButtonElement): void {
-        const existingPopup = document.querySelector('.json-table-sort-popup');
-        if (existingPopup) existingPopup.remove();
+        // Remove any existing sort popup
+        document.querySelector('.json-table-sort-menu')?.remove();
 
-        const popup = document.body.createEl('div', { cls: 'json-table-popup json-table-sort-popup' });
-        // Position popup dynamically based on button location
-        positionPopup(popup, button);
+        const menuEl = document.createElement('div');
+        menuEl.addClass('menu');
+        menuEl.addClass('json-table-sort-menu');
+        menuEl.style.position = 'fixed';
+        menuEl.style.zIndex = '9999';
+        menuEl.style.minWidth = '300px';
 
-        const currentRules = this.getCurrentSortRules();
-        const currentSort = currentRules.length > 0 ? currentRules[0] : { columnId: null, direction: 'asc' };
+        const scrollContainer = menuEl.createDiv({ cls: 'menu-scroll' });
 
-        // --- Header ---
-        const header = popup.createEl('div', { cls: 'json-table-popup-header' });
-        header.createEl('h3', { text: 'Sort', cls: 'json-table-popup-title' });
+        // --- Sort section ---
+        const sortSection = scrollContainer.createDiv({ cls: 'bases-toolbar-section' });
+        const sectionContent = sortSection.createDiv({ cls: 'bases-toolbar-section-content' });
+        const queryContainer = sectionContent.createDiv({ cls: 'bases-query-container' });
+        const sortGroup = queryContainer.createDiv({ cls: 'filter-group' });
 
-        // --- Content ---
-        const content = popup.createEl('div', { cls: 'json-table-popup-content' });
+        // Sort rows container
+        const statementsContainer = sortGroup.createDiv({ cls: 'filter-group-statements' });
 
-        // --- Column Select ---
-        const columnSelect = content.createEl('select', { cls: 'json-table-popup-select' });
-        const noneOption = columnSelect.createEl('option', { text: '-- None --', value: '' });
-        if (currentSort.columnId === null) noneOption.selected = true;
-        this.data.columns.forEach(col => {
-            const option = columnSelect.createEl('option', { text: col.name, value: col.id });
-            if (col.id === currentSort.columnId) option.selected = true;
-        });
+        const cleanup = () => {
+            menuEl.remove();
+            document.removeEventListener('click', onOutsideClick, true);
+        };
 
-        // --- Direction Select ---
-        const directionSelect = content.createEl('select', { cls: 'json-table-popup-select' });
-        const ascOption = directionSelect.createEl('option', { text: 'Ascending', value: 'asc' });
-        const descOption = directionSelect.createEl('option', { text: 'Descending', value: 'desc' });
-        if (currentSort.direction === 'asc') ascOption.selected = true;
-        else descOption.selected = true;
-        directionSelect.disabled = currentSort.columnId === null; // Disable if no column selected
+        const rebuildSortRows = () => {
+            statementsContainer.empty();
+            const currentRules = this.getCurrentSortRules();
 
-        // Enable/disable direction when column changes
-        columnSelect.addEventListener('change', () => {
-            directionSelect.disabled = columnSelect.value === '';
-        });
+            if (currentRules.length === 0) {
+                statementsContainer.createDiv({ text: 'No sorts applied', cls: 'json-table-filter-empty' });
+                statementsContainer.style.padding = '4px 8px';
+                statementsContainer.style.color = 'var(--text-muted)';
+                statementsContainer.style.fontSize = 'var(--font-smallest)';
+            } else {
+                statementsContainer.style.padding = '';
+                statementsContainer.style.color = '';
+                statementsContainer.style.fontSize = '';
+                currentRules.forEach((rule, index) => {
+                    const rowDiv = statementsContainer.createDiv({ cls: 'filter-row' });
 
-        // --- Footer ---
-        const footer = popup.createEl('div', { cls: 'json-table-popup-footer' });
+                    // Conjunction
+                    rowDiv.createSpan({ cls: 'conjunction', text: index === 0 ? 'sort by' : 'then by' });
 
-        // --- Delete/Clear Sort Button ---
-        if (currentSort.columnId !== null) {
-            const deleteButton = footer.createEl('button', {
-                cls: 'json-table-btn json-table-btn--icon',
-                attr: { 'aria-label': 'Clear sort', title: 'Clear sort' }
-            });
-            const trashIcon = createIconElement(ICON_NAMES.trash, 16);
-            deleteButton.appendChild(trashIcon);
+                    // Statement wrapper
+                    const statement = rowDiv.createDiv({ cls: 'filter-statement' });
+                    const expression = statement.createDiv({ cls: 'filter-expression metadata-property' });
 
-            deleteButton.addEventListener('click', async () => {
-                try {
-                    this.setCurrentSortRules([]); // Clear rules
-
-                    if (this.view && typeof this.view.saveTableData === 'function') {
+                    // Column select
+                    const columnSelect = expression.createEl('select', { cls: 'dropdown' });
+                    this.data.columns.forEach(col => {
+                        const option = columnSelect.createEl('option', { text: col.name, value: col.id });
+                        if (col.id === rule.columnId) option.selected = true;
+                    });
+                    columnSelect.addEventListener('click', (e) => e.stopPropagation());
+                    columnSelect.addEventListener('mousedown', (e) => e.stopPropagation());
+                    columnSelect.addEventListener('change', async () => {
+                        rule.columnId = columnSelect.value;
                         await this.view.saveTableData(this.data);
-                    }
+                        this.triggerRender();
+                    });
 
-                    this.triggerRender();
-                    closePopup();
-                } catch (error) {
-                    console.error("Error clearing sort:", error);
-                    closePopup();
-                }
-            });
-        }
+                    // Direction select
+                    const directionSelect = expression.createEl('select', { cls: 'dropdown' });
+                    const ascOpt = directionSelect.createEl('option', { text: 'Ascending', value: 'asc' });
+                    const descOpt = directionSelect.createEl('option', { text: 'Descending', value: 'desc' });
+                    if (rule.direction === 'asc') ascOpt.selected = true;
+                    else descOpt.selected = true;
+                    directionSelect.addEventListener('click', (e) => e.stopPropagation());
+                    directionSelect.addEventListener('mousedown', (e) => e.stopPropagation());
+                    directionSelect.addEventListener('change', async () => {
+                        rule.direction = directionSelect.value as 'asc' | 'desc';
+                        await this.view.saveTableData(this.data);
+                        this.triggerRender();
+                    });
 
-        // --- Apply Button ---
-        const applyButton = footer.createEl('button', {
-            text: 'Apply',
-            cls: 'json-table-btn json-table-btn--standard'
+                    // Delete button
+                    const rowActions = expression.createDiv({ cls: 'filter-row-actions' });
+                    const deleteBtn = rowActions.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': 'Remove sort' } });
+                    setIcon(deleteBtn, 'trash-2');
+                    deleteBtn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const rules = this.getCurrentSortRules();
+                        rules.splice(index, 1);
+                        this.setCurrentSortRules(rules);
+                        await this.view.saveTableData(this.data);
+                        this.triggerRender();
+                        rebuildSortRows();
+                    });
+                });
+            }
+        };
+
+        rebuildSortRows();
+
+        // --- Actions: Add sort ---
+        const actionsDiv = sortGroup.createDiv({ cls: 'filter-group-actions' });
+        const addSortBtn = actionsDiv.createDiv({ cls: 'text-icon-button', attr: { tabindex: '0' } });
+        const addIcon = addSortBtn.createSpan({ cls: 'text-button-icon' });
+        setIcon(addIcon, 'plus');
+        addSortBtn.createSpan({ cls: 'text-button-label', text: 'Add sort' });
+
+        addSortBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const defaultColumnId = this.data.columns[0]?.id;
+            if (!defaultColumnId) return;
+
+            const newRule: SortRule = {
+                columnId: defaultColumnId,
+                direction: 'asc'
+            };
+            const currentRules = this.getCurrentSortRules();
+            currentRules.push(newRule);
+            this.setCurrentSortRules(currentRules);
+            rebuildSortRows();
         });
 
-        // --- Apply Button Click Handler (Arrow Function) ---
-        const handleApplyClick = async () => {
+        // Prevent closing on interaction
+        menuEl.addEventListener('click', (e) => e.stopPropagation());
+        menuEl.addEventListener('mousedown', (e) => e.stopPropagation());
 
-            const selectedColumnId = columnSelect.value || null;
-            const selectedDirection = directionSelect.value as 'asc' | 'desc';
-            const newRules = selectedColumnId ? [{ columnId: selectedColumnId, direction: selectedDirection }] : [];
+        // Position and insert
+        document.body.appendChild(menuEl);
+        positionPopup(menuEl, button, { align: 'auto' });
 
-            try {
-                this.setCurrentSortRules(newRules); // Update sort rules in the data object
-
-                // Explicitly call the save function passed from TableRenderer
-                if (this.view && typeof this.view.saveTableData === 'function') {
-                    await this.view.saveTableData(this.data); // Call the view's save method
-                } else {
-                    console.error("Error: View instance or saveTableData method is not available!");
-                    closePopup();
-                    return;
-                }
-
-                this.triggerRender(); // Re-render the table with the new sort
-                closePopup(); // Close popup after successful application
-            } catch (error) {
-                console.error("Error applying sort or saving:", error);
-                closePopup(); // Ensure popup closes even on error
-            }
+        const onOutsideClick = (ev: MouseEvent) => {
+            if (!menuEl.contains(ev.target as Node) && ev.target !== button) cleanup();
         };
-        applyButton.addEventListener('click', handleApplyClick);
-        // --- End Apply Button ---
-
-
-        // --- Close popup logic ---
-        const closePopup = () => {
-            popup.remove();
-            document.removeEventListener('click', clickOutside, true);
-        };
-
-        const clickOutside = (e: MouseEvent) => {
-            // Close only if click is outside popup AND outside the original button
-            if (!popup.contains(e.target as Node) && !button.contains(e.target as Node)) {
-                closePopup();
-            }
-        };
-
-        // Use timeout and capture phase
-        setTimeout(() => {
-            document.addEventListener('click', clickOutside, true);
-        }, 0);
-    } // End showSortPopup
+        setTimeout(() => document.addEventListener('click', onOutsideClick, true), 0);
+    }
 
     // --- Sorting Logic ---
     /** Sorts the this.data.rows array in place based on the rules in the current view */
