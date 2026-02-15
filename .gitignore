@@ -3,8 +3,9 @@ node_modules/
 
 # Build artifacts (we'll commit the built files for releases)
 # Uncomment these if you don't want built files in git:
-# main.js
-# styles.css
+main.js
+styles.css
+data.json
 
 # OS files
 .DS_Store

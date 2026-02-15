@@ -179,9 +179,9 @@ export class FilterHandler {
     operatorSelect.addEventListener('change', () => {
       rule.operator = operatorSelect.value as FilterOperator;
       if (rule.operator === 'isEmpty' || rule.operator === 'isNotEmpty') {
-        valueInput.addClass('is-hidden');
+        valueInput.addClass("json-table-is-hidden");
       } else {
-        valueInput.removeClass('is-hidden');
+        valueInput.removeClass("json-table-is-hidden");
       }
       this.applyFiltersAndRerender();
     });
@@ -196,7 +196,7 @@ export class FilterHandler {
     valueInput.addEventListener('click', (e) => e.stopPropagation());
     valueInput.addEventListener('mousedown', (e) => e.stopPropagation());
     if (rule.operator === 'isEmpty' || rule.operator === 'isNotEmpty') {
-      valueInput.addClass('is-hidden');
+      valueInput.addClass("json-table-is-hidden");
     }
     valueInput.addEventListener('input', () => {
       rule.value = valueInput.value;

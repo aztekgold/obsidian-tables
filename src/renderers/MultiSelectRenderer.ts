@@ -3,6 +3,8 @@ import { App } from 'obsidian';
 import { ICellRenderer } from './ICellRenderer';
 import { ColumnDef, DropdownOption, SelectTypeOptions } from '../types';
 
+import { DropdownMenu } from '../ui/DropdownMenu';
+
 export class MultiSelectRenderer implements ICellRenderer {
   public render(
     app: App,
@@ -82,48 +84,39 @@ export class MultiSelectRenderer implements ICellRenderer {
     // 1. Render tags with "x" buttons
     this.renderTags(newWrapper, value, column, handleRemove);
 
-    // 2. Show the popup with available options
-    const popup = this.showDropdownPopup(
-      newWrapper,
-      value,
-      column,
-      (valueToAdd) => {
+    const typeOpts = column.typeOptions as SelectTypeOptions | undefined;
+
+    // 2. Show the menu with available options
+    new DropdownMenu({
+      app,
+      anchor: newWrapper,
+      options: typeOpts?.options || [],
+      selectedValues: this.getValues(value),
+      multiSelect: true,
+      onSelect: (clickedValue) => {
         const selected = this.getValues(value);
-        
-        // For multi-select, only add if not already present
-        if (selected.includes(valueToAdd)) {
-          // Already selected - do nothing (use "×" button to remove)
-          return;
+        let newSelected: string[];
+
+        if (selected.includes(clickedValue)) {
+          // Toggle off
+          newSelected = selected.filter(v => v !== clickedValue);
+        } else {
+          // Toggle on
+          newSelected = [...selected, clickedValue];
         }
-        
-        // Add the new value
-        selected.push(valueToAdd);
-        const newValue = selected.join(',');
+
+        const newValue = newSelected.join(',');
         value = newValue;
         onChange(newValue);
-        
-        // Re-render the edit state
-        this.renderEdit(app, newWrapper, value, column, onChange);
-      }
-    );
 
-    // 3. Set up the "click outside" listener to close edit mode
-    const clickOutside = (e: MouseEvent) => {
-      if (
-        !newWrapper.contains(e.target as Node) &&
-        !popup.contains(e.target as Node)
-      ) {
-        document.removeEventListener('click', clickOutside, true);
-        popup.remove();
-        // Go back to display mode
+        // Re-render tags in the background (edit mode wrapper)
+        this.renderTags(newWrapper, value, column, handleRemove);
+      },
+      onClose: () => {
+        // Return to display mode
         this.renderDisplay(app, newWrapper, value, column, onChange);
       }
-    };
-
-    // Use timeout (0ms) and capture phase
-    setTimeout(() => {
-      document.addEventListener('click', clickOutside, true);
-    }, 0);
+    });
   }
 
   /**
@@ -174,9 +167,9 @@ export class MultiSelectRenderer implements ICellRenderer {
 
       // Apply style based on definition or default
       if (option && option.style) {
-        tagContainer.addClass(`dropdown-tag--${option.style}`);
+        tagContainer.addClass(`json-table-tag--${option.style}`);
       } else {
-        tagContainer.addClass('dropdown-tag--default');
+        tagContainer.addClass('json-table-tag--default');
       }
 
       // Add the text
@@ -195,65 +188,5 @@ export class MultiSelectRenderer implements ICellRenderer {
         });
       }
     });
-  }
-
-  /**
-   * Shows the popup with all available options
-   */
-  private showDropdownPopup(
-    wrapper: HTMLElement,
-    currentValue: string,
-    column: ColumnDef,
-    onSelect: (value: string) => void
-  ): HTMLElement {
-    const typeOpts = column.typeOptions as SelectTypeOptions | undefined;
-    const allOptions = typeOpts?.options || [];
-
-    // Remove existing popup first
-    const existingPopup = document.body.querySelector('.json-table-dropdown-popup');
-    if (existingPopup) existingPopup.remove();
-
-    const popup = document.body.createEl('div', {
-      cls: 'json-table-popup json-table-dropdown-popup'
-    });
-
-    // Positioning - must be dynamic based on cell position
-    const rect = wrapper.getBoundingClientRect();
-    popup.style.top = `${rect.bottom + 4}px`;
-    popup.style.left = `${rect.left}px`;
-    popup.style.minWidth = `${rect.width}px`;
-
-    const selected = this.getValues(currentValue);
-
-    // Show all options
-    if (allOptions.length > 0) {
-      allOptions.forEach(option => {
-        const optionEl = popup.createEl('div', {
-          cls: 'json-table-dropdown-option'
-        });
-
-        const tag = optionEl.createEl('span', {
-          text: option.value,
-          cls: 'json-table-dropdown-tag'
-        });
-        if (option.style) {
-          tag.addClass(`dropdown-tag--${option.style}`);
-        }
-
-
-        // Click selects the option (if not already selected)
-        optionEl.addEventListener('mousedown', (e) => {
-          e.preventDefault();
-          onSelect(option.value);
-        });
-      });
-    } else {
-      popup.createEl('div', {
-        text: 'No options defined',
-        cls: 'json-table-dropdown-option is-disabled'
-      });
-    }
-
-    return popup;
   }
 }

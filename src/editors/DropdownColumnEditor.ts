@@ -168,7 +168,7 @@ export class DropdownColumnEditor implements IColumnEditor {
 
           colors.forEach(color => {
             const circle = colorPicker.createDiv({
-              cls: `json-table-color-circle color-circle--${color}`
+              cls: `json-table-color-circle json-table-color-circle--${color}`
             });
 
             if ((option.style || 'default') === color) {
@@ -201,7 +201,7 @@ export class DropdownColumnEditor implements IColumnEditor {
             cls: 'json-table-dropdown-tag'
           });
           if (option.style) {
-            tag.addClass(`dropdown-tag--${option.style}`);
+            tag.addClass(`json-table-tag--${option.style}`);
           }
 
           // Click to edit

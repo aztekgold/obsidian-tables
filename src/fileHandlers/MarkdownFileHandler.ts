@@ -8,8 +8,8 @@ const CODE_BLOCK_START = '```json-table';
 const CODE_BLOCK_END = '```';
 // Use constants in the Regex - make whitespace matching flexible
 const JSON_CODE_BLOCK_REGEX = new RegExp(
-    // Match start, optional whitespace/newline, capture content (non-greedy), optional whitespace/newline, match end
-    `${CODE_BLOCK_START}\\s*\\n?([\\s\\S]*?)\\n?\\s*${CODE_BLOCK_END}`
+  // Match start, optional whitespace/newline, capture content (non-greedy), optional whitespace/newline, match end
+  `${CODE_BLOCK_START}\\s*\\n?([\\s\\S]*?)\\n?\\s*${CODE_BLOCK_END}`
 );
 
 // Define the frontmatter key for identification
@@ -23,7 +23,7 @@ const FRONTMATTER_LINKS_KEY = 'table-links';
  */
 export class MarkdownFileHandler implements ITableFileHandler {
 
-  constructor(private app: App) {}
+  constructor(private app: App) { }
 
   /**
    * Reads the .table.md file, verifies frontmatter, and extracts JSON data.
@@ -32,13 +32,26 @@ export class MarkdownFileHandler implements ITableFileHandler {
     const content = await this.app.vault.read(file);
 
     // --- Verify Frontmatter ---
+
     // Use Obsidian's metadata cache to get frontmatter (more reliable than manual parsing)
-    const fileCache = this.app.metadataCache.getFileCache(file);
-    const frontmatter = fileCache?.frontmatter || {};
-    
+    let fileCache = this.app.metadataCache.getFileCache(file);
+    let frontmatter = fileCache?.frontmatter;
+
+    if (!frontmatter) {
+      // Fallback: parse frontmatter from content manually if cache is not ready
+      const fmMatch = content.match(/^---\s*([\s\S]*?)\s*---/);
+      if (fmMatch) {
+        try {
+          frontmatter = parseYaml(fmMatch[1]);
+        } catch (e) {
+          console.warn('Failed to parse frontmatter manually:', e);
+        }
+      }
+    }
+
     // Validate that this file is properly formatted as a table file
-    if (frontmatter[FRONTMATTER_PLUGIN_KEY] !== true) {
-         throw new Error(`File ${file.path} is not a valid table file. Missing '${FRONTMATTER_PLUGIN_KEY}: true' in frontmatter.`);
+    if (!frontmatter || frontmatter[FRONTMATTER_PLUGIN_KEY] !== true) {
+      throw new Error(`File ${file.path} is not a valid table file. Missing '${FRONTMATTER_PLUGIN_KEY}: true' in frontmatter.`);
     }
     // --- End Frontmatter Verification ---
 
@@ -47,24 +60,24 @@ export class MarkdownFileHandler implements ITableFileHandler {
     const match = content.match(JSON_CODE_BLOCK_REGEX);
 
     if (!match || match[1] === undefined || match[1] === null) {
-        // Provide more detailed error messages
-        if (!content.includes(CODE_BLOCK_START)) {
-            throw new Error(`Could not find '${CODE_BLOCK_START}' code block start in ${file.path}`);
-        } else if (!content.substring(content.indexOf(CODE_BLOCK_START)).includes(CODE_BLOCK_END)) {
-            throw new Error(`Found '${CODE_BLOCK_START}' but no closing '${CODE_BLOCK_END}' in ${file.path}`);
-        } else {
-             const startIndex = content.indexOf(CODE_BLOCK_START);
-             console.error("Regex failed despite markers present. Content around block:\n", content.substring(Math.max(0, startIndex-20), startIndex+100));
-            throw new Error(`Could not extract content from '${CODE_BLOCK_START}' code block in ${file.path}. Check for malformed block or unexpected characters.`);
-        }
+      // Provide more detailed error messages
+      if (!content.includes(CODE_BLOCK_START)) {
+        throw new Error(`Could not find '${CODE_BLOCK_START}' code block start in ${file.path}`);
+      } else if (!content.substring(content.indexOf(CODE_BLOCK_START)).includes(CODE_BLOCK_END)) {
+        throw new Error(`Found '${CODE_BLOCK_START}' but no closing '${CODE_BLOCK_END}' in ${file.path}`);
+      } else {
+        const startIndex = content.indexOf(CODE_BLOCK_START);
+        console.error("Regex failed despite markers present. Content around block:\n", content.substring(Math.max(0, startIndex - 20), startIndex + 100));
+        throw new Error(`Could not extract content from '${CODE_BLOCK_START}' code block in ${file.path}. Check for malformed block or unexpected characters.`);
+      }
     }
 
     const jsonContent = match[1].trim();
     // Handle case where code block is present but empty
     if (!jsonContent) {
-        console.warn(`Empty json-table code block found in ${file.path}. Returning default structure.`);
-        // Return a valid empty table structure
-        return { columns: [], rows: [], views: [{ id: 'default_'+Date.now(), name: 'Default', sort: [], filter: [] }] };
+      console.warn(`Empty json-table code block found in ${file.path}. Returning default structure.`);
+      // Return a valid empty table structure
+      return { columns: [], rows: [], views: [{ id: 'default_' + Date.now(), name: 'Default', sort: [], filter: [] }] };
     }
 
     try {
@@ -77,37 +90,37 @@ export class MarkdownFileHandler implements ITableFileHandler {
       // --- Ensure views array and default view exist (migration for older files) ---
       if (!data.views || !Array.isArray(data.views) || data.views.length === 0) {
         data.views = [{
-            id: 'default_' + Date.now(),
-            name: 'Default',
-            sort: [],
-            filter: []
-            // hiddenColumns: [] // Add if needed
+          id: 'default_' + Date.now(),
+          name: 'Default',
+          sort: [],
+          filter: []
+          // hiddenColumns: [] // Add if needed
         }];
       }
       // Ensure the first view has a sort array
       if (!data.views[0].sort) {
-          data.views[0].sort = [];
+        data.views[0].sort = [];
       }
       // Ensure typeOptions exists on columns (migration)
-       data.columns.forEach(col => {
-           if (!col.typeOptions) {
-               col.typeOptions = {};
-               // Migrate old direct properties if they exist
-               if ((col as any).dateFormat) {
-                    (col.typeOptions as any).dateFormat = (col as any).dateFormat;
-                    delete (col as any).dateFormat;
-               }
-               if ((col as any).options) {
-                   (col.typeOptions as any).options = (col as any).options;
-                   delete (col as any).options;
-               }
-                if ((col as any).suggestAllFiles !== undefined) { // Check for undefined for boolean
-                   (col.typeOptions as any).suggestAllFiles = (col as any).suggestAllFiles;
-                   delete (col as any).suggestAllFiles;
-               }
-           }
-       });
-       // --- End Migration ---
+      data.columns.forEach(col => {
+        if (!col.typeOptions) {
+          col.typeOptions = {};
+          // Migrate old direct properties if they exist
+          if ((col as any).dateFormat) {
+            (col.typeOptions as any).dateFormat = (col as any).dateFormat;
+            delete (col as any).dateFormat;
+          }
+          if ((col as any).options) {
+            (col.typeOptions as any).options = (col as any).options;
+            delete (col as any).options;
+          }
+          if ((col as any).suggestAllFiles !== undefined) { // Check for undefined for boolean
+            (col.typeOptions as any).suggestAllFiles = (col as any).suggestAllFiles;
+            delete (col as any).suggestAllFiles;
+          }
+        }
+      });
+      // --- End Migration ---
 
       return data;
     } catch (e) {
@@ -190,12 +203,12 @@ export class MarkdownFileHandler implements ITableFileHandler {
           body = existingContent; // Treat everything as body if parse fails
         }
       } else {
-          // If starts with --- but doesn't match regex (e.g., malformed), treat all as body
-          body = existingContent;
+        // If starts with --- but doesn't match regex (e.g., malformed), treat all as body
+        body = existingContent;
       }
     } else {
-        // No frontmatter found, treat all content as body
-        body = existingContent;
+      // No frontmatter found, treat all content as body
+      body = existingContent;
     }
     // --- End Frontmatter Parsing ---
 
@@ -220,17 +233,17 @@ export class MarkdownFileHandler implements ITableFileHandler {
       // Check if the body *only* contains the code block (and maybe whitespace/comments)
       // This prevents duplicating surrounding text if the body was minimal
       const contentOutsideBlock = body.replace(JSON_CODE_BLOCK_REGEX, '').trim();
-       const commentRegex = /<!--[\s\S]*?-->/g; // Regex to find HTML comments
-       const nonCommentContent = contentOutsideBlock.replace(commentRegex, '').trim();
+      const commentRegex = /<!--[\s\S]*?-->/g; // Regex to find HTML comments
+      const nonCommentContent = contentOutsideBlock.replace(commentRegex, '').trim();
 
       if (!nonCommentContent || nonCommentContent.startsWith('##')) { // Allow headings before block
-          // If only comments or headings exist outside, replace the whole effective body part found
-          newBody = body.replace(JSON_CODE_BLOCK_REGEX, newCodeBlock);
-          // If the original body had leading/trailing whitespace after frontmatter, preserve it?
-          // This logic can get complex depending on desired preservation.
-          // Let's assume trimming and adding newlines is acceptable.
+        // If only comments or headings exist outside, replace the whole effective body part found
+        newBody = body.replace(JSON_CODE_BLOCK_REGEX, newCodeBlock);
+        // If the original body had leading/trailing whitespace after frontmatter, preserve it?
+        // This logic can get complex depending on desired preservation.
+        // Let's assume trimming and adding newlines is acceptable.
       } else {
-          newBody = body.replace(JSON_CODE_BLOCK_REGEX, newCodeBlock);
+        newBody = body.replace(JSON_CODE_BLOCK_REGEX, newCodeBlock);
       }
     } else {
       // If no block found, append it cleanly

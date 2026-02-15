@@ -91,6 +91,22 @@ class JsonTableSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
+            .setName('Sticky Action Column')
+            .setDesc('Keep the action column (add/delete row) visible when scrolling horizontally.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.stickyActionColumn)
+                .onChange(async (value) => {
+                    this.plugin.settings.stickyActionColumn = value;
+                    await this.plugin.saveSettings();
+                    // Reload active views
+                    this.plugin.app.workspace.iterateAllLeaves(leaf => {
+                        if (leaf.view.getViewType() === VIEW_TYPE_JSON_TABLE) {
+                            (leaf.view as any).render();
+                        }
+                    });
+                }));
+
+        new Setting(containerEl)
             .setName('Enable CSV Support')
             .setDesc('Allow opening and editing .csv files directly in the table view. Note: Original formatting like extra whitespace might not be preserved perfectly.')
             .addToggle(toggle => toggle
@@ -112,6 +128,8 @@ class JsonTableSettingTab extends PluginSettingTab {
                     this.plugin.settings.enableBetaFeatures = value;
                     await this.plugin.saveSettings();
                 }));
+
+
 
         // Add more settings here later if needed
     }

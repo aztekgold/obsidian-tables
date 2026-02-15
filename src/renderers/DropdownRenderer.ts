@@ -3,6 +3,8 @@ import { App } from 'obsidian';
 import { ICellRenderer } from './ICellRenderer';
 import { ColumnDef, DropdownOption, SelectTypeOptions } from '../types';
 
+import { DropdownMenu } from '../ui/DropdownMenu';
+
 export class DropdownRenderer implements ICellRenderer {
   public render(
     app: App,
@@ -79,42 +81,26 @@ export class DropdownRenderer implements ICellRenderer {
     // 1. Render tag with "x" button if value exists
     this.renderTags(newWrapper, value, column, handleRemove);
 
-    let clickOutside: (e: MouseEvent) => void;
+    const typeOpts = column.typeOptions as SelectTypeOptions | undefined;
 
-    // 2. Show the popup with available options
-    const popup = this.showDropdownPopup(
-      newWrapper,
-      value,
-      column,
-      (selectedValue) => {
-        // For dropdown (single select), clicking replaces the current value
+    // 2. Show the menu with available options
+    new DropdownMenu({
+      app,
+      anchor: newWrapper,
+      options: typeOpts?.options || [],
+      selectedValues: value ? [value] : [],
+      multiSelect: false,
+      onSelect: (selectedValue) => {
         value = selectedValue;
-        onChange(selectedValue); // Trigger save
-        
-        // Close popup and return to display mode
-        if (clickOutside) document.removeEventListener('click', clickOutside, true);
-        popup.remove();
-        this.renderDisplay(app, newWrapper, selectedValue, column, onChange);
-      }
-    );
-
-    // 3. Set up the "click outside" listener to close edit mode
-    clickOutside = (e: MouseEvent) => {
-      if (
-        !newWrapper.contains(e.target as Node) &&
-        !popup.contains(e.target as Node)
-      ) {
-        document.removeEventListener('click', clickOutside, true);
-        popup.remove();
-        // Go back to display mode
+        onChange(selectedValue);
+        // Menu closes automatically handling by DropdownMenu
+        // onClose will be called to return to display mode
+      },
+      onClose: () => {
+        // Return to display mode
         this.renderDisplay(app, newWrapper, value, column, onChange);
       }
-    };
-
-    // Use timeout (0ms) and capture phase
-    setTimeout(() => {
-      document.addEventListener('click', clickOutside, true);
-    }, 0);
+    });
   }
 
   /**
@@ -157,9 +143,9 @@ export class DropdownRenderer implements ICellRenderer {
 
     // Apply style based on definition or default
     if (option && option.style) {
-      tagContainer.addClass(`dropdown-tag--${option.style}`);
+      tagContainer.addClass(`json-table-tag--${option.style}`);
     } else {
-      tagContainer.addClass('dropdown-tag--default');
+      tagContainer.addClass('json-table-tag--default');
     }
 
     // Add the text
@@ -182,58 +168,5 @@ export class DropdownRenderer implements ICellRenderer {
   /**
    * Shows the popup with all available options
    */
-  private showDropdownPopup(
-    wrapper: HTMLElement,
-    currentValue: string,
-    column: ColumnDef,
-    onSelect: (value: string) => void
-  ): HTMLElement {
-    const typeOpts = column.typeOptions as SelectTypeOptions | undefined;
-    const allOptions = typeOpts?.options || [];
 
-    // Remove existing popup first
-    const existingPopup = document.body.querySelector('.json-table-dropdown-popup');
-    if (existingPopup) existingPopup.remove();
-
-    const popup = document.body.createEl('div', {
-      cls: 'json-table-popup json-table-dropdown-popup'
-    });
-
-    // Position popup dynamically based on cell position
-    const rect = wrapper.getBoundingClientRect();
-    popup.style.top = `${rect.bottom + 4}px`;
-    popup.style.left = `${rect.left}px`;
-    popup.style.minWidth = `${rect.width}px`;
-
-    // Show all options
-    if (allOptions.length > 0) {
-      allOptions.forEach(option => {
-        const optionEl = popup.createEl('div', {
-          cls: 'json-table-dropdown-option'
-        });
-
-        const tag = optionEl.createEl('span', {
-          text: option.value,
-          cls: 'json-table-dropdown-tag'
-        });
-        if (option.style) {
-          tag.addClass(`dropdown-tag--${option.style}`);
-        }
-
-
-        // Click selects/replaces the option
-        optionEl.addEventListener('mousedown', (e) => {
-          e.preventDefault();
-          onSelect(option.value);
-        });
-      });
-    } else {
-      popup.createEl('div', {
-        text: 'No options defined',
-        cls: 'json-table-dropdown-option is-disabled'
-      });
-    }
-
-    return popup;
-  }
 }

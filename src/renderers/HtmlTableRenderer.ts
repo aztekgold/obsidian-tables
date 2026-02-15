@@ -29,6 +29,9 @@ export class HtmlTableRenderer extends AbstractTableRenderer {
         this.renderControls();
 
         const tableWrapper = this.container.createEl('div', { cls: 'json-table-wrapper' });
+        if (this.settings.stickyActionColumn) {
+            tableWrapper.addClass('is-sticky-actions');
+        }
         const table = tableWrapper.createEl('table', { cls: 'json-table' });
 
         this.sortHandler.sortDataInMemory();
@@ -72,6 +75,21 @@ export class HtmlTableRenderer extends AbstractTableRenderer {
         addColEl.style.width = '100px';
     }
 
+    protected getHeaderCell(visualIndex: number): HTMLElement | null {
+        // Check if drag handle exists
+        const activeSort = this.sortHandler.getCurrentSortRules();
+        const isSortActive = activeSort.length > 0 && activeSort[0].columnId !== null;
+        const hasDragHandle = !isSortActive && this.settings.enableBetaFeatures && !this.isInline;
+
+        const targetIndex = visualIndex + (hasDragHandle ? 1 : 0);
+        const headers = this.container.querySelectorAll('.json-table-header-cell');
+
+        if (targetIndex >= 0 && targetIndex < headers.length) {
+            return headers[targetIndex] as HTMLElement;
+        }
+        return null;
+    }
+
     protected renderHeader(table: HTMLTableElement) {
         const thead = table.createEl('thead');
         const headerRow = thead.createEl('tr');
@@ -90,13 +108,9 @@ export class HtmlTableRenderer extends AbstractTableRenderer {
             const th = headerRow.createEl('th', { cls: 'json-table-header-cell' });
             th.draggable = true;
             th.setAttribute('data-col-index', visibleIndex.toString());
+            // ... (rest is same)
 
             const contentWrapper = th.createEl('div', { cls: 'json-table-header-content' });
-
-            // Add drag handle (this was missing!)
-            const dragHandle = contentWrapper.createDiv({ cls: 'json-table-drag-handle' });
-            setIcon(dragHandle, ICON_NAMES.gripVertical);
-
             const iconSvg = TYPE_ICONS[col.type];
             if (iconSvg) {
                 const iconEl = createIconElement(iconSvg, 14, `icon-col-${col.type}`);
@@ -261,8 +275,10 @@ export class HtmlTableRenderer extends AbstractTableRenderer {
 
     private renderAddRowButton(container: Element) {
         const wrapper = container.createEl('div', { cls: 'json-table-add-row-wrapper' });
-        // Use standard button classes + icon
-        const addBtn = wrapper.createEl('button', { cls: 'json-table-btn json-table-btn--standard json-table-add-row-btn' });
+        // Use standard button classes + icon (as array to ensure application)
+        const addBtn = wrapper.createEl('button', {
+            cls: ['json-table-btn', 'json-table-btn--standard', 'json-table-add-row-btn']
+        });
         const icon = createIconElement(ICON_NAMES.plus, 16);
         addBtn.appendChild(icon);
         addBtn.appendChild(document.createTextNode(' Add row'));

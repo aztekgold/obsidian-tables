@@ -28,6 +28,9 @@ export class DivTableRenderer extends AbstractTableRenderer {
 
         // Main Wrapper
         const tableWrapper = this.container.createDiv({ cls: 'json-table-div-wrapper' });
+        if (this.settings.stickyActionColumn) {
+            tableWrapper.addClass('is-sticky-actions');
+        }
 
         this.sortHandler.sortDataInMemory();
         const rowsToRender = this.filterHandler.getFilteredRows();
@@ -43,6 +46,21 @@ export class DivTableRenderer extends AbstractTableRenderer {
                 tableWrapper.scrollTop = scrollTop;
             }
         });
+    }
+
+    protected getHeaderCell(visualIndex: number): HTMLElement | null {
+        // Check if drag handle exists
+        const activeSort = this.sortHandler.getCurrentSortRules();
+        const isSortActive = activeSort.length > 0 && activeSort[0].columnId !== null;
+        const hasDragHandle = !isSortActive && this.settings.enableBetaFeatures && !this.isInline;
+
+        const targetIndex = visualIndex + (hasDragHandle ? 1 : 0);
+        const headers = this.container.querySelectorAll('.json-table-div-header-cell');
+
+        if (targetIndex >= 0 && targetIndex < headers.length) {
+            return headers[targetIndex] as HTMLElement;
+        }
+        return null;
     }
 
     protected renderHeader(container: HTMLElement) {
@@ -126,9 +144,8 @@ export class DivTableRenderer extends AbstractTableRenderer {
 
         // Buttons Header Area
         const buttonsTh = headerRow.createDiv({ cls: 'json-table-div-header-cell json-table-buttons-th' });
-        buttonsTh.style.width = '100px';
-        buttonsTh.style.flexShrink = '0';
-        const buttonContainer = buttonsTh.createDiv({ cls: 'json-table-header-buttons-container' });
+        // Width handled by CSS
+        const buttonContainer = buttonsTh.createDiv({ cls: 'json-table-header-content' });
 
         const addColBtnDiv = buttonContainer.createDiv({ cls: 'json-table-btn json-table-btn--icon', attr: { 'aria-label': 'Add column', title: 'Add column' } });
         addColBtnDiv.appendChild(createIconElement(ICON_NAMES.plus, 18));
@@ -157,7 +174,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
             if (!isSortActive && this.settings.enableBetaFeatures && !this.isInline) {
                 tr.draggable = true;
                 const handleCell = tr.createDiv({ cls: 'json-table-div-cell json-table-drag-handle-cell' });
-                const handleContent = handleCell.createDiv({ cls: 'json-table-cell-content json-table-drag-handle-content' });
+                const handleContent = handleCell.createDiv({ cls: 'json-table-cell-btn-wrapper json-table-drag-handle-content' });
                 handleContent.appendChild(createIconElement(ICON_NAMES.gripVertical, 14, 'json-table-row-drag-icon'));
 
                 tr.addEventListener('dragstart', (e) => { draggedRowIndex = originalRowIndex; tr.addClass('is-dragging'); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; });
@@ -185,7 +202,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
 
             // Delete Row Cell
             const deleteCell = tr.createDiv({ cls: 'json-table-div-cell json-table-row-actions-cell' });
-            const cellContent = deleteCell.createDiv({ cls: 'json-table-cell-content' });
+            const cellContent = deleteCell.createDiv({ cls: 'json-table-cell-btn-wrapper' });
             const deleteButton = cellContent.createDiv({ cls: 'json-table-btn json-table-btn--icon', attr: { 'aria-label': 'Delete row', title: 'Delete row' } });
             deleteButton.appendChild(createIconElement(ICON_NAMES.trash, 16));
             deleteButton.addEventListener('click', async (e) => {
@@ -230,9 +247,19 @@ export class DivTableRenderer extends AbstractTableRenderer {
 
     private renderAddRowButton(container: Element) {
         const wrapper = container.createDiv({ cls: 'json-table-add-row-wrapper' });
-        const addBtn = wrapper.createEl('button', { text: '+ Add row', cls: 'json-table-add-row' });
+        // Use standard button classes + icon (as array)
+        const addBtn = wrapper.createEl('button', {
+            cls: ['json-table-btn', 'json-table-btn--standard', 'json-table-add-row-btn']
+        });
+        const icon = createIconElement(ICON_NAMES.plus, 16);
+        addBtn.appendChild(icon);
+        addBtn.appendChild(document.createTextNode(' Add row'));
+
         const rowCountValue = this.data.rows.length;
-        wrapper.createDiv({ text: `${rowCountValue} Row${rowCountValue !== 1 ? 's' : ''}`, cls: 'json-table-row-count' });
+        wrapper.createDiv({
+            text: `${rowCountValue} Row${rowCountValue !== 1 ? 's' : ''}`,
+            cls: 'json-table-row-count'
+        });
         addBtn.addEventListener('click', async () => {
             const newRow: CellData[] = [];
             this.data.columns.forEach(col => newRow.push({ column: col.id, value: '' }));

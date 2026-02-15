@@ -116,6 +116,7 @@ export interface JsonTableSettings {
   rendererType: 'table' | 'div'; // 'table' uses <table>, 'div' uses <div>
   enableBetaFeatures: boolean; // Toggle for experimental features like column dragging
   enableCsvSupport: boolean; // Toggle for opening/editing .csv files directly
+  stickyActionColumn: boolean; // Toggle for sticky action column
 }
 
 // Default values for the plugin settings
@@ -123,5 +124,6 @@ export const DEFAULT_SETTINGS: JsonTableSettings = {
   tableRenderer: 'default', // Default to using .table.md files for compatibility
   rendererType: 'table',
   enableBetaFeatures: false,
-  enableCsvSupport: false
+  enableCsvSupport: false,
+  stickyActionColumn: false
 }
