@@ -42,38 +42,121 @@ import {
     tableEmbedExtension
 } from './livePreviewExtension';
 
+import { around } from 'monkey-around';
+
+// --- Settings Tab Implementation ---
+class JsonTableSettingTab extends PluginSettingTab {
+    plugin: JsonTablePlugin;
+
+    constructor(app: App, plugin: JsonTablePlugin) {
+        super(app, plugin);
+        this.plugin = plugin;
+    }
+
+    display(): void {
+        const {
+            containerEl
+        } = this;
+        containerEl.empty();
+        containerEl.createEl('h2', {
+            text: 'Tables Settings'
+        });
+
+        new Setting(containerEl)
+            .setName('Default File Format')
+            .setDesc(
+                'By default, Tables uses .table.md to maximise compatibility and incorporate Obsidian backlink functionality. ' +
+                'This setting only affects creation of new tables.'
+            )
+            .addDropdown(dropdown => dropdown
+                .addOption('default', 'Default (.table.md)')
+                .addOption('json', 'JSON (.table.json)')
+                .setValue(this.plugin.settings.tableRenderer)
+                .onChange(async (value) => {
+                    this.plugin.settings.tableRenderer = value as 'default' | 'json';
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('Renderer Type')
+            .setDesc('Choose between the default Div-based rendering or legacy HTML table rendering.')
+            .addDropdown(dropdown => dropdown
+                .addOption('div', 'Default')
+                .addOption('table', 'HTML Table (Legacy)')
+                .setValue(this.plugin.settings.rendererType)
+                .onChange(async (value) => {
+                    this.plugin.settings.rendererType = value as 'table' | 'div';
+                    await this.plugin.saveSettings();
+                    // Reload active views? For now just save.
+                }));
+
+        new Setting(containerEl)
+            .setName('Enable CSV Support')
+            .setDesc('Allow opening and editing .csv files directly in the table view. Note: Original formatting like extra whitespace might not be preserved perfectly.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableCsvSupport)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableCsvSupport = value;
+                    await this.plugin.saveSettings();
+                    new Notice("Reload required for file extension changes to take full effect.", 7000);
+                }));
+
+        containerEl.createEl('h3', { text: 'Experimental' });
+
+        new Setting(containerEl)
+            .setName('Enable Beta Features')
+            .setDesc('Enable experimental features. These features may be unstable.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableBetaFeatures)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableBetaFeatures = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // Add more settings here later if needed
+    }
+}
+
 export default class JsonTablePlugin extends Plugin {
     settings!: JsonTableSettings; // Store settings
+
+
 
 
     // --- Monkey Patching to prevent flash ---
     patchSetViewState() {
         const plugin = this;
-        // @ts-ignore
-        const originalSetViewState = WorkspaceLeaf.prototype.setViewState;
 
-        // @ts-ignore
-        this.register(function () {
-            // @ts-ignore
-            WorkspaceLeaf.prototype.setViewState = originalSetViewState;
+        const uninstaller = around(WorkspaceLeaf.prototype, {
+            setViewState(oldMethod) {
+                return async function (this: WorkspaceLeaf, viewState: any, eState: any) {
+                    // Check if we are trying to open a markdown file
+                    if (viewState.type === 'markdown' && viewState.state && viewState.state.file) {
+                        const filePath = viewState.state.file;
+                        if (typeof filePath === 'string' && filePath.endsWith('.table.md')) {
+                            // Always force view type for .table.md files
+                            // Check settings - logic simplified to always allow opening
+                            viewState.type = VIEW_TYPE_JSON_TABLE;
+                        }
+                    }
+
+                    // Check for .table.json files (rendererType: 'json')
+                    // This handles cases where we couldn't register the extension due to conflict
+                    if (viewState.state && viewState.state.file) {
+                        const filePath = viewState.state.file;
+                        if (typeof filePath === 'string' && filePath.endsWith('.table.json')) {
+                            // Always allow opening .table.json as table view
+                            viewState.type = VIEW_TYPE_JSON_TABLE;
+                        }
+                    }
+
+                    // Call the original method
+                    return oldMethod.call(this, viewState, eState);
+                };
+            }
         });
 
-        // @ts-ignore
-        WorkspaceLeaf.prototype.setViewState = async function (viewState, eState) {
-            // Check if we are trying to open a markdown file
-            if (viewState.type === 'markdown' && viewState.state && viewState.state.file) {
-                const filePath = viewState.state.file;
-                if (typeof filePath === 'string' && filePath.endsWith('.table.md')) {
-                    // Check settings
-                    if (plugin.settings.tableRenderer === 'default') {
-                        // Force the view type to be our json table view
-                        viewState.type = VIEW_TYPE_JSON_TABLE;
-                    }
-                }
-            }
-            // Call the original method
-            return originalSetViewState.call(this, viewState, eState);
-        };
+        this.register(uninstaller);
     }
 
     async onload() {
@@ -309,8 +392,8 @@ export default class JsonTablePlugin extends Plugin {
                 }
 
                 // Handle .table.md files
-                // 1. Check Setting and File Type
-                if (this.settings.tableRenderer !== 'default' || !file.name.endsWith('.table.md')) {
+                // 1. Check File Type
+                if (!file.name.endsWith('.table.md')) {
                     return;
                 }
 
@@ -395,7 +478,11 @@ export default class JsonTablePlugin extends Plugin {
         // Unregistering old handlers is complex. Register both potentially relevant
         // extensions and let the JsonTableView decide if it can handle the specific file.
         this.registerExtensions(['table.md'], VIEW_TYPE_JSON_TABLE); // For direct open attempts of MD wrappers
-        this.registerExtensions(['json'], VIEW_TYPE_JSON_TABLE);     // Catches .table.json and allows view to show errors for other .json
+        try {
+            this.registerExtensions(['json'], VIEW_TYPE_JSON_TABLE);     // Catches .table.json and allows view to show errors for other .json
+        } catch (e) {
+            console.warn('JsonTablePlugin: Could not register "json" extension. It may be handled by another plugin.', e);
+        }
 
         if (this.settings.enableCsvSupport) {
             this.registerExtensions(['csv'], VIEW_TYPE_JSON_TABLE);
@@ -697,6 +784,8 @@ export default class JsonTablePlugin extends Plugin {
         // Create and open the file
         try {
             const file = await this.app.vault.create(filePath, fileContent);
+            // Add a small delay to ensure file is fully written and cached before opening
+            await new Promise(resolve => setTimeout(resolve, 100));
             const leaf = this.app.workspace.getLeaf('tab');
             await leaf.openFile(file);
         } catch (error) {
@@ -830,77 +919,3 @@ export default class JsonTablePlugin extends Plugin {
 
 } // End Plugin Class
 
-
-// --- Settings Tab Implementation ---
-class JsonTableSettingTab extends PluginSettingTab {
-    plugin: JsonTablePlugin;
-
-    constructor(app: App, plugin: JsonTablePlugin) {
-        super(app, plugin);
-        this.plugin = plugin;
-    }
-
-    display(): void {
-        const {
-            containerEl
-        } = this;
-        containerEl.empty();
-        containerEl.createEl('h2', {
-            text: 'Tables Settings'
-        });
-
-        new Setting(containerEl)
-            .setName('Table Renderer')
-            .setDesc(
-                'By default, Tables uses .table.md to maximise compatibility and incorporate Obsidian backlink functionality. ' +
-                'JSON is an alternative - it\'s faster and uses native JSON. Use if experiencing issues with the default renderer. ' +
-                'Reload Obsidian for changes to take full effect on file handling and creation.'
-            )
-            .addDropdown(dropdown => dropdown
-                .addOption('default', 'Default (.table.md)')
-                .addOption('json', 'JSON (.table.json)')
-                .setValue(this.plugin.settings.tableRenderer)
-                .onChange(async (value) => {
-                    this.plugin.settings.tableRenderer = value as 'default' | 'json';
-                    await this.plugin.saveSettings();
-                    // Prompt user to reload for the change to reliably affect extension handling
-                    new Notice("Reload required for file handling changes to take full effect.", 7000);
-                }));
-
-        new Setting(containerEl)
-            .setName('Renderer Type')
-            .setDesc('Choose between standard HTML table rendering or Div-based rendering (Beta). Div rendering may offer better resizing experience.')
-            .addDropdown(dropdown => dropdown
-                .addOption('table', 'Table Renderer (Standard)')
-                .addOption('div', 'Div Renderer (Beta)')
-                .setValue(this.plugin.settings.rendererType)
-                .onChange(async (value) => {
-                    this.plugin.settings.rendererType = value as 'table' | 'div';
-                    await this.plugin.saveSettings();
-                    // Reload active views? For now just save.
-                }));
-
-        new Setting(containerEl)
-            .setName('Enable Beta Features')
-            .setDesc('Enable experimental features like column reordering via drag-and-drop. These features may be unstable.')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableBetaFeatures)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableBetaFeatures = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(containerEl)
-            .setName('Enable CSV Support')
-            .setDesc('Allow opening and editing .csv files directly in the table view. Note: Original formatting like extra whitespace might not be preserved perfectly.')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableCsvSupport)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableCsvSupport = value;
-                    await this.plugin.saveSettings();
-                    new Notice("Reload required for file extension changes to take full effect.", 7000);
-                }));
-
-        // Add more settings here later if needed
-    }
-}

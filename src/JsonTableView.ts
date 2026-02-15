@@ -128,10 +128,8 @@ export class JsonTableView extends ItemView {
     this.fileHandler = null; // Reset
 
     if (isMarkdownTableFile) {
-      if (useMarkdown) {
-        this.fileHandler = new MarkdownFileHandler(this.app);
-      } else {
-      }
+      // Always allow markdown handler for .table.md files
+      this.fileHandler = new MarkdownFileHandler(this.app);
     } else if (isJsonTableFile) {
       this.fileHandler = new JsonFileHandler(this.app);
     } else if (file.name.endsWith('.csv') && this.settings.enableCsvSupport) {
@@ -160,12 +158,9 @@ export class JsonTableView extends ItemView {
     if (!this.fileHandler || !this.checkIfHandlerIsValid(file)) {
       console.warn(`renderContent: No valid file handler for ${file.path} with current settings.`);
       // ... (Error handling logic - unchanged) ...
-      const useMarkdown = this.settings.tableRenderer === 'default';
-      if (file.name.endsWith('.table.md') && !useMarkdown) {
-        this.showError(container, "Set 'Table Renderer' to 'Default' in settings to view this file.", false);
-      } else {
-        this.showError(container, "This file is not recognized as a valid table type or requires different settings.", true);
-      }
+      // ... (Error handling logic - unchanged) ...
+      // Removed specific error for table renderer setting mismatch
+      this.showError(container, "This file is not recognized as a valid table type or requires different settings.", true);
       return;
     }
 
@@ -360,7 +355,7 @@ export class JsonTableView extends ItemView {
     const isJsonTableFile = file.name.endsWith('.table.json');
 
     if (isMarkdownTableFile) {
-      return useMarkdown;
+      return true; // Always allow reading Markdown tables
     } else if (isJsonTableFile) {
       return true; // Always allow reading JSON
     } else if (file.name.endsWith('.csv') && this.settings.enableCsvSupport) {

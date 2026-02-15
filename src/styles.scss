@@ -122,7 +122,7 @@ div.json-table-btn--icon:hover {
 button.json-table-btn--standard,
 div.json-table-btn--standard {
   padding: 8px 12px !important;
-  border-radius: 4px;
+  border-radius: 4px !important;
 }
 
 /* Hybrid button variant - no background unless hovered, 8px 12px padding */
@@ -241,12 +241,15 @@ div.json-table-btn--active:hover {
 }
 
 /* Drop Indicator (Line between rows) */
-.json-table-row.is-dragover-top {
-  box-shadow: inset 0 2px 0 0 var(--interactive-accent);
+/* Drop Indicator (Line between rows) */
+.json-table-row.is-dragover-top td,
+.json-table-div-row.is-dragover-top .json-table-div-cell {
+  box-shadow: inset 0 3px 0 0 var(--interactive-accent) !important;
 }
 
-.json-table-row.is-dragover-bottom {
-  box-shadow: inset 0 -2px 0 0 var(--interactive-accent);
+.json-table-row.is-dragover-bottom td,
+.json-table-div-row.is-dragover-bottom .json-table-div-cell {
+  box-shadow: inset 0 -3px 0 0 var(--interactive-accent) !important;
 }
 
 // Row dragging styles
@@ -370,10 +373,36 @@ div.json-table-btn--active:hover {
 }
 
 .json-table-checkbox {
-  width: 1.2em;
-  height: 1.2em;
+  width: 1em;
+  height: 1em;
   cursor: pointer;
   margin: 0;
+}
+
+/* Input Styling Fixes for Native Table */
+.json-table-cell input[type="text"],
+.json-table-cell input[type="number"],
+.json-table-cell input[type="date"],
+.json-table-cell select,
+.json-table-cell textarea {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  padding: 0 12px;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  outline: none;
+}
+
+.json-table-cell input:focus,
+.json-table-cell select:focus,
+.json-table-cell textarea:focus {
+  /* Optional focus ring or rely on inherited/default */
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--interactive-accent);
 }
 
 /* ==========================================================================
@@ -397,7 +426,7 @@ div.json-table-btn--active:hover {
   width: 100%;
   height: 100%;
   min-height: $table-cell-height;
-  padding: 8px;
+  padding: 8px 12px;
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
@@ -465,51 +494,7 @@ div.json-table-btn--active:hover {
    Popups: Base
    ========================================================================== */
 
-.json-table-popup {
-  position: absolute;
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 0;
-  z-index: 1000;
-  min-width: 280px;
-}
 
-.json-table-popup-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 12px;
-}
-
-.json-table-popup-header {
-  padding: 12px;
-  border-bottom: 1px solid var(--background-modifier-border);
-  background: var(--background-primary);
-  border-radius: 8px 8px 0 0;
-}
-
-.json-table-popup-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-normal);
-  margin: 0;
-}
-
-.json-table-popup-content {
-  padding: 12px;
-}
-
-.json-table-popup-footer {
-  padding: 12px;
-  border-top: 1px solid var(--background-modifier-border);
-  background: var(--background-primary);
-  border-radius: 0 0 8px 8px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
 
 .json-table-popup-label {
   color: var(--text-muted);
@@ -668,28 +653,7 @@ div.json-table-btn--active:hover {
    Popups: Dropdown (Cell)
    ========================================================================== */
 
-.json-table-dropdown-popup {
-  padding: 6px;
-  max-height: 300px;
-  overflow-y: auto;
-}
 
-/* Your style for dropdown options */
-.json-table-dropdown-option {
-  padding: 8px 10px;
-  /* Use the roomier padding */
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.json-table-dropdown-option:hover {
-  background-color: var(--background-modifier-hover);
-}
-
-.json-table-dropdown-option.is-disabled {
-  color: var(--text-muted);
-  cursor: not-allowed;
-}
 
 .json-table-multiselect-tag-remove {
   font-weight: bold;
@@ -723,111 +687,111 @@ div.json-table-btn--active:hover {
    ========================================================================== */
 
 /* Default (Gray-200 equivalent) */
-.dropdown-tag--default {
+.json-table-tag--default {
   background-color: var(--background-modifier-hover);
   color: var(--text-normal);
 }
 
 /* Obsidian Accent */
-.dropdown-tag--accent {
+.json-table-tag--accent {
   background-color: var(--interactive-accent);
   color: var(--text-on-accent);
 }
 
 /* Red (Red-500) */
-.dropdown-tag--red {
+.json-table-tag--red {
   background-color: rgba(239, 68, 68, 0.6);
   color: #ffffff;
   // border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 /* Orange (Orange-500) */
-.dropdown-tag--orange {
+.json-table-tag--orange {
   background-color: rgba(249, 115, 22, 0.6);
   color: #ffffff;
   // border: 1px solid rgba(249, 115, 22, 0.3);
 }
 
 /* Yellow (Yellow-500) */
-.dropdown-tag--yellow {
+.json-table-tag--yellow {
   background-color: rgba(234, 179, 8, 0.6);
   color: #ffffff;
   // border: 1px solid rgba(234, 179, 8, 0.3);
 }
 
 /* Green (Green-500) */
-.dropdown-tag--green {
+.json-table-tag--green {
   background-color: rgba(34, 197, 94, 0.6);
   color: #ffffff;
   // border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 /* Blue (Blue-500) */
-.dropdown-tag--blue {
+.json-table-tag--blue {
   background-color: rgba(59, 130, 246, 0.6);
   color: #ffffff;
   // border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 /* Indigo (Indigo-500) */
-.dropdown-tag--indigo {
+.json-table-tag--indigo {
   background-color: rgba(99, 102, 241, 0.6);
   color: #ffffff;
   // border: 1px solid rgba(99, 102, 241, 0.3);
 }
 
 /* Violet (Violet-500) */
-.dropdown-tag--violet {
+.json-table-tag--violet {
   background-color: rgba(139, 92, 246, 0.6);
   color: #ffffff;
   // border: 1px solid rgba(139, 92, 246, 0.3);
 }
 
 /* Pink (Pink-500) */
-.dropdown-tag--pink {
+.json-table-tag--pink {
   background-color: rgba(236, 72, 153, 0.6);
   color: #ffffff;
   // border: 1px solid rgba(236, 72, 153, 0.3);
 }
 
 /* Hover/select states - slightly darker background */
-.json-table-dropdown-option:hover .dropdown-tag--red {
+.json-table-dropdown-option:hover .json-table-tag--red {
   background-color: rgba(239, 68, 68, 0.8);
 }
 
-.json-table-dropdown-option:hover .dropdown-tag--orange {
+.json-table-dropdown-option:hover .json-table-tag--orange {
   background-color: rgba(249, 115, 22, 0.8);
 }
 
-.json-table-dropdown-option:hover .dropdown-tag--yellow {
+.json-table-dropdown-option:hover .json-table-tag--yellow {
   background-color: rgba(234, 179, 8, 0.8);
 }
 
-.json-table-dropdown-option:hover .dropdown-tag--green {
+.json-table-dropdown-option:hover .json-table-tag--green {
   background-color: rgba(34, 197, 94, 0.8);
 }
 
-.json-table-dropdown-option:hover .dropdown-tag--blue {
+.json-table-dropdown-option:hover .json-table-tag--blue {
   background-color: rgba(59, 130, 246, 0.8);
 }
 
-.json-table-dropdown-option:hover .dropdown-tag--indigo {
+.json-table-dropdown-option:hover .json-table-tag--indigo {
   background-color: rgba(99, 102, 241, 0.8);
 }
 
-.json-table-dropdown-option:hover .dropdown-tag--violet {
+.json-table-dropdown-option:hover .json-table-tag--violet {
   background-color: rgba(139, 92, 246, 0.8);
 }
 
-.json-table-dropdown-option:hover .dropdown-tag--pink {
+.json-table-dropdown-option:hover .json-table-tag--pink {
   background-color: rgba(236, 72, 153, 0.8);
 }
 
-.json-table-dropdown-option:hover .dropdown-tag--accent {
+.json-table-dropdown-option:hover .json-table-tag--accent {
   opacity: 0.9;
 }
 
-.json-table-dropdown-option:hover .dropdown-tag--default {
+.json-table-dropdown-option:hover .json-table-tag--default {
   background-color: var(--background-modifier-hover);
 }
 
@@ -866,44 +830,44 @@ div.json-table-btn--active:hover {
 }
 
 /* Color circle backgrounds */
-.color-circle--default {
+.json-table-color-circle--default {
   background-color: var(--background-modifier-hover);
   border: 1px solid var(--background-modifier-border);
 }
 
-.color-circle--accent {
+.json-table-color-circle--accent {
   background-color: var(--interactive-accent);
 }
 
-.color-circle--red {
+.json-table-color-circle--red {
   background-color: #ef4444;
 }
 
-.color-circle--orange {
+.json-table-color-circle--orange {
   background-color: #f97316;
 }
 
-.color-circle--yellow {
+.json-table-color-circle--yellow {
   background-color: #eab308;
 }
 
-.color-circle--green {
+.json-table-color-circle--green {
   background-color: #22c55e;
 }
 
-.color-circle--blue {
+.json-table-color-circle--blue {
   background-color: #3b82f6;
 }
 
-.color-circle--indigo {
+.json-table-color-circle--indigo {
   background-color: #6366f1;
 }
 
-.color-circle--violet {
+.json-table-color-circle--violet {
   background-color: #8b5cf6;
 }
 
-.color-circle--pink {
+.json-table-color-circle--pink {
   background-color: #ec4899;
 }
 
@@ -1059,8 +1023,23 @@ div.json-table-btn--active:hover {
 /* .json-table-header-cell.is-dragging .json-table-drag-handle { ... } */
 
 /* Keep dragover style */
-.json-table-header-cell.is-dragover {
-  box-shadow: inset 2px 0 0 0 var(--interactive-accent);
+/* Enhanced visual for drop target */
+.json-table-header-cell.is-dragover,
+.json-table-div-header-cell.is-dragover {
+  background-color: var(--background-modifier-hover);
+  position: relative;
+}
+
+.json-table-header-cell.is-dragover::before,
+.json-table-div-header-cell.is-dragover::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: var(--interactive-accent);
+  z-index: 20;
 }
 
 /* Ensure content wrapper doesn't interfere */
@@ -1462,10 +1441,13 @@ input.table-filename-input {
 .json-table-add-row-wrapper {
   display: flex;
   align-items: center;
+  font-size: 14px;
   gap: 12px;
   padding: 0.875em 0;
   border-bottom: 1px solid var(--background-modifier-border);
 }
+
+
 
 /* Reset Add Row padding since it's now on the wrapper */
 .json-table-add-row {
@@ -1657,22 +1639,43 @@ input.table-filename-input {
   z-index: 10;
 }
 
-.json-table-div-header-cell.json-table-buttons-th {
+.json-table-buttons-th,
+.json-table-row-actions-cell {
   position: sticky;
   right: 0;
-  z-index: 11;
-  background-color: var(--background-secondary);
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  z-index: 10;
+  background-color: var(--background-primary);
   border-left: 1px solid var(--background-modifier-border);
-  border-right: none;
-  padding: 0;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
 }
+
+.json-table-buttons-th {
+  z-index: 11;
+  /* Header above body */
+  background-color: var(--background-secondary);
+  /* Match header bg */
+}
+
+/* Specific fix for HTML table structure if needed */
+th.json-table-buttons-th {
+  position: sticky;
+  right: 0;
+}
+
 
 /* Body Cell Specifics */
 .json-table-div-cell {
-  padding: 0 12px;
+  padding: 0;
 }
 
-.json-table-div-cell .json-table-cell-content {
+
+.json-table-div-cell .json-table-cell-btn-wrapper {
   width: 100%;
   height: 100%;
   padding: 8px 12px;
@@ -1680,9 +1683,29 @@ input.table-filename-input {
   align-items: center;
 }
 
+.json-table-text-span {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 8px 12px;
+  outline: none;
+  cursor: text;
+}
+
+.json-table-dropdown {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
 /* Drag Handle Cell */
 .json-table-div-cell.json-table-drag-handle-cell {
   width: 30px !important;
+  flex: 0 0 30px !important;
   min-width: 30px !important;
   max-width: 30px !important;
   justify-content: center;
@@ -1694,6 +1717,7 @@ input.table-filename-input {
 
 .json-table-div-header-cell.json-table-div-drag-handle-header {
   width: 30px !important;
+  flex: 0 0 30px !important;
   min-width: 30px !important;
   border-right: 1px solid var(--background-modifier-border);
   padding: 0;
@@ -1710,4 +1734,40 @@ input.table-filename-input {
   border-right: none;
   justify-content: center;
   padding: 0;
+}
+
+/* Property Editor Styles */
+
+/* Inline Options List in Column Menu */
+.json-table-column-options-list {
+  max-height: 160px;
+  /* Approx 5 items (32px each) */
+  overflow-y: auto;
+  border-bottom: 1px solid var(--background-modifier-border);
+  margin-bottom: 4px;
+}
+
+/* Input Container in Menu */
+
+
+
+.search-input-container input {
+  width: 100%;
+  /* Padding removed */
+  background: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-normal);
+}
+
+.search-input-container input:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+/* Color Dot */
+.json-table-color-dot {
+  /* Dimensions set inline in TS, but ensure block behavior */
+  display: inline-block;
+  vertical-align: middle;
 }
