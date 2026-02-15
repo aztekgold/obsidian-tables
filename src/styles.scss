@@ -1641,18 +1641,32 @@ input.table-filename-input {
 
 .json-table-buttons-th,
 .json-table-row-actions-cell {
-  position: sticky;
+  position: static;
+  /* Default to static */
   right: 0;
-  width: 40px;
+  width: 60px;
   min-width: 40px;
-  max-width: 40px;
+  max-width: 60px;
   z-index: 10;
   background-color: var(--background-primary);
   border-left: 1px solid var(--background-modifier-border);
   display: flex !important;
   align-items: center;
   justify-content: center;
-  padding: 0 !important;
+}
+
+.is-sticky-actions .json-table-buttons-th,
+.is-sticky-actions .json-table-row-actions-cell {
+  position: sticky;
+}
+
+/* Ensure sticky cells have background to cover content underneath */
+.is-sticky-actions tbody tr:nth-child(odd) .json-table-row-actions-cell {
+  background-color: var(--background-primary);
+}
+
+.is-sticky-actions tbody tr:nth-child(even) .json-table-row-actions-cell {
+  background-color: var(--background-primary-alt);
 }
 
 .json-table-buttons-th {
@@ -1664,8 +1678,12 @@ input.table-filename-input {
 
 /* Specific fix for HTML table structure if needed */
 th.json-table-buttons-th {
-  position: sticky;
+  position: static;
   right: 0;
+}
+
+.is-sticky-actions th.json-table-buttons-th {
+  position: sticky;
 }
 
 
@@ -1676,7 +1694,6 @@ th.json-table-buttons-th {
 
 
 .json-table-div-cell .json-table-cell-btn-wrapper {
-  width: 100%;
   height: 100%;
   padding: 8px 12px;
   display: flex;
@@ -1726,14 +1743,28 @@ th.json-table-buttons-th {
 /* Actions Cell */
 .json-table-div-cell.json-table-row-actions-cell {
   width: 60px !important;
-  position: sticky;
+  position: static;
+  /* Default static */
   right: 0;
   z-index: 5;
   background-color: inherit;
   border-left: 1px solid var(--background-modifier-border);
-  border-right: none;
+  border-right: 1px solid var(--background-modifier-border);
   justify-content: center;
   padding: 0;
+}
+
+.is-sticky-actions .json-table-div-cell.json-table-row-actions-cell {
+  position: sticky;
+}
+
+/* Match row background for sticky cells (even = alt, odd = primary/default) */
+.is-sticky-actions .json-table-div-row:nth-child(even) .json-table-div-cell.json-table-row-actions-cell {
+  background-color: var(--background-primary-alt);
+}
+
+.is-sticky-actions .json-table-div-row:nth-child(odd) .json-table-div-cell.json-table-row-actions-cell {
+  background-color: var(--background-primary);
 }
 
 /* Property Editor Styles */
