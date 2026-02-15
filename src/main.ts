@@ -79,7 +79,7 @@ class JsonTableSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Renderer Type')
-            .setDesc('Choose between the default Div-based rendering or legacy HTML table rendering.')
+            .setDesc('Use the legacy HTML table renderer if you experience stability issues with the default renderer.')
             .addDropdown(dropdown => dropdown
                 .addOption('div', 'Default')
                 .addOption('table', 'HTML Table (Legacy)')
@@ -104,8 +104,8 @@ class JsonTableSettingTab extends PluginSettingTab {
         containerEl.createEl('h3', { text: 'Experimental' });
 
         new Setting(containerEl)
-            .setName('Enable Beta Features')
-            .setDesc('Enable experimental features. These features may be unstable.')
+            .setName('Row Reordering')
+            .setDesc('Enable row reordering via drag-and-drop. This feature is experimental and may be unstable.')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableBetaFeatures)
                 .onChange(async (value) => {
