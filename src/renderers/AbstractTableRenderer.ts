@@ -66,6 +66,7 @@ export abstract class AbstractTableRenderer {
     public abstract render(): void;
     protected abstract renderHeader(container: HTMLElement): void;
     protected abstract renderBody(container: HTMLElement, rowsToRender: CellData[][]): void;
+    protected abstract getHeaderCell(visualIndex: number): HTMLElement | null; // For refreshing menu position
 
     // --- Shared Methods ---
 
@@ -177,6 +178,9 @@ export abstract class AbstractTableRenderer {
     }
 
     protected renderViewTabs() {
+        const currentFilePath = this.view.getFilePath();
+        if (currentFilePath && currentFilePath.endsWith('.csv')) return; // Hide views for CSV files
+
         const tabsContainer = this.container.createDiv({ cls: 'json-table-view-tabs' });
         this.data.views.forEach(view => {
             const tab = tabsContainer.createDiv({
@@ -404,12 +408,13 @@ export abstract class AbstractTableRenderer {
         setTimeout(() => document.addEventListener('click', onOutsideClick, true), 0);
     }
 
-    protected showEditColumnDialog(headerCell: HTMLElement, column: ColumnDef, data: TableData, colIndex: number) {
+    protected showEditColumnDialog(headerCell: HTMLElement, column: ColumnDef, data: TableData, colIndex: number, deepLink?: { view: 'option-edit', optionIndex: number }) {
         // Remove any existing popup
         document.querySelector('.json-table-column-menu')?.remove();
 
         const menuEl = document.createElement('div');
         menuEl.addClass('menu');
+        menuEl.addClass('bases-toolbar-menu'); // Requested class
         menuEl.addClass('json-table-column-menu');
         menuEl.style.position = 'fixed';
         menuEl.style.zIndex = '9999';
@@ -420,8 +425,10 @@ export abstract class AbstractTableRenderer {
 
         // --- Section 1: Rename ---
         const renameSection = menuContainer.createDiv({ cls: 'bases-toolbar-section' });
-        const searchWrapper = renameSection.createDiv({ cls: 'search-input-container' });
-        const renameInput = searchWrapper.createEl('input', {
+        const renameForm = renameSection.createDiv({ cls: 'bases-toolbar-menu-form' });
+        const inputRow = renameForm.createDiv({ cls: 'input-row' });
+        const inputContent = inputRow.createDiv({ cls: 'input-row-content' });
+        const renameInput = inputContent.createEl('input', {
             type: 'text',
             value: column.name,
             placeholder: 'Column Name'
@@ -443,8 +450,8 @@ export abstract class AbstractTableRenderer {
             }
         });
 
-        // Divider after rename
-        menuContainer.createEl('div', { cls: 'menu-separator' });
+        // Divider removed
+
 
         // --- Section 2: Change Type (drill-down item) ---
         const changeTypeSection = menuContainer.createDiv({ cls: 'bases-toolbar-section' });
@@ -484,8 +491,8 @@ export abstract class AbstractTableRenderer {
                 this.showEditColumnDialog(headerCell, column, data, colIndex);
             });
 
-            // Divider after back
-            typeContainer.createEl('div', { cls: 'menu-separator' });
+            // Divider removed
+
 
             // Type section
             const typeSection = typeContainer.createDiv({ cls: 'bases-toolbar-section' });
@@ -535,6 +542,213 @@ export abstract class AbstractTableRenderer {
             });
         });
 
+        // --- Section: Properties (Inline) ---
+        if (column.type === 'dropdown' || column.type === 'multiselect') {
+            const propsSection = menuContainer.createDiv({ cls: 'bases-toolbar-section' });
+            propsSection.createDiv({ cls: 'bases-toolbar-section-header', text: 'Option Properties' }); // New Header
+
+            const optionsContent = propsSection.createDiv({ cls: 'bases-toolbar-section-content' });
+            // Add custom class for scrolling limits
+            const optionsList = optionsContent.createDiv({ cls: 'json-table-column-options-list bases-toolbar-items' });
+
+            const typeOpts = column.typeOptions as any;
+            const options = typeOpts?.options || [];
+            const availableColors = ['default', 'accent', 'red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'pink'];
+
+            const renderInlineOptions = () => {
+                optionsList.empty();
+
+                // Render all options, CSS will handle scrolling
+                options.forEach((opt: any, index: number) => {
+                    const item = optionsList.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item' });
+
+                    // Auto-open if deep linked
+                    if (deepLink?.view === 'option-edit' && deepLink.optionIndex === index) {
+                        setTimeout(() => item.click(), 0);
+                    }
+
+                    const info = item.createDiv({ cls: 'bases-toolbar-menu-item-info' });
+
+                    // Color Dot
+                    const iconWrap = info.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
+                    const dot = iconWrap.createDiv({ cls: `json-table-color-dot json-table-tag--${opt.style || 'default'}` });
+                    dot.style.width = '10px';
+                    dot.style.height = '10px';
+                    dot.style.borderRadius = '50%';
+                    // dot style handles background via class
+
+                    info.createDiv({ cls: 'bases-toolbar-menu-item-name', text: opt.value });
+
+                    const chevron = item.createDiv({ cls: 'clickable-icon bases-toolbar-menu-item-icon' });
+                    setIcon(chevron, 'chevron-right');
+
+                    // Click -> Open Edit Submenu
+                    item.addEventListener('click', () => {
+                        scrollContainer.empty();
+                        const editPropContainer = scrollContainer.createDiv({ cls: 'bases-toolbar-menu-container' });
+
+                        // Header / Back
+                        const backSection = editPropContainer.createDiv({ cls: 'bases-toolbar-section' });
+                        const backItems = backSection.createDiv({ cls: 'bases-toolbar-items' });
+                        const backItem = backItems.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item' });
+                        const backInfo = backItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
+                        const backIcon = backInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
+                        setIcon(backIcon, 'arrow-left');
+                        backInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Back' });
+                        backItem.addEventListener('click', () => {
+                            cleanup();
+                            // Fix Jumping: Re-select header cell as it might be detached/stale
+                            const newHeader = this.getHeaderCell(colIndex);
+                            if (newHeader) {
+                                this.showEditColumnDialog(newHeader, column, data, colIndex);
+                            }
+                        });
+
+                        editPropContainer.createEl('div', { cls: 'menu-separator' });
+
+                        // Edit Propery UI
+                        const editSection = editPropContainer.createDiv({ cls: 'bases-toolbar-section' });
+
+                        // 1. Rename Input
+                        const renameForm = editSection.createDiv({ cls: 'bases-toolbar-menu-form' });
+                        const inputRow = renameForm.createDiv({ cls: 'input-row' });
+                        const inputContent = inputRow.createDiv({ cls: 'input-row-content' });
+                        const nameInput = inputContent.createEl('input', {
+                            type: 'text',
+                            value: opt.value,
+                            placeholder: 'Option Name'
+                        });
+                        nameInput.spellcheck = false;
+                        // Focus if deep linked (and this is the target)
+                        if (deepLink?.view === 'option-edit' && deepLink.optionIndex === index) {
+                            setTimeout(() => nameInput.focus(), 50);
+                        }
+
+
+                        nameInput.addEventListener('click', (e) => e.stopPropagation());
+                        nameInput.addEventListener('keydown', (e) => {
+                            e.stopPropagation();
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                nameInput.blur();
+                            }
+                        });
+                        nameInput.addEventListener('change', async () => {
+                            const newValue = nameInput.value.trim();
+                            if (newValue === opt.value) return;
+
+                            opt.value = newValue;
+                            await this.view.saveTableData(data);
+                            this.render(); // Re-render table
+
+                            // Re-anchor with delay to ensure DOM layout is settled
+                            setTimeout(() => {
+                                const newHeader = this.getHeaderCell(colIndex);
+                                if (newHeader) positionPopup(menuEl, newHeader, { align: 'auto' });
+                            }, 0);
+                        });
+
+                        // 2. Delete Option Button
+                        const deleteBtn = editSection.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item mod-warning' });
+                        deleteBtn.style.marginBottom = '8px';
+                        const deleteInfo = deleteBtn.createDiv({ cls: 'bases-toolbar-menu-item-info' });
+                        const deleteIcon = deleteInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
+                        setIcon(deleteIcon, ICON_NAMES.trash);
+                        deleteInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Delete Option' });
+
+                        deleteBtn.addEventListener('click', async () => {
+                            if (typeOpts.options) {
+                                typeOpts.options.splice(index, 1);
+                                await this.view.saveTableData(data);
+                                this.render();
+
+                                // Return to main menu (re-open)
+                                const newHeader = this.getHeaderCell(colIndex);
+                                if (newHeader) {
+                                    cleanup();
+                                    this.showEditColumnDialog(newHeader, column, data, colIndex);
+                                }
+                            }
+                        });
+
+
+                        // 3. Color List (renumbered)
+                        const colorList = editSection.createDiv({ cls: 'bases-toolbar-items' });
+
+                        availableColors.forEach(color => {
+                            const colorItem = colorList.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item' });
+                            if ((opt.style || 'default') === color) colorItem.addClass('is-selected');
+
+                            const colorInfo = colorItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
+                            const colorIconWrap = colorInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
+                            const colorDot = colorIconWrap.createDiv({ cls: `json-table-color-dot json-table-tag--${color}` });
+                            colorDot.style.width = '12px';
+                            colorDot.style.height = '12px';
+                            colorDot.style.borderRadius = '50%';
+
+                            const colorName = color.charAt(0).toUpperCase() + color.slice(1);
+                            colorInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: colorName });
+
+                            if ((opt.style || 'default') === color) {
+                                const check = colorItem.createDiv({ cls: 'clickable-icon bases-toolbar-menu-item-icon' });
+                                setIcon(check, 'check');
+                            }
+
+                            colorItem.addEventListener('click', async () => {
+                                opt.style = color;
+                                await this.view.saveTableData(data);
+                                this.render();
+
+                                // Re-anchor after render
+                                const newHeader = this.getHeaderCell(colIndex);
+                                if (newHeader) {
+                                    positionPopup(menuEl, newHeader, { align: 'auto' });
+
+                                    // Update selection UI manually
+                                    const allItems = colorList.querySelectorAll('.suggestion-item');
+                                    allItems.forEach(el => el.removeClass('is-selected'));
+                                    colorItem.addClass('is-selected');
+                                    allItems.forEach(el => {
+                                        const icon = el.querySelector('.clickable-icon');
+                                        if (icon) icon.remove();
+                                    });
+                                    const newCheck = colorItem.createDiv({ cls: 'clickable-icon bases-toolbar-menu-item-icon' });
+                                    setIcon(newCheck, 'check');
+                                }
+                            });
+                        });
+                    });
+                });
+            };
+
+            renderInlineOptions();
+
+            // Add Option Button (at bottom of section)
+            // Use standard item style
+            const addItem = propsSection.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item' });
+            const addInfo = addItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
+            const addIcon = addInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
+            setIcon(addIcon, ICON_NAMES.plus);
+            addInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Add Option' });
+
+            addItem.addEventListener('click', async () => {
+                if (!typeOpts.options) typeOpts.options = [];
+                typeOpts.options.push({ value: 'New Option', style: 'default' });
+                await this.view.saveTableData(data);
+                this.render();
+
+                const newHeader = this.getHeaderCell(colIndex);
+                if (newHeader) {
+                    cleanup();
+                    // Re-open with deep link to the new option
+                    this.showEditColumnDialog(newHeader, column, data, colIndex, {
+                        view: 'option-edit',
+                        optionIndex: typeOpts.options.length - 1
+                    });
+                }
+            });
+        }
+
         // --- Section 3: Actions ---
         const actionsSection = menuContainer.createDiv({ cls: 'bases-toolbar-section' });
         const actionItems = actionsSection.createDiv({ cls: 'bases-toolbar-items' });
@@ -578,8 +792,8 @@ export abstract class AbstractTableRenderer {
             cleanup();
         });
 
-        // Divider before delete
-        menuContainer.createEl('div', { cls: 'menu-separator' });
+        // Divider removed
+
 
         // Delete Column (destructive) — in its own section for visual separation
         const deleteSection = menuContainer.createDiv({ cls: 'bases-toolbar-section' });
@@ -623,7 +837,9 @@ export abstract class AbstractTableRenderer {
 
         const menuEl = document.createElement('div');
         menuEl.addClass('menu');
+        menuEl.addClass('bases-toolbar-menu'); // Requested class
         menuEl.addClass('json-table-add-column-menu');
+
         menuEl.style.position = 'fixed';
         menuEl.style.zIndex = '9999';
         menuEl.style.width = '200px';
@@ -633,8 +849,10 @@ export abstract class AbstractTableRenderer {
 
         // --- Name input ---
         const nameSection = menuContainer.createDiv({ cls: 'bases-toolbar-section' });
-        const searchWrapper = nameSection.createDiv({ cls: 'search-input-container' });
-        const nameInput = searchWrapper.createEl('input', {
+        const nameForm = nameSection.createDiv({ cls: 'bases-toolbar-menu-form' });
+        const inputRow = nameForm.createDiv({ cls: 'input-row' });
+        const inputContent = inputRow.createDiv({ cls: 'input-row-content' });
+        const nameInput = inputContent.createEl('input', {
             type: 'text',
             placeholder: 'Column name'
         });

@@ -337,6 +337,7 @@ div.json-table-btn--active:hover {
   font-family: inherit;
   font-size: inherit;
   cursor: text;
+  padding: 8px 12px;
 
   /* Default: No wrap, ellipsis */
   white-space: nowrap;
@@ -1700,15 +1701,7 @@ th.json-table-buttons-th {
   align-items: center;
 }
 
-.json-table-text-span {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  padding: 8px 12px;
-  outline: none;
-  cursor: text;
-}
+
 
 .json-table-dropdown {
   display: flex;
