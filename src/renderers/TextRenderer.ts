@@ -6,12 +6,15 @@ export class TextRenderer implements ICellRenderer {
   public render(
     app: App,
     container: HTMLElement,
-    value: string,
+    value: any,
     column: ColumnDef,
-    onChange: (newValue: string) => void
+    onChange: (newValue: any) => void
   ): void {
     const typeOpts = column.typeOptions as TextTypeOptions | undefined;
     const isWrapped = typeOpts?.wrap || false;
+
+    // Ensure value is a string for the span
+    const stringValue = value === null || value === undefined ? "" : String(value);
 
     // The container is already a flexbox with align-items: center (from .json-table-cell-content)
     // We just need a span inside it to hold the text.
@@ -25,7 +28,7 @@ export class TextRenderer implements ICellRenderer {
     }
 
     // Set initial text
-    span.setText(value);
+    span.setText(stringValue);
 
     // Make the span editable
     span.contentEditable = 'true';
@@ -42,6 +45,7 @@ export class TextRenderer implements ICellRenderer {
 
     // Save on blur
     span.addEventListener('blur', () => {
+      span.scrollLeft = 0; // Reset scroll position to beginning
       const newValue = span.innerText; // innerText preserves newlines
       if (newValue !== value) {
         onChange(newValue);

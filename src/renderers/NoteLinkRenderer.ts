@@ -11,9 +11,9 @@ export class NoteLinkRenderer implements ICellRenderer {
   public render(
     app: App,
     container: HTMLElement, // This is the <td>
-    value: string,
+    value: any,
     column: ColumnDef, // We receive the full column definition
-    onChange: (newValue: string) => void
+    onChange: (newValue: any) => void
   ): void {
     container.empty(); // Clear td
 
@@ -30,9 +30,9 @@ export class NoteLinkRenderer implements ICellRenderer {
   private renderDisplay(
     app: App,
     wrapper: HTMLElement, // Wrapper div
-    value: string,
+    value: any,
     column: ColumnDef, // Pass column info through
-    onChange: (newValue: string) => void
+    onChange: (newValue: any) => void
   ) {
     wrapper.empty();
     wrapper.addClass('is-displaying-link'); // Add styles for display mode
@@ -75,9 +75,9 @@ export class NoteLinkRenderer implements ICellRenderer {
   private renderEdit(
     app: App,
     wrapper: HTMLElement, // Wrapper div
-    value: string,
+    value: any,
     column: ColumnDef, // Receive column info
-    onChange: (newValue: string) => void
+    onChange: (newValue: any) => void
   ) {
     // Clone wrapper to remove old listeners
     const parent = wrapper.parentNode;

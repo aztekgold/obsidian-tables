@@ -8,11 +8,11 @@ export class CheckboxRenderer implements ICellRenderer {
   public render(
     app: App,
     container: HTMLElement,
-    value: string,
+    value: any,
     column: ColumnDef,
-    onChange: (newValue: string) => void
+    onChange: (newValue: any) => void
   ): void {
-    
+
     // Create cell content wrapper
     const cellContent = container.createEl('div', { cls: 'json-table-cell-content json-table-cell-checkbox' });
 
@@ -20,7 +20,7 @@ export class CheckboxRenderer implements ICellRenderer {
       type: 'checkbox',
       cls: 'json-table-checkbox'
     });
-    
+
     // The "value" will be a string like "true" or "false"
     // We check if the string is "true"
     input.checked = value === 'true';

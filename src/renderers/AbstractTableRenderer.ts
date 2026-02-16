@@ -9,11 +9,7 @@ import { DropdownRenderer } from './DropdownRenderer';
 import { MultiSelectRenderer } from './MultiSelectRenderer';
 import { NoteLinkRenderer } from './NoteLinkRenderer';
 import { DateRenderer } from './DateRenderer';
-import { IColumnEditor } from '../editors/IColumnEditor';
-import { TextColumnEditor } from '../editors/TextColumnEditor';
-import { DropdownColumnEditor } from '../editors/DropdownColumnEditor';
-import { NoteLinkColumnEditor } from '../editors/NoteLinkColumnEditor';
-import { DateColumnEditor } from '../editors/DateColumnEditor';
+import { NumberRenderer } from './NumberRenderer';
 import { SortHandler } from '../SortHandler';
 import { FilterHandler } from '../FilterHandler';
 import { ICON_NAMES, createIconElement } from '../icons';
@@ -26,11 +22,11 @@ export const TYPE_ICONS: Record<string, string> = { // Exported for use in subcl
     checkbox: ICON_NAMES.checkbox,
     date: ICON_NAMES.date,
     notelink: ICON_NAMES.link,
+    number: ICON_NAMES.number,
 };
 
 export abstract class AbstractTableRenderer {
     protected cellRenderers: Map<string, ICellRenderer>;
-    protected columnEditors: Map<string, IColumnEditor>;
     protected isResizing: boolean = false;
     protected sortHandler: SortHandler;
     protected filterHandler: FilterHandler;
@@ -55,8 +51,6 @@ export abstract class AbstractTableRenderer {
 
         this.cellRenderers = new Map();
         this.registerRenderers();
-        this.columnEditors = new Map();
-        this.registerColumnEditors();
 
         this.sortHandler = new SortHandler(this.data, () => this.render(), this.view, () => this.getActiveView());
         this.filterHandler = new FilterHandler(this.data, () => this.render(), this.view, () => this.getActiveView());
@@ -125,15 +119,7 @@ export abstract class AbstractTableRenderer {
         this.cellRenderers.set('multiselect', new MultiSelectRenderer());
         this.cellRenderers.set('notelink', new NoteLinkRenderer());
         this.cellRenderers.set('date', new DateRenderer());
-    }
-
-    protected registerColumnEditors() {
-        this.columnEditors.set('text', new TextColumnEditor());
-        this.columnEditors.set('checkbox', new TextColumnEditor());
-        this.columnEditors.set('dropdown', new DropdownColumnEditor());
-        this.columnEditors.set('multiselect', new DropdownColumnEditor());
-        this.columnEditors.set('notelink', new NoteLinkColumnEditor());
-        this.columnEditors.set('date', new DateColumnEditor());
+        this.cellRenderers.set('number', new NumberRenderer());
     }
 
     protected getVisibleColumns(): ColumnDef[] {
@@ -471,6 +457,7 @@ export abstract class AbstractTableRenderer {
             { value: 'multiselect', label: 'Multi-select', icon: ICON_NAMES.multiselect },
             { value: 'notelink', label: 'Note Link', icon: ICON_NAMES.link },
             { value: 'date', label: 'Date', icon: ICON_NAMES.date },
+            { value: 'number', label: 'Number', icon: ICON_NAMES.number },
         ];
 
         changeTypeItem.addEventListener('click', () => {
@@ -747,6 +734,116 @@ export abstract class AbstractTableRenderer {
                     });
                 }
             });
+        } else if (column.type === 'date') {
+            const propsSection = menuContainer.createDiv({ cls: 'bases-toolbar-section' });
+            propsSection.createDiv({ cls: 'bases-toolbar-section-header', text: 'Date Properties' });
+
+            const typeOpts = column.typeOptions as any;
+            const currentFormat = typeOpts?.dateFormat || 'YYYY/MM/DD';
+
+            const availableFormats: { label: string; format: any }[] = [
+                { label: 'Full Date', format: 'MMMM D, YYYY' },
+                { label: 'Short Date', format: 'MMM D' },
+                { label: 'Day/Month/Year', format: 'DD/MM/YYYY' },
+                { label: 'Month/Day/Year', format: 'MM/DD/YYYY' },
+                { label: 'Year/Month/Day', format: 'YYYY/MM/DD' },
+            ];
+
+            const formatItem = propsSection.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item' });
+            const formatInfo = formatItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
+            const formatIcon = formatInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
+            setIcon(formatIcon, ICON_NAMES.date);
+            formatInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Date Format' });
+
+            // Display current value on the right if possible, or just a chevron
+            const currentLabel = availableFormats.find(f => f.format === currentFormat)?.label || currentFormat;
+            const formatValue = formatItem.createDiv({ cls: 'bases-toolbar-menu-item-icon', text: currentLabel });
+            formatValue.style.fontSize = 'var(--font-smallest)';
+            formatValue.style.color = 'var(--text-muted)';
+            const chevron = formatItem.createDiv({ cls: 'clickable-icon bases-toolbar-menu-item-icon' });
+            setIcon(chevron, 'chevron-right');
+
+            formatItem.addEventListener('click', () => {
+                scrollContainer.empty();
+                const formatMenuContainer = scrollContainer.createDiv({ cls: 'bases-toolbar-menu-container' });
+
+                // Back button
+                const backSection = formatMenuContainer.createDiv({ cls: 'bases-toolbar-section' });
+                const backItem = backSection.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item' });
+                const backInfo = backItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
+                const backIcon = backInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
+                setIcon(backIcon, 'arrow-left');
+                backInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Back' });
+                backItem.addEventListener('click', () => {
+                    cleanup();
+                    const newHeader = this.getHeaderCell(colIndex);
+                    if (newHeader) {
+                        this.showEditColumnDialog(newHeader, column, data, colIndex);
+                    }
+                });
+
+                formatMenuContainer.createEl('div', { cls: 'menu-separator' });
+
+                // Format list
+                const listSection = formatMenuContainer.createDiv({ cls: 'bases-toolbar-section' });
+                listSection.createDiv({ cls: 'bases-toolbar-section-header', text: 'Formats' });
+                const listItems = listSection.createDiv({ cls: 'bases-toolbar-items' });
+
+                availableFormats.forEach(f => {
+                    const isActive = currentFormat === f.format;
+                    const item = listItems.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item' });
+                    if (isActive) item.addClass('is-selected');
+
+                    const info = item.createDiv({ cls: 'bases-toolbar-menu-item-info' });
+                    info.createDiv({ cls: 'bases-toolbar-menu-item-name', text: f.label });
+
+                    if (isActive) {
+                        const check = item.createDiv({ cls: 'clickable-icon bases-toolbar-menu-item-icon' });
+                        setIcon(check, 'check');
+                    }
+
+                    item.addEventListener('click', async () => {
+                        if (isActive) return;
+                        column.typeOptions = column.typeOptions || {};
+                        (column.typeOptions as any).dateFormat = f.format;
+                        await this.view.saveTableData(data);
+                        this.render();
+                        cleanup();
+                        const newHeader = this.getHeaderCell(colIndex);
+                        if (newHeader) {
+                            this.showEditColumnDialog(newHeader, column, data, colIndex);
+                        }
+                    });
+                });
+            });
+        } else if (column.type === 'notelink') {
+            const propsSection = menuContainer.createDiv({ cls: 'bases-toolbar-section' });
+            propsSection.createDiv({ cls: 'bases-toolbar-section-header', text: 'Note Link Properties' });
+
+            const typeOpts = column.typeOptions as any;
+            const suggestAll = typeOpts?.suggestAllFiles === true;
+
+            const suggestItem = propsSection.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item' });
+            const suggestInfo = suggestItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
+            const suggestIcon = suggestInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
+            setIcon(suggestIcon, ICON_NAMES.link);
+            suggestInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Suggest All Files' });
+
+            const checkbox = suggestItem.createEl('input', { type: 'checkbox' });
+            checkbox.checked = suggestAll;
+            checkbox.style.pointerEvents = 'none';
+
+            suggestItem.addEventListener('click', async () => {
+                const currentOpts = column.typeOptions as any || {};
+                column.typeOptions = { ...currentOpts, suggestAllFiles: !suggestAll };
+                await this.view.saveTableData(data);
+                this.render();
+                cleanup();
+                const newHeader = this.getHeaderCell(colIndex);
+                if (newHeader) {
+                    this.showEditColumnDialog(newHeader, column, data, colIndex);
+                }
+            });
         }
 
         // --- Section 3: Actions ---
@@ -873,6 +970,7 @@ export abstract class AbstractTableRenderer {
             { type: 'multiselect' as const, name: 'Multi-select', icon: ICON_NAMES.multiselect },
             { type: 'notelink' as const, name: 'Note Link', icon: ICON_NAMES.link },
             { type: 'date' as const, name: 'Date', icon: ICON_NAMES.date },
+            { type: 'number' as const, name: 'Number', icon: ICON_NAMES.number },
         ];
         const defaultDropdownOptions = [
             { value: 'To Do', style: 'red' }, { value: 'In Progress', style: 'blue' }, { value: 'Done', style: 'green' }

@@ -93,7 +93,7 @@ export interface ColumnDef {
 // Defines a single cell's data within a row
 export interface CellData {
   column: string; // The ID of the column this cell belongs to
-  value: string; // The raw data stored for the cell (always a string)
+  value: any; // The raw data stored for the cell (string, number, boolean, etc.)
 }
 
 // Represents the entire table data structure saved in the file

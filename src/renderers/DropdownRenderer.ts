@@ -9,9 +9,9 @@ export class DropdownRenderer implements ICellRenderer {
   public render(
     app: App,
     container: HTMLElement, // This is the <td>
-    value: string,
+    value: any,
     column: ColumnDef,
-    onChange: (newValue: string) => void
+    onChange: (newValue: any) => void
   ): void {
     container.empty();
 
@@ -36,9 +36,9 @@ export class DropdownRenderer implements ICellRenderer {
   private renderDisplay(
     app: App,
     wrapper: HTMLElement,
-    value: string,
+    value: any,
     column: ColumnDef,
-    onChange: (newValue: string) => void
+    onChange: (newValue: any) => void
   ) {
     wrapper.empty();
     wrapper.removeClass('is-editing');
@@ -57,9 +57,9 @@ export class DropdownRenderer implements ICellRenderer {
   private renderEdit(
     app: App,
     wrapper: HTMLElement,
-    value: string,
+    value: any,
     column: ColumnDef,
-    onChange: (newValue: string) => void
+    onChange: (newValue: any) => void
   ) {
     // Clone wrapper to remove old listeners
     const parent = wrapper.parentNode;
@@ -112,7 +112,7 @@ export class DropdownRenderer implements ICellRenderer {
    */
   private renderTags(
     wrapper: HTMLElement,
-    value: string,
+    value: any,
     column: ColumnDef,
     onRemove?: () => void
   ) {

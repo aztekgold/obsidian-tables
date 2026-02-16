@@ -14,6 +14,7 @@ export const ICON_NAMES = {
   checkbox: 'check-square',
   date: 'calendar',
   link: 'link',
+  number: 'hash',
   plus: 'plus',
   moreVertical: 'more-vertical',
   trash: 'trash-2',

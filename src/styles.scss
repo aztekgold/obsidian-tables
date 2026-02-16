@@ -347,6 +347,15 @@ div.json-table-btn--active:hover {
   /* Behave like block for width */
 }
 
+.json-table-text-span:focus {
+  white-space: nowrap;
+  overflow: auto;
+  /* Allow horizontal scrolling while editing */
+  text-overflow: clip;
+  /* Show full text */
+  flex: 1;
+}
+
 .json-table-text-span.is-wrapped {
   white-space: pre-wrap;
   word-break: break-word;
@@ -1701,6 +1710,43 @@ th.json-table-buttons-th {
   align-items: center;
 }
 
+
+.json-table-number-cell {
+  width: 100%;
+  height: 100%;
+}
+
+.json-table-number-input {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  padding: 8px 12px;
+  color: var(--text-normal);
+  font-family: inherit;
+  font-size: inherit;
+  text-align: right;
+  /* Numbers are usually right-aligned */
+}
+
+.json-table-number-input:focus {
+  outline: none;
+  background-color: var(--background-modifier-form-field);
+}
+
+// Remove arrows/spinners for number input
+.json-table-number-input::-webkit-outer-spin-button,
+.json-table-number-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.json-table-number-input {
+  -webkit-appearance: textfield;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
 
 
 .json-table-dropdown {

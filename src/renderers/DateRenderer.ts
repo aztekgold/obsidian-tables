@@ -14,18 +14,18 @@ export class DateRenderer implements ICellRenderer {
   // Map format names to date-fns format strings
   private formatMap: Record<DateFormat, string> = {
     'MMMM D, YYYY': 'MMMM d, yyyy',
-    'MMM D':        'MMM d',
-    'DD/MM/YYYY':   'dd/MM/yyyy',
-    'MM/DD/YYYY':   'MM/dd/yyyy',
-    'YYYY/MM/DD':   'yyyy/MM/dd',
+    'MMM D': 'MMM d',
+    'DD/MM/YYYY': 'dd/MM/yyyy',
+    'MM/DD/YYYY': 'MM/dd/yyyy',
+    'YYYY/MM/DD': 'yyyy/MM/dd',
   };
 
   public render(
     app: App,
     container: HTMLElement, // This is the <td>
-    value: string, // Stored as timestamp string
+    value: any, // Stored as timestamp string (or number)
     column: ColumnDef, // Full column definition including typeOptions
-    onChange: (newValue: string) => void
+    onChange: (newValue: any) => void
   ): void {
     container.empty();
     container.addClass('json-table-date-cell'); // Style the TD directly
@@ -44,8 +44,8 @@ export class DateRenderer implements ICellRenderer {
     const formatString = this.formatMap[currentFormat];
     // --- End Read ---
 
-    // Try parsing the stored value
-    const timestamp = parseInt(value, 10);
+    // Parse timestamp - handle both number and string for compatibility
+    const timestamp = typeof value === 'number' ? value : parseInt(value, 10);
     let displayDate = ''; // Placeholder for empty/invalid
     let currentDate: Date | null = null;
 
@@ -62,7 +62,7 @@ export class DateRenderer implements ICellRenderer {
 
     // Create date wrapper directly in the cell (no content wrapper)
     const dateWrapper = container.createEl('div', { cls: 'json-table-date-wrapper' });
-    
+
     // Display the formatted date
     const dateSpan = dateWrapper.createSpan({
       text: displayDate,
@@ -71,38 +71,38 @@ export class DateRenderer implements ICellRenderer {
 
     // --- Flatpickr Integration ---
     try {
-        // Attach flatpickr directly to the date wrapper
-        const fpInstance = flatpickr(dateWrapper, {
-          clickOpens: true,
-          allowInput: false,
-          dateFormat: 'U', // Internal format is Unix timestamp (seconds)
-          defaultDate: currentDate || undefined, // Use parsed date or undefined
-          appendTo: document.body,
+      // Attach flatpickr directly to the date wrapper
+      const fpInstance = flatpickr(dateWrapper, {
+        clickOpens: true,
+        allowInput: false,
+        dateFormat: 'U', // Internal format is Unix timestamp (seconds)
+        defaultDate: currentDate || undefined, // Use parsed date or undefined
+        appendTo: document.body,
 
-          onChange: (selectedDates) => {
-              if (selectedDates.length > 0) {
-                  const selectedDate = selectedDates[0];
-                  const newTimestampMs = selectedDate.getTime();
-                  // --- Read format again for immediate update ---
-                  const updatedFormatString = this.formatMap[(column.typeOptions as DateTypeOptions)?.dateFormat || 'YYYY/MM/DD'];
-                  // --- End Read ---
-                  dateSpan.setText(format(selectedDate, updatedFormatString));
-                  onChange(newTimestampMs.toString()); // Save as milliseconds string
-              } else {
-                  // Handle clearing the date
-                  dateSpan.setText('');
-                  onChange('');
-              }
-          },
-        });
+        onChange: (selectedDates) => {
+          if (selectedDates.length > 0) {
+            const selectedDate = selectedDates[0];
+            const newTimestampMs = selectedDate.getTime();
+            // --- Read format again for immediate update ---
+            const updatedFormatString = this.formatMap[(column.typeOptions as DateTypeOptions)?.dateFormat || 'YYYY/MM/DD'];
+            // --- End Read ---
+            dateSpan.setText(format(selectedDate, updatedFormatString));
+            onChange(newTimestampMs.toString()); // Save as milliseconds string
+          } else {
+            // Handle clearing the date
+            dateSpan.setText('');
+            onChange('');
+          }
+        },
+      });
 
-        // Store the new instance associated with the TD
-        flatpickrInstances.set(container, fpInstance);
+      // Store the new instance associated with the TD
+      flatpickrInstances.set(container, fpInstance);
 
-    } catch(err) {
-        console.error("Failed to initialize flatpickr:", err);
-        container.setText('Error initializing date picker');
-        return;
+    } catch (err) {
+      console.error("Failed to initialize flatpickr:", err);
+      container.setText('Error initializing date picker');
+      return;
     }
   } // End render method
 } // End DateRenderer class

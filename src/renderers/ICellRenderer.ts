@@ -15,8 +15,8 @@ export interface ICellRenderer {
   render(
     app: App,
     container: HTMLElement,
-    value: string,
+    value: any,
     column: ColumnDef,
-    onChange: (newValue: string) => void
+    onChange: (newValue: any) => void
   ): void;
 }
