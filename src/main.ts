@@ -58,9 +58,11 @@ class JsonTableSettingTab extends PluginSettingTab {
             containerEl
         } = this;
         containerEl.empty();
-        containerEl.createEl('h2', {
-            text: 'Tables Settings'
-        });
+        const mainHeading = containerEl.createDiv({ cls: 'setting-item setting-item-heading' });
+        const mainInfo = mainHeading.createDiv({ cls: 'setting-item-info' });
+        mainInfo.createDiv({ cls: 'setting-item-name', text: 'Tables Settings' });
+        mainInfo.createDiv({ cls: 'setting-item-description' });
+        mainHeading.createDiv({ cls: 'setting-item-control' });
 
         new Setting(containerEl)
             .setName('Default File Format')
@@ -117,7 +119,11 @@ class JsonTableSettingTab extends PluginSettingTab {
                     new Notice("Reload required for file extension changes to take full effect.", 7000);
                 }));
 
-        containerEl.createEl('h3', { text: 'Experimental' });
+        const experimentalHeading = containerEl.createDiv({ cls: 'setting-item setting-item-heading' });
+        const experimentalInfo = experimentalHeading.createDiv({ cls: 'setting-item-info' });
+        experimentalInfo.createDiv({ cls: 'setting-item-name', text: 'Experimental' });
+        experimentalInfo.createDiv({ cls: 'setting-item-description' });
+        experimentalHeading.createDiv({ cls: 'setting-item-control' });
 
         new Setting(containerEl)
             .setName('Row Reordering')
