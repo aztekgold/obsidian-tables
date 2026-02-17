@@ -1,6 +1,7 @@
 // src/InlineTableRenderer.ts
 import { MarkdownRenderChild, MarkdownView } from 'obsidian';
 import { TableData, ColumnDef, CellData, JsonTableSettings } from './types';
+import { DivTableRenderer } from './renderers/DivTableRenderer';
 import { HtmlTableRenderer } from './renderers/HtmlTableRenderer';
 import { AbstractTableRenderer } from './renderers/AbstractTableRenderer';
 import { JsonTableView } from './JsonTableView';
@@ -69,7 +70,11 @@ export class InlineTableRenderer extends MarkdownRenderChild {
 
       // Create and render the table
       this.containerEl.addClass('json-table-inline-container');
-      this.renderer = new HtmlTableRenderer(this.containerEl, this.data, mockView, true, this.settings); // isInline = true
+      if (this.settings.rendererType === 'div') {
+        this.renderer = new DivTableRenderer(this.containerEl, this.data, mockView, true, this.settings);
+      } else {
+        this.renderer = new HtmlTableRenderer(this.containerEl, this.data, mockView, true, this.settings);
+      }
       this.renderer.render();
 
     } catch (error) {

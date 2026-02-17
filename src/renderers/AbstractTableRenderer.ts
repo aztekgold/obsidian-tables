@@ -603,7 +603,7 @@ export abstract class AbstractTableRenderer {
                         const nameInput = inputContent.createEl('input', {
                             type: 'text',
                             value: opt.value,
-                            placeholder: 'Option Name'
+                            placeholder: 'Option name'
                         });
                         nameInput.spellcheck = false;
                         // Focus if deep linked (and this is the target)
@@ -641,7 +641,7 @@ export abstract class AbstractTableRenderer {
                         const deleteInfo = deleteBtn.createDiv({ cls: 'bases-toolbar-menu-item-info' });
                         const deleteIcon = deleteInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
                         setIcon(deleteIcon, ICON_NAMES.trash);
-                        deleteInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Delete Option' });
+                        deleteInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Delete option' });
 
                         deleteBtn.addEventListener('click', async () => {
                             if (typeOpts.options) {
@@ -720,7 +720,7 @@ export abstract class AbstractTableRenderer {
 
             addItem.addEventListener('click', async () => {
                 if (!typeOpts.options) typeOpts.options = [];
-                typeOpts.options.push({ value: 'New Option', style: 'default' });
+                typeOpts.options.push({ value: 'New option', style: 'default' });
                 await this.view.saveTableData(data);
                 this.render();
 
