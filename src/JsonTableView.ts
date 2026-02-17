@@ -62,7 +62,8 @@ export class JsonTableView extends ItemView {
   setSettings(settings: JsonTableSettings) {
     this.settings = settings;
     // If view is active, re-evaluate and re-render if necessary
-    if (this.currentFilePath && this.app.workspace.activeLeaf === this.leaf) {
+    const activeView = this.app.workspace.getActiveViewOfType(JsonTableView);
+    if (this.currentFilePath && activeView === this) {
       this.loadFileAndRender(this.currentFilePath); // Reload based on path
     }
   }
@@ -156,10 +157,29 @@ export class JsonTableView extends ItemView {
 
     // Check validity based on selected handler and settings
     if (!this.fileHandler || !this.checkIfHandlerIsValid(file)) {
+
+      // Fallback for generic .json files: 
+      // If we caught a .json file that is NOT a .table.json (and thus not valid),
+      // we should try to open it as a regular text file (Source/Markdown view)
+      // so we don't block the user from editing their JSON.
+      if (file.extension === 'json' && !file.name.endsWith('.table.json')) {
+        // Switch this leaf to text view
+        // We use 'markdown' as it handles text editing well in Obsidian
+        // or 'json' if another plugin registered it? Safe bet is 'markdown' (source).
+        this.leaf.setViewState({
+          type: 'markdown',
+          state: { file: file.path }
+        }).catch(err => {
+          console.error("Failed to fallback generic JSON to markdown view:", err);
+          // If fallback fails, show the error as usual
+          this.showError(container, "This file is not recognized as a valid table type.", true);
+        });
+        return;
+      }
+
       console.warn(`renderContent: No valid file handler for ${file.path} with current settings.`);
       // ... (Error handling logic - unchanged) ...
-      // ... (Error handling logic - unchanged) ...
-      // Removed specific error for table renderer setting mismatch
+      // use standard error for others
       this.showError(container, "This file is not recognized as a valid table type or requires different settings.", true);
       return;
     }
@@ -320,7 +340,7 @@ export class JsonTableView extends ItemView {
     const newPath = currentDir ? `${currentDir}/${newFileName}` : newFileName;
 
     // Check if the new file already exists
-    if (await this.app.vault.adapter.exists(newPath)) {
+    if (this.app.vault.getAbstractFileByPath(newPath)) {
       console.error(`Cannot rename: File "${newFileName}" already exists.`);
       return false;
     }

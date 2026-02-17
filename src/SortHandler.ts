@@ -184,69 +184,67 @@ export class SortHandler {
     /** Sorts the this.data.rows array in place based on the rules in the current view */
     public sortDataInMemory(): void {
         const rules = this.getCurrentSortRules();
-        if (rules.length === 0) {
-            // TODO: Restore original order if needed
-            return;
-        }
+        if (rules.length === 0) return;
 
         const { columnId, direction } = rules[0];
         const sortColumn = this.data.columns.find(c => c.id === columnId);
-        if (!sortColumn) {
-            console.warn(`Sort column with ID "${columnId}" not found.Skipping sort.`);
-            return;
-        }
+        if (!sortColumn) return;
 
-        const stripEmojis = (str: string): string => { /* ... emoji stripping regex ... */
+        const stripEmojis = (str: string): string => {
             return str.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE0F}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}]/gu, '').trim();
         };
 
+        // --- PRE-CALCULATE SORT KEYS ($O(R*C)$ once instead of $O(R log R * C)$) ---
+        // Using a Map to associate original row arrays with their normalized sort keys
+        const sortKeys = new Map<any[], any>();
 
-        this.data.rows.sort((rowA, rowB) => {
-            const cellA = rowA.find(cell => cell.column === columnId);
-            const cellB = rowB.find(cell => cell.column === columnId);
-            const valueA_str = cellA?.value || '';
-            const valueB_str = cellB?.value || '';
+        this.data.rows.forEach(row => {
+            const cell = row.find(c => c.column === columnId);
+            const rawValue = cell?.value || '';
 
-            // --- NEW: Prioritize Empty Values ---
-            const isEmptyA = !valueA_str; // True if empty string, null, or undefined
-            const isEmptyB = !valueB_str;
-
-            if (isEmptyA && isEmptyB) {
-                return 0; // Both empty, treat as equal
+            if (rawValue === '' || rawValue === null || rawValue === undefined) {
+                sortKeys.set(row, null); // Mark as empty
+                return;
             }
-            if (isEmptyA) {
-                return 1; // Empty A comes *after* non-empty B, regardless of direction
-            }
-            if (isEmptyB) {
-                return -1; // Non-empty A comes *before* empty B, regardless of direction
-            }
-            // --- END NEW ---
-
-            // --- If neither is empty, proceed with normal comparison ---
-            let comparison = 0;
 
             switch (sortColumn.type) {
                 case 'date':
-                    const timestampA = parseInt(valueA_str, 10); // Already checked for empty, parse should work or yield NaN
-                    const timestampB = parseInt(valueB_str, 10);
-                    // Handle potential NaN from failed parseInt on non-empty, non-numeric strings
-                    comparison = (isNaN(timestampA) ? 0 : timestampA) - (isNaN(timestampB) ? 0 : timestampB);
+                    const ts = parseInt(rawValue, 10);
+                    sortKeys.set(row, isNaN(ts) ? 0 : ts);
                     break;
                 case 'checkbox':
-                    const boolA = valueA_str === 'true';
-                    const boolB = valueB_str === 'true';
-                    comparison = (boolA === boolB) ? 0 : (boolA ? 1 : -1); // false < true
+                    sortKeys.set(row, rawValue === 'true' ? 1 : 0);
                     break;
-                // Add number case here if implemented
+                case 'number':
+                    const num = parseFloat(rawValue);
+                    sortKeys.set(row, isNaN(num) ? 0 : num);
+                    break;
                 default: // text, dropdown, multiselect, notelink
-                    const valueA = stripEmojis(valueA_str);
-                    const valueB = stripEmojis(valueB_str);
-                    comparison = valueA.toLowerCase().localeCompare(valueB.toLowerCase());
+                    sortKeys.set(row, stripEmojis(rawValue).toLowerCase());
                     break;
             }
+        });
 
-            // Apply direction ONLY to non-empty comparisons
-            return direction === 'asc' ? comparison : comparison * -1;
+        this.data.rows.sort((rowA, rowB) => {
+            const valA = sortKeys.get(rowA);
+            const valB = sortKeys.get(rowB);
+
+            // Handle Empty Values (Always go to bottom)
+            const isEmptyA = valA === null;
+            const isEmptyB = valB === null;
+
+            if (isEmptyA && isEmptyB) return 0;
+            if (isEmptyA) return 1;
+            if (isEmptyB) return -1;
+
+            let comparison = 0;
+            if (typeof valA === 'string' && typeof valB === 'string') {
+                comparison = valA.localeCompare(valB);
+            } else {
+                comparison = valA < valB ? -1 : (valA > valB ? 1 : 0);
+            }
+
+            return direction === 'asc' ? comparison : -comparison;
         });
     } // End sortDataInMemory
 } // End SortHandler class

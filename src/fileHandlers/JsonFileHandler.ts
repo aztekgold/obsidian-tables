@@ -9,7 +9,7 @@ import { ITableFileHandler } from './ITableFileHandler';
  */
 export class JsonFileHandler implements ITableFileHandler {
 
-  constructor(private app: App) {}
+  constructor(private app: App) { }
 
   async read(file: TFile): Promise<TableData> {
     const content = await this.app.vault.read(file);
@@ -18,9 +18,9 @@ export class JsonFileHandler implements ITableFileHandler {
     if (!content) {
       console.warn(`File is empty: ${file.path}. Returning default structure.`);
       return {
-          columns: [],
-          rows: [],
-          views: [{ id: 'default_' + Date.now(), name: 'Default', sort: [], filter: [] }]
+        columns: [],
+        rows: [],
+        views: [{ id: 'default_' + Date.now(), name: 'Default', sort: [], filter: [] }]
       };
     }
 
@@ -32,11 +32,11 @@ export class JsonFileHandler implements ITableFileHandler {
       // 1. Ensure 'views' array and default view exist
       if (!data.views || !Array.isArray(data.views) || data.views.length === 0) {
         data.views = [{
-            id: 'default_' + Date.now(),
-            name: 'Default',
-            sort: [],
-            filter: []
-            // hiddenColumns: [] // Add if implementing hidden columns later
+          id: 'default_' + Date.now(),
+          name: 'Default',
+          sort: [],
+          filter: []
+          // hiddenColumns: [] // Add if implementing hidden columns later
         }];
         // Ensure the first view has necessary properties if migrating
         if (!data.views[0].sort) data.views[0].sort = [];
@@ -71,16 +71,15 @@ export class JsonFileHandler implements ITableFileHandler {
   async save(file: TFile, data: TableData): Promise<void> {
     try {
       // Ensure required structures exist before saving (belt-and-suspenders)
-       if (!data.views || data.views.length === 0) {
-           data.views = [{ id: 'default_'+Date.now(), name: 'Default', sort: [], filter: [] }];
-       }
-       if (!data.views[0].sort) data.views[0].sort = [];
-       if (!data.views[0].filter) data.views[0].filter = [];
-       data.columns.forEach(col => { if (!col.typeOptions) col.typeOptions = {}; });
+      if (!data.views || data.views.length === 0) {
+        data.views = [{ id: 'default_' + Date.now(), name: 'Default', sort: [], filter: [] }];
+      }
+      if (!data.views[0].sort) data.views[0].sort = [];
+      if (!data.views[0].filter) data.views[0].filter = [];
+      data.columns.forEach(col => { if (!col.typeOptions) col.typeOptions = {}; });
 
       const jsonString = JSON.stringify(data, null, 2); // Pretty print
-      await this.app.vault.modify(file, jsonString);
-      console.log(`Successfully Saved ${file.name}`);
+      await this.app.vault.process(file, () => jsonString);
     } catch (e) {
       console.error(`Error saving JSON file ${file.path}:`, e);
       throw new Error(`Failed to save file: ${(e as Error).message}`);

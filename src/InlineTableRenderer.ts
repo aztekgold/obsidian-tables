@@ -97,74 +97,64 @@ export class InlineTableRenderer extends MarkdownRenderChild {
         data.views[0].id = this.tableViewId;
       }
 
-      // Read the current file content
-      let content = await this.app.vault.read(this.file);
-
-      // Find and replace the SPECIFIC code block that matches this instance's view ID
-      const codeBlockRegex = /```jsontable\s*\n([\s\S]*?)\n```/g;
       const jsonString = JSON.stringify(data, null, 2);
       const newCodeBlock = `\`\`\`jsontable\n${jsonString}\n\`\`\``;
-
-      // Find the code block that matches this instance's view ID
-      let match;
       let foundMatch = false;
 
-      // Collect all matches first to handle duplicate view IDs
-      const matches: Array<{ match: RegExpExecArray, parsed: TableData, hash: string }> = [];
-      codeBlockRegex.lastIndex = 0;
+      // Use vault.process for atomic update
+      await this.app.vault.process(this.file, (content) => {
+        // Find and replace the SPECIFIC code block that matches this instance's view ID
+        const codeBlockRegex = /```jsontable\s*\n([\s\S]*?)\n```/g;
 
-      while ((match = codeBlockRegex.exec(content)) !== null) {
-        const matchedContent = match[1].trim();
+        // Collect all matches first to handle duplicate view IDs
+        const matches: Array<{ match: RegExpExecArray, parsed: TableData, hash: string }> = [];
+        codeBlockRegex.lastIndex = 0;
 
-        try {
-          const parsedMatch = JSON.parse(matchedContent);
-          const matchViewId = parsedMatch.views?.[0]?.id;
+        let match;
+        while ((match = codeBlockRegex.exec(content)) !== null) {
+          const matchedContent = match[1].trim();
+          try {
+            const parsedMatch = JSON.parse(matchedContent);
+            const matchViewId = parsedMatch.views?.[0]?.id;
 
-          if (matchViewId === this.tableViewId) {
-            // Calculate hash for this match
-            const matchFirstColId = parsedMatch.columns?.[0]?.id || '';
-            const matchFirstColName = parsedMatch.columns?.[0]?.name || '';
-            const matchHash = `${matchFirstColId}:${matchFirstColName}`;
+            if (matchViewId === this.tableViewId) {
+              // Calculate hash for this match
+              const matchFirstColId = parsedMatch.columns?.[0]?.id || '';
+              const matchFirstColName = parsedMatch.columns?.[0]?.name || '';
+              const matchHash = `${matchFirstColId}:${matchFirstColName}`;
 
-            matches.push({ match, parsed: parsedMatch, hash: matchHash });
+              matches.push({ match, parsed: parsedMatch, hash: matchHash });
+            }
+          } catch (e) {
+            // Skip invalid JSON blocks
+            continue;
           }
-        } catch (e) {
-          // Skip invalid JSON blocks
-          continue;
         }
-      }
 
-      // If multiple matches found (duplicate view IDs), match by hash
-      // Otherwise, match by view ID only
-      let targetMatch: RegExpExecArray | null = null;
-
-      if (matches.length === 1) {
-        // Unique match by view ID
-        targetMatch = matches[0].match;
-      } else if (matches.length > 1) {
-        // Duplicate view IDs - match by hash (original column ID + name)
-        const matchingByHash = matches.find(m => m.hash === this.originalSourceHash);
-        if (matchingByHash) {
-          targetMatch = matchingByHash.match;
-        } else {
-          // Hash doesn't match - fallback to first match (shouldn't happen, but safety)
+        // Match logic
+        let targetMatch: RegExpExecArray | null = null;
+        if (matches.length === 1) {
           targetMatch = matches[0].match;
+        } else if (matches.length > 1) {
+          const matchingByHash = matches.find(m => m.hash === this.originalSourceHash);
+          targetMatch = matchingByHash ? matchingByHash.match : matches[0].match;
         }
-      }
 
-      if (targetMatch) {
-        const startPos = targetMatch.index;
-        const endPos = startPos + targetMatch[0].length;
-        content = content.substring(0, startPos) + newCodeBlock + content.substring(endPos);
-        foundMatch = true;
-      }
+        if (targetMatch) {
+          const startPos = targetMatch.index;
+          const endPos = startPos + targetMatch[0].length;
+          // Return updated content
+          foundMatch = true;
+          return content.substring(0, startPos) + newCodeBlock + content.substring(endPos);
+        }
+
+        console.warn(`Could not find matching code block with view ID: ${this.tableViewId}`);
+        return content; // No change
+      });
 
       if (foundMatch) {
-        await this.app.vault.modify(this.file, content);
         this.data = data; // Update local reference
         this.source = jsonString; // Update source reference
-      } else {
-        console.warn(`Could not find matching code block with view ID: ${this.tableViewId}`);
       }
     } catch (error) {
       console.error('Error saving inline table:', error);

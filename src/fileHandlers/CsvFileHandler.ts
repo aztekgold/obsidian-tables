@@ -49,7 +49,7 @@ export class CsvFileHandler implements ITableFileHandler {
 
     async save(file: TFile, data: TableData): Promise<void> {
         const csvContent = this.generateCSV(data);
-        await this.app.vault.modify(file, csvContent);
+        await this.app.vault.process(file, () => csvContent);
     }
 
     private parseCSV(content: string): { columns: string[], rows: string[][] } | null {

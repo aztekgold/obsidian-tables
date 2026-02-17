@@ -63,12 +63,167 @@ export class DivTableRenderer extends AbstractTableRenderer {
         return null;
     }
 
+
+
+    protected renderBody(container: HTMLElement, rowsToRender: CellData[][]) {
+        const tbody = container.createDiv({ cls: 'json-table-div-body' });
+        const visibleColumns = this.getVisibleColumns();
+        let draggedRowIndex: number | null = null;
+        const rowIndexMap = new Map<CellData[], number>();
+        this.data.rows.forEach((row, idx) => rowIndexMap.set(row, idx));
+        const activeSort = this.sortHandler.getCurrentSortRules();
+        const isSortActive = activeSort.length > 0 && activeSort[0].columnId !== null;
+
+        rowsToRender.forEach(row => {
+            const tr = tbody.createDiv({ cls: 'json-table-div-row' });
+            const originalRowIndex = rowIndexMap.get(row) ?? -1;
+
+            // Drag Handle
+            if (!isSortActive && this.settings.enableBetaFeatures && !this.isInline) {
+                tr.draggable = true;
+                const handleCell = tr.createDiv({ cls: 'json-table-div-cell json-table-drag-handle-cell' });
+                const handleContent = handleCell.createDiv({ cls: 'json-table-cell-btn-wrapper json-table-drag-handle-content' });
+                handleContent.appendChild(createIconElement(ICON_NAMES.gripVertical, 14, 'json-table-row-drag-icon'));
+
+                tr.addEventListener('dragstart', (e) => { draggedRowIndex = originalRowIndex; tr.addClass('is-dragging'); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; });
+                tr.addEventListener('dragover', (e) => {
+                    e.preventDefault(); if (draggedRowIndex === null || draggedRowIndex === originalRowIndex) return;
+                    if (draggedRowIndex < originalRowIndex) { tr.addClass('is-dragover-bottom'); tr.removeClass('is-dragover-top'); }
+                    else { tr.addClass('is-dragover-top'); tr.removeClass('is-dragover-bottom'); }
+                    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+                });
+                tr.addEventListener('dragleave', () => { tr.removeClass('is-dragover-top'); tr.removeClass('is-dragover-bottom'); });
+                tr.addEventListener('drop', async (e) => {
+                    e.stopPropagation(); tr.removeClass('is-dragover-top'); tr.removeClass('is-dragover-bottom');
+                    const currentIndex = draggedRowIndex; draggedRowIndex = null;
+                    if (currentIndex === null || currentIndex === originalRowIndex) return;
+                    const movedRow = this.data.rows.splice(currentIndex, 1)[0];
+                    this.data.rows.splice(originalRowIndex, 0, movedRow);
+                    await this.view.saveTableData(this.data);
+                    this.render();
+                });
+                tr.addEventListener('dragend', () => { tr.removeClass('is-dragging'); tr.removeClass('is-dragover-top'); tr.removeClass('is-dragover-bottom'); draggedRowIndex = null; });
+            }
+
+            // Data Cells
+            this.renderRow(tr, row, visibleColumns, activeSort.length > 0);
+
+            // Delete Row Cell
+            const deleteCell = tr.createDiv({ cls: 'json-table-div-cell json-table-row-actions-cell' });
+            const cellContent = deleteCell.createDiv({ cls: 'json-table-cell-btn-wrapper' });
+            const deleteButton = cellContent.createDiv({ cls: 'json-table-btn json-table-btn--icon', attr: { 'aria-label': 'Delete row', title: 'Delete row' } });
+            deleteButton.appendChild(createIconElement(ICON_NAMES.trash, 16));
+            deleteButton.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (originalRowIndex > -1) { this.data.rows.splice(originalRowIndex, 1); await this.view.saveTableData(this.data); this.render(); }
+            });
+        });
+    }
+
+    private renderRow(tr: HTMLElement, row: CellData[], columns: ColumnDef[], isSorted: boolean) {
+        const cellMap = new Map<string, string>();
+        row.forEach(cell => cellMap.set(cell.column, cell.value));
+
+        columns.forEach(col => {
+            const value = cellMap.get(col.id) || '';
+            const td = tr.createDiv({ cls: 'json-table-div-cell' });
+
+            // USE CSS VARIABLE FOR WIDTH
+            // The container (tableWrapper) will have --col-width-{id} set
+            // We just need to map this cell to that variable via style
+            td.style.width = `var(--col-width-${col.id}, 150px)`;
+            td.style.flex = `0 0 var(--col-width-${col.id}, 150px)`; // IMPORTANT: Prevent growing/shrinking
+
+            td.setAttribute('data-col-id', col.id); // Keep for reference if needed
+
+            let renderer = this.cellRenderers.get(col.type) || this.cellRenderers.get('text');
+            if (!renderer) return;
+
+            const onCellChange = async (newValue: string) => {
+                const cellData = row.find(c => c.column === col.id);
+                if (cellData) { cellData.value = newValue; }
+                else { row.push({ column: col.id, value: newValue }); }
+                await this.view.saveTableData(this.data);
+                if (isSorted || this.filterHandler.hasActiveFilters()) {
+                    this.render();
+                }
+            };
+            renderer.render(this.view.app, td, value, col, onCellChange);
+        });
+    }
+
+    private renderAddRowButton(container: Element) {
+        const wrapper = container.createDiv({ cls: 'json-table-add-row-wrapper' });
+        // Use standard button classes + icon (as array)
+        const addBtn = wrapper.createEl('button', {
+            cls: ['json-table-btn', 'json-table-btn--standard', 'json-table-add-row-btn']
+        });
+        const icon = createIconElement(ICON_NAMES.plus, 16);
+        addBtn.appendChild(icon);
+        addBtn.appendChild(document.createTextNode(' Add row'));
+
+        const rowCountValue = this.data.rows.length;
+        wrapper.createDiv({
+            text: `${rowCountValue} Row${rowCountValue !== 1 ? 's' : ''}`,
+            cls: 'json-table-row-count'
+        });
+        addBtn.addEventListener('click', async () => {
+            const newRow: CellData[] = [];
+            this.data.columns.forEach(col => newRow.push({ column: col.id, value: '' }));
+            this.data.rows.push(newRow);
+            await this.view.saveTableData(this.data);
+            this.render();
+        });
+    }
+
+    private onResizeStart(e: MouseEvent, column: ColumnDef, headerCell: HTMLElement) {
+        this.isResizing = true;
+        e.preventDefault(); e.stopPropagation();
+
+        const startX = e.clientX;
+        const startWidth = headerCell.offsetWidth;
+        const columnId = column.id;
+        const wrapper = this.container.querySelector('.json-table-div-wrapper') as HTMLElement;
+
+        const onMouseMove = (moveE: MouseEvent) => {
+            const newWidth = Math.max(40, startWidth + (moveE.clientX - startX));
+
+            // PERFORMANCE OPTIMIZATION:
+            // Update CSS Variable on the wrapper instead of iterating all cells
+            if (wrapper) {
+                wrapper.style.setProperty(`--col-width-${columnId}`, `${newWidth}px`);
+            }
+        };
+
+        const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+
+            // Save final width
+            // Read from the variable or calculate based on existing logic
+            // (The header cell width is now controlled by the variable too)
+            const finalWidth = parseFloat(wrapper.style.getPropertyValue(`--col-width-${columnId}`)) || headerCell.offsetWidth;
+
+            column.width = finalWidth;
+            this.view.saveTableData(this.data);
+            setTimeout(() => { this.isResizing = false; }, 0);
+        };
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    }
+
+    // Override renderHeaderto set initial CSS variables and use them
     protected renderHeader(container: HTMLElement) {
         const headerRow = container.createDiv({ cls: 'json-table-div-header-row' });
         const visibleColumns = this.getVisibleColumns();
         let draggedColumnId: string | null = null;
         const activeSort = this.sortHandler.getCurrentSortRules();
         const isSortActive = activeSort.length > 0 && activeSort[0].columnId !== null;
+
+        // Set initial CSS variables on container for all visible columns
+        visibleColumns.forEach(col => {
+            container.style.setProperty(`--col-width-${col.id}`, `${col.width || 150}px`);
+        });
 
         // Drag Handle Header
         if (!isSortActive && this.settings.enableBetaFeatures && !this.isInline) {
@@ -78,14 +233,11 @@ export class DivTableRenderer extends AbstractTableRenderer {
         visibleColumns.forEach((col, visibleIndex) => {
             const realIndex = this.data.columns.findIndex(c => c.id === col.id);
             const th = headerRow.createDiv({ cls: 'json-table-div-header-cell' });
-            if (col.width) {
-                th.style.width = `${col.width}px`;
-                th.style.flex = '0 0 auto';
-            } else {
-                th.style.width = '';
-                th.style.flex = ''; // Let CSS handle flex: 1
-            }
-            // th.style.flexShrink = '0'; // Removed, handled by CSS flex: 1 1 0px or flex: 0 0 auto
+
+            // USE CSS VARIABLE
+            th.style.width = `var(--col-width-${col.id}, 150px)`;
+            th.style.flex = `0 0 var(--col-width-${col.id}, 150px)`; // Prevent growing/shrinking
+
             th.draggable = true;
             th.setAttribute('data-col-id', col.id);
 
@@ -155,153 +307,5 @@ export class DivTableRenderer extends AbstractTableRenderer {
             isAddColPopupOpen = true;
             this.showAddColumnDialog(buttonsTh, addColBtnDiv, this.data, () => { isAddColPopupOpen = false; });
         });
-    }
-
-    protected renderBody(container: HTMLElement, rowsToRender: CellData[][]) {
-        const tbody = container.createDiv({ cls: 'json-table-div-body' });
-        const visibleColumns = this.getVisibleColumns();
-        let draggedRowIndex: number | null = null;
-        const rowIndexMap = new Map<CellData[], number>();
-        this.data.rows.forEach((row, idx) => rowIndexMap.set(row, idx));
-        const activeSort = this.sortHandler.getCurrentSortRules();
-        const isSortActive = activeSort.length > 0 && activeSort[0].columnId !== null;
-
-        rowsToRender.forEach(row => {
-            const tr = tbody.createDiv({ cls: 'json-table-div-row' });
-            const originalRowIndex = rowIndexMap.get(row) ?? -1;
-
-            // Drag Handle
-            if (!isSortActive && this.settings.enableBetaFeatures && !this.isInline) {
-                tr.draggable = true;
-                const handleCell = tr.createDiv({ cls: 'json-table-div-cell json-table-drag-handle-cell' });
-                const handleContent = handleCell.createDiv({ cls: 'json-table-cell-btn-wrapper json-table-drag-handle-content' });
-                handleContent.appendChild(createIconElement(ICON_NAMES.gripVertical, 14, 'json-table-row-drag-icon'));
-
-                tr.addEventListener('dragstart', (e) => { draggedRowIndex = originalRowIndex; tr.addClass('is-dragging'); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; });
-                tr.addEventListener('dragover', (e) => {
-                    e.preventDefault(); if (draggedRowIndex === null || draggedRowIndex === originalRowIndex) return;
-                    if (draggedRowIndex < originalRowIndex) { tr.addClass('is-dragover-bottom'); tr.removeClass('is-dragover-top'); }
-                    else { tr.addClass('is-dragover-top'); tr.removeClass('is-dragover-bottom'); }
-                    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-                });
-                tr.addEventListener('dragleave', () => { tr.removeClass('is-dragover-top'); tr.removeClass('is-dragover-bottom'); });
-                tr.addEventListener('drop', async (e) => {
-                    e.stopPropagation(); tr.removeClass('is-dragover-top'); tr.removeClass('is-dragover-bottom');
-                    const currentIndex = draggedRowIndex; draggedRowIndex = null;
-                    if (currentIndex === null || currentIndex === originalRowIndex) return;
-                    const movedRow = this.data.rows.splice(currentIndex, 1)[0];
-                    this.data.rows.splice(originalRowIndex, 0, movedRow);
-                    await this.view.saveTableData(this.data);
-                    this.render();
-                });
-                tr.addEventListener('dragend', () => { tr.removeClass('is-dragging'); tr.removeClass('is-dragover-top'); tr.removeClass('is-dragover-bottom'); draggedRowIndex = null; });
-            }
-
-            // Data Cells
-            this.renderRow(tr, row, visibleColumns, activeSort.length > 0);
-
-            // Delete Row Cell
-            const deleteCell = tr.createDiv({ cls: 'json-table-div-cell json-table-row-actions-cell' });
-            const cellContent = deleteCell.createDiv({ cls: 'json-table-cell-btn-wrapper' });
-            const deleteButton = cellContent.createDiv({ cls: 'json-table-btn json-table-btn--icon', attr: { 'aria-label': 'Delete row', title: 'Delete row' } });
-            deleteButton.appendChild(createIconElement(ICON_NAMES.trash, 16));
-            deleteButton.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                if (originalRowIndex > -1) { this.data.rows.splice(originalRowIndex, 1); await this.view.saveTableData(this.data); this.render(); }
-            });
-        });
-    }
-
-    private renderRow(tr: HTMLElement, row: CellData[], columns: ColumnDef[], isSorted: boolean) {
-        const cellMap = new Map<string, string>();
-        row.forEach(cell => cellMap.set(cell.column, cell.value));
-
-        columns.forEach(col => {
-            const value = cellMap.get(col.id) || '';
-            const td = tr.createDiv({ cls: 'json-table-div-cell' });
-            if (col.width) {
-                td.style.width = `${col.width}px`;
-                td.style.flex = '0 0 auto';
-            } else {
-                td.style.width = '';
-                td.style.flex = '';
-            }
-            // td.style.flexShrink = '0'; // Removed
-            td.setAttribute('data-col-id', col.id); // For resizing reference
-
-            let renderer = this.cellRenderers.get(col.type) || this.cellRenderers.get('text');
-            if (!renderer) return;
-
-            const onCellChange = async (newValue: string) => {
-                const cellData = row.find(c => c.column === col.id);
-                if (cellData) { cellData.value = newValue; }
-                else { row.push({ column: col.id, value: newValue }); }
-                await this.view.saveTableData(this.data);
-                if (isSorted || this.filterHandler.hasActiveFilters()) {
-                    this.render();
-                }
-            };
-            renderer.render(this.view.app, td, value, col, onCellChange);
-        });
-    }
-
-    private renderAddRowButton(container: Element) {
-        const wrapper = container.createDiv({ cls: 'json-table-add-row-wrapper' });
-        // Use standard button classes + icon (as array)
-        const addBtn = wrapper.createEl('button', {
-            cls: ['json-table-btn', 'json-table-btn--standard', 'json-table-add-row-btn']
-        });
-        const icon = createIconElement(ICON_NAMES.plus, 16);
-        addBtn.appendChild(icon);
-        addBtn.appendChild(document.createTextNode(' Add row'));
-
-        const rowCountValue = this.data.rows.length;
-        wrapper.createDiv({
-            text: `${rowCountValue} Row${rowCountValue !== 1 ? 's' : ''}`,
-            cls: 'json-table-row-count'
-        });
-        addBtn.addEventListener('click', async () => {
-            const newRow: CellData[] = [];
-            this.data.columns.forEach(col => newRow.push({ column: col.id, value: '' }));
-            this.data.rows.push(newRow);
-            await this.view.saveTableData(this.data);
-            this.render();
-        });
-    }
-
-    private onResizeStart(e: MouseEvent, column: ColumnDef, headerCell: HTMLElement) {
-        this.isResizing = true;
-        e.preventDefault(); e.stopPropagation();
-
-        const startX = e.clientX;
-        const startWidth = headerCell.offsetWidth;
-        const columnId = column.id;
-
-        // Find all cells for this column to update them in real-time
-        const wrapper = this.container.querySelector('.json-table-div-wrapper');
-        const cells = wrapper ? Array.from(wrapper.querySelectorAll(`[data-col-id="${columnId}"]`)) as HTMLElement[] : [];
-        // Include the header cell itself if not in the list (depends on querySelectorAll)
-        if (!cells.includes(headerCell)) cells.push(headerCell);
-
-        const onMouseMove = (moveE: MouseEvent) => {
-            const newWidth = Math.max(40, startWidth + (moveE.clientX - startX));
-            // Update width of all cells in this column
-            cells.forEach(cell => {
-                cell.style.width = `${newWidth}px`;
-                cell.style.flex = '0 0 auto';
-            });
-        };
-
-        const onMouseUp = () => {
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-            // Read final width from header
-            const finalWidth = headerCell.offsetWidth;
-            column.width = finalWidth;
-            this.view.saveTableData(this.data);
-            setTimeout(() => { this.isResizing = false; }, 0);
-        };
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
     }
 }

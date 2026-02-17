@@ -41,8 +41,9 @@ import {
 import {
     tableEmbedExtension
 } from './livePreviewExtension';
-
 import { around } from 'monkey-around';
+
+
 
 // --- Settings Tab Implementation ---
 class JsonTableSettingTab extends PluginSettingTab {
@@ -147,45 +148,52 @@ export default class JsonTablePlugin extends Plugin {
 
 
 
-    // --- Monkey Patching to prevent flash ---
+    // --- Monkey Patching ---
+    // Safely patch setViewState to intercept .table.md files before they open as markdown.
+    // This eliminates the "flash" of the markdown view.
     patchSetViewState() {
-        const plugin = this;
-
-        const uninstaller = around(WorkspaceLeaf.prototype, {
-            setViewState(oldMethod) {
-                return async function (this: WorkspaceLeaf, viewState: any, eState: any) {
-                    // Check if we are trying to open a markdown file
-                    if (viewState.type === 'markdown' && viewState.state && viewState.state.file) {
+        const self = this;
+        const patch = around(WorkspaceLeaf.prototype, {
+            setViewState(next) {
+                return function (this: any, viewState: any, ...args: any[]) {
+                    // Check if Obsidian is trying to open a file
+                    if (viewState && viewState.state && viewState.state.file) {
                         const filePath = viewState.state.file;
-                        if (typeof filePath === 'string' && filePath.endsWith('.table.md')) {
-                            // Always force view type for .table.md files
-                            // Check settings - logic simplified to always allow opening
-                            viewState.type = VIEW_TYPE_JSON_TABLE;
+                        if (typeof filePath === 'string') {
+
+                            // Case 1: .table.md (Prevent Markdown Flash)
+                            if (viewState.type === 'markdown' && filePath.endsWith('.table.md')) {
+                                // Verify it's one of our tables using metadata cache (fast)
+                                const file = self.app.vault.getAbstractFileByPath(filePath);
+                                if (file instanceof TFile) {
+                                    const cache = self.app.metadataCache.getFileCache(file);
+                                    if (cache?.frontmatter?.['json-table-plugin']) {
+                                        // FORCE the view type to be our custom view
+                                        viewState.type = VIEW_TYPE_JSON_TABLE;
+                                    }
+                                }
+                            }
+
+                            // Case 2: .table.json (Prioritize over other JSON viewers)
+                            // We intercept generic 'json' view types OR just check the extension if we want be aggressive for .table.json
+                            // Obsidian defaults json to 'json' view type usually (or whatever plugin handles it).
+                            if (filePath.endsWith('.table.json')) {
+                                // For .table.json, we ALWAYS want to handle it.
+                                viewState.type = VIEW_TYPE_JSON_TABLE;
+                            }
                         }
                     }
-
-                    // Check for .table.json files (rendererType: 'json')
-                    // This handles cases where we couldn't register the extension due to conflict
-                    if (viewState.state && viewState.state.file) {
-                        const filePath = viewState.state.file;
-                        if (typeof filePath === 'string' && filePath.endsWith('.table.json')) {
-                            // Always allow opening .table.json as table view
-                            viewState.type = VIEW_TYPE_JSON_TABLE;
-                        }
-                    }
-
-                    // Call the original method
-                    return oldMethod.call(this, viewState, eState);
-                };
+                    return next.call(this, viewState, ...args);
+                }
             }
         });
-
-        this.register(uninstaller);
+        this.register(patch); // Automatically unpatch on unload
     }
 
     async onload() {
         await this.loadSettings();
-        this.patchSetViewState(); // Load settings first
+        this.patchSetViewState();
+
 
         // Register the custom view
         // The factory function creates the view and passes settings
@@ -203,6 +211,7 @@ export default class JsonTablePlugin extends Plugin {
         this.app.workspace.onLayoutReady(() => {
             this.registerFileExtensions();
         });
+
 
         // Add Settings Tab
         this.addSettingTab(new JsonTableSettingTab(this.app, this));
@@ -277,7 +286,7 @@ export default class JsonTablePlugin extends Plugin {
                         if (leaf.view.getViewType() !== VIEW_TYPE_JSON_TABLE) {
                             menu.addItem((item) => {
                                 item
-                                    .setTitle('Open as Table') // The command text
+                                    .setTitle('Open as table') // Sentence case
                                     .setIcon('table') // Use a relevant icon
                                     .onClick(async () => {
                                         // Force the view switch on the current leaf using state
@@ -416,22 +425,20 @@ export default class JsonTablePlugin extends Plugin {
                 }
 
                 // Handle .table.md files
-                // 1. Check File Type
-                if (!file.name.endsWith('.table.md')) {
-                    return;
-                }
+                // Note: The primary handling is now done via patchSetViewState to prevent flash.
+                // This listener acts as a fall back logic, but for .table.json patching handles it too.
+                // We keep this for robustness.
 
-                // 2. Check Frontmatter
+                // 2. Check Frontmatter using Metadata Cache (Faster)
                 let hasTableFrontmatter = false;
-                try {
-                    const content = await this.app.vault.read(file);
-                    hasTableFrontmatter = /^---\s*\n[\s\S]*?json-table-plugin:\s*true[\s\S]*?\n---/.test(content);
-                } catch (readErr) {
-                    console.error("file-open: Error reading file content:", readErr);
-                    return;
+                const cache = this.app.metadataCache.getFileCache(file);
+                if (cache?.frontmatter?.['json-table-plugin']) {
+                    hasTableFrontmatter = true;
                 }
 
-                if (!hasTableFrontmatter) {
+                const isTableJson = file.name.endsWith('.table.json');
+
+                if (!hasTableFrontmatter && !isTableJson) {
                     return;
                 }
 
@@ -446,17 +453,22 @@ export default class JsonTablePlugin extends Plugin {
                         // Already open in table view - just focus it
                         this.app.workspace.setActiveLeaf(leaf, { focus: true });
 
-                        // Check if we have a duplicate leaf (the one that just opened as markdown)
-                        // and close it if it's different from the existing table leaf
-                        const activeLeaf = this.app.workspace.activeLeaf;
-                        if (activeLeaf && activeLeaf !== leaf) {
-                            activeLeaf.detach();
+                        // Check if we have a duplicate leaf (the one that just opened as markdown/json)
+                        const leaves = this.app.workspace.getLeavesOfType('markdown');
+                        // Also check generic json viewers if needed, or just iterate all leaves?
+                        // For now, keeping markdown check.
+                        for (const l of leaves) {
+                            if (l.getViewState().state?.file === file.path && l !== leaf) {
+                                // This is likely the duplicate view that just opened
+                                l.detach();
+                            }
                         }
+
                         return;
                     }
                 }
 
-                // Second: Check for markdown leaves with this file
+                // Second: Check for markdown leaves with this file (only for .md)
                 const markdownLeaves = this.app.workspace.getLeavesOfType('markdown');
                 for (const leaf of markdownLeaves) {
                     const viewState = leaf.getViewState();
@@ -465,18 +477,32 @@ export default class JsonTablePlugin extends Plugin {
                         break;
                     }
                 }
+                // Also check generic leaves? .table.json might open in 'json' view
+                if (!targetLeaf && isTableJson) {
+                    // Try to find the leaf that just opened this file
+                    // Iterating all leaves is safer
+                    this.app.workspace.iterateAllLeaves(leaf => {
+                        if (leaf.getViewState().state?.file === file.path) {
+                            targetLeaf = leaf;
+                            return true; // Stop iteration
+                        }
+                    });
+                }
 
                 // Third: If no existing leaf found, reuse current active leaf if it's a table view
                 if (!targetLeaf) {
-                    const activeLeaf = this.app.workspace.getActiveViewOfType(JsonTableView)?.leaf;
-                    if (activeLeaf) {
+                    const activeTableView = this.app.workspace.getActiveViewOfType(JsonTableView);
+                    if (activeTableView) {
                         // Reuse the current table view leaf to switch to the new file
-                        targetLeaf = activeLeaf;
+                        targetLeaf = activeTableView.leaf;
                     }
                 }
 
                 // 4. Perform the View Switch
                 if (targetLeaf) {
+                    // Check if it's alreay the correct type
+                    if (targetLeaf.view.getViewType() === VIEW_TYPE_JSON_TABLE) return;
+
                     try {
                         await targetLeaf.setViewState({
                             type: VIEW_TYPE_JSON_TABLE,
@@ -486,7 +512,6 @@ export default class JsonTablePlugin extends Plugin {
                         console.error("file-open: Error during setViewState:", err);
                     }
                 }
-                // If no targetLeaf found, let Obsidian handle normally (will open in new tab)
             })
         );
         // --- End File Open Listener ---
@@ -502,6 +527,7 @@ export default class JsonTablePlugin extends Plugin {
         // Unregistering old handlers is complex. Register both potentially relevant
         // extensions and let the JsonTableView decide if it can handle the specific file.
         this.registerExtensions(['table.md'], VIEW_TYPE_JSON_TABLE); // For direct open attempts of MD wrappers
+
         try {
             this.registerExtensions(['json'], VIEW_TYPE_JSON_TABLE);     // Catches .table.json and allows view to show errors for other .json
         } catch (e) {
@@ -586,7 +612,7 @@ export default class JsonTablePlugin extends Plugin {
             // Construct path carefully for root vs subfolder
             filePath = folderPath ? `${folderPath}/${fileName}` : fileName;
             // Check for existing file and increment counter
-            while (await this.app.vault.adapter.exists(filePath)) {
+            while (this.app.vault.getAbstractFileByPath(filePath)) {
                 fileName = `${baseName} ${counter}${extension}`;
                 filePath = folderPath ? `${folderPath}/${fileName}` : fileName;
                 counter++;
@@ -605,7 +631,7 @@ export default class JsonTablePlugin extends Plugin {
             const extension = '.table.json';
             fileName = `${baseName}${extension}`;
             filePath = folderPath ? `${folderPath}/${fileName}` : fileName;
-            while (await this.app.vault.adapter.exists(filePath)) {
+            while (this.app.vault.getAbstractFileByPath(filePath)) {
                 fileName = `${baseName} ${counter}${extension}`;
                 filePath = folderPath ? `${folderPath}/${fileName}` : fileName;
                 counter++;
@@ -757,7 +783,7 @@ export default class JsonTablePlugin extends Plugin {
 
         // Handle duplicates
         let counter = 1;
-        while (await this.app.vault.adapter.exists(filePath)) {
+        while (this.app.vault.getAbstractFileByPath(filePath)) {
             fileName = `${baseName} ${counter}${extension}`;
             filePath = folderPath ? `${folderPath}/${fileName}` : fileName;
             counter++;

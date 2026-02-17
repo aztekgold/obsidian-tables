@@ -2,7 +2,7 @@
 
 A powerful table plugin for Obsidian that lets you create, manage, and visualize structured data with an intuitive interface.
 
-![Tables Screenshot](images/tables-screeshot.jpg)
+![Tables Showcase](images/obsidian-tables-showcase.png)
 
 ## Support
 

@@ -887,11 +887,11 @@ div.json-table-btn--active:hover {
    ========================================================================== */
 
 // Utility classes for dynamic visibility and states
-.is-hidden {
+.json-table-is-hidden {
   display: none !important;
 }
 
-.is-dimmed {
+.json-table-is-dimmed {
   opacity: 0.5;
 }
 
@@ -1200,8 +1200,8 @@ div.json-table-btn--active:hover {
 }
 
 .json-table-row-button .json-table-icon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 /* Ensure alternating row color applies correctly if needed */
@@ -1711,42 +1711,12 @@ th.json-table-buttons-th {
 }
 
 
-.json-table-number-cell {
+.json-table-number-span {
   width: 100%;
-  height: 100%;
-}
-
-.json-table-number-input {
-  width: 100%;
-  height: 100%;
-  background: transparent;
-  border: none;
-  padding: 8px 12px;
-  color: var(--text-normal);
-  font-family: inherit;
-  font-size: inherit;
   text-align: right;
-  /* Numbers are usually right-aligned */
+  display: block;
 }
 
-.json-table-number-input:focus {
-  outline: none;
-  background-color: var(--background-modifier-form-field);
-}
-
-// Remove arrows/spinners for number input
-.json-table-number-input::-webkit-outer-spin-button,
-.json-table-number-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  appearance: none;
-  margin: 0;
-}
-
-.json-table-number-input {
-  -webkit-appearance: textfield;
-  -moz-appearance: textfield;
-  appearance: textfield;
-}
 
 
 .json-table-dropdown {

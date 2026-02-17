@@ -446,7 +446,7 @@ export abstract class AbstractTableRenderer {
         const changeTypeInfo = changeTypeItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
         const changeTypeIcon = changeTypeInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
         setIcon(changeTypeIcon, ICON_NAMES.switch);
-        changeTypeInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Change Type' });
+        changeTypeInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Change type' });
         const chevronIcon = changeTypeItem.createDiv({ cls: 'clickable-icon bases-toolbar-menu-item-icon' });
         setIcon(chevronIcon, 'chevron-right');
 
@@ -455,7 +455,7 @@ export abstract class AbstractTableRenderer {
             { value: 'checkbox', label: 'Checkbox', icon: ICON_NAMES.checkbox },
             { value: 'dropdown', label: 'Dropdown', icon: ICON_NAMES.dropdown },
             { value: 'multiselect', label: 'Multi-select', icon: ICON_NAMES.multiselect },
-            { value: 'notelink', label: 'Note Link', icon: ICON_NAMES.link },
+            { value: 'notelink', label: 'Note link', icon: ICON_NAMES.link },
             { value: 'date', label: 'Date', icon: ICON_NAMES.date },
             { value: 'number', label: 'Number', icon: ICON_NAMES.number },
         ];
@@ -532,7 +532,7 @@ export abstract class AbstractTableRenderer {
         // --- Section: Properties (Inline) ---
         if (column.type === 'dropdown' || column.type === 'multiselect') {
             const propsSection = menuContainer.createDiv({ cls: 'bases-toolbar-section' });
-            propsSection.createDiv({ cls: 'bases-toolbar-section-header', text: 'Option Properties' }); // New Header
+            propsSection.createDiv({ cls: 'bases-toolbar-section-header', text: 'Option properties' }); // New Header
 
             const optionsContent = propsSection.createDiv({ cls: 'bases-toolbar-section-content' });
             // Add custom class for scrolling limits
@@ -716,7 +716,7 @@ export abstract class AbstractTableRenderer {
             const addInfo = addItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
             const addIcon = addInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
             setIcon(addIcon, ICON_NAMES.plus);
-            addInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Add Option' });
+            addInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Add option' });
 
             addItem.addEventListener('click', async () => {
                 if (!typeOpts.options) typeOpts.options = [];
@@ -736,7 +736,7 @@ export abstract class AbstractTableRenderer {
             });
         } else if (column.type === 'date') {
             const propsSection = menuContainer.createDiv({ cls: 'bases-toolbar-section' });
-            propsSection.createDiv({ cls: 'bases-toolbar-section-header', text: 'Date Properties' });
+            propsSection.createDiv({ cls: 'bases-toolbar-section-header', text: 'Date properties' });
 
             const typeOpts = column.typeOptions as any;
             const currentFormat = typeOpts?.dateFormat || 'YYYY/MM/DD';
@@ -753,7 +753,7 @@ export abstract class AbstractTableRenderer {
             const formatInfo = formatItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
             const formatIcon = formatInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
             setIcon(formatIcon, ICON_NAMES.date);
-            formatInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Date Format' });
+            formatInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Date format' });
 
             // Display current value on the right if possible, or just a chevron
             const currentLabel = availableFormats.find(f => f.format === currentFormat)?.label || currentFormat;
@@ -899,7 +899,7 @@ export abstract class AbstractTableRenderer {
         const deleteInfo = deleteItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
         const deleteIcon = deleteInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
         setIcon(deleteIcon, ICON_NAMES.trash);
-        deleteInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Delete Column' });
+        deleteInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Delete option' });
         deleteItem.addEventListener('click', async () => {
             data.columns.splice(colIndex, 1);
             data.rows.forEach(row => {

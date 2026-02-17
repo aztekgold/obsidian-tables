@@ -140,15 +140,11 @@ export class MarkdownFileHandler implements ITableFileHandler {
       // 2. Extract unique links from 'notelink' columns
       const linkPaths = this.extractLinkPaths(data);
 
-      // 3. Read the existing markdown content
-      const existingContent = await this.app.vault.read(file);
-
-      // 4. Update the frontmatter and JSON block within the content
-      let newContent = this.updateMarkdownContent(existingContent, jsonString, linkPaths);
-
-      // 5. Write the updated content back to the file
-      await this.app.vault.modify(file, newContent);
-      console.log(`Successfully Saved ${file.name}`);
+      // 3. Use vault.process to safely modify the file
+      await this.app.vault.process(file, (existingContent) => {
+        // 4. Update the frontmatter and JSON block within the content
+        return this.updateMarkdownContent(existingContent, jsonString, linkPaths);
+      });
 
     } catch (e) {
       console.error(`Error saving Markdown file ${file.path}:`, e);
