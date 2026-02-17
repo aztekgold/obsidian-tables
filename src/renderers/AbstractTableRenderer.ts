@@ -203,7 +203,7 @@ export abstract class AbstractTableRenderer {
             }
         });
 
-        const addBtn = tabsContainer.createDiv({ cls: 'json-table-view-add-btn', attr: { title: 'Add View' } });
+        const addBtn = tabsContainer.createDiv({ cls: 'json-table-view-add-btn', attr: { title: 'Add view' } });
         addBtn.innerHTML = '+';
         addBtn.addEventListener('click', () => { this.createNewView(); });
     }
@@ -215,27 +215,27 @@ export abstract class AbstractTableRenderer {
 
         // Sort
         const sortButton = leftControls.createEl('button', { cls: 'json-table-btn json-table-btn--standard json-table-sort-button', attr: { 'aria-label': 'Sort table' } });
-        const sortIcon = createIconElement(ICON_NAMES.sort, 16, 'icon-sort');
+        const sortIcon = createIconElement(ICON_NAMES.sort, 14, 'icon-sort');
         sortButton.appendChild(sortIcon); sortButton.appendText(' Sort');
         if (this.sortHandler.getCurrentSortRules().length > 0 && this.sortHandler.getCurrentSortRules()[0].columnId !== null) sortButton.addClass('json-table-btn--active');
         sortButton.addEventListener('click', (e) => { e.stopPropagation(); this.sortHandler.showSortPopup(sortButton); });
 
         // Filter
         const filterButton = leftControls.createEl('button', { cls: 'json-table-btn json-table-btn--standard json-table-filter-button', attr: { 'aria-label': 'Filter table' } });
-        const filterIcon = createIconElement(ICON_NAMES.filter, 16, 'icon-filter');
+        const filterIcon = createIconElement(ICON_NAMES.filter, 14, 'icon-filter');
         filterButton.appendChild(filterIcon); filterButton.appendText(' Filter');
         if (this.filterHandler.hasActiveFilters()) filterButton.addClass('json-table-btn--active');
         filterButton.addEventListener('click', (e) => { e.stopPropagation(); this.filterHandler.showFilterPopup(filterButton); });
 
         // Show/Hide
         const propsButton = leftControls.createEl('button', { cls: 'json-table-btn json-table-btn--standard json-table-props-button', attr: { 'aria-label': 'Column visibility' } });
-        const propsIcon = createIconElement(ICON_NAMES.eye, 16, 'icon-props');
+        const propsIcon = createIconElement(ICON_NAMES.eye, 14, 'icon-props');
         propsButton.appendChild(propsIcon); propsButton.appendText(' Show/Hide');
         propsButton.addEventListener('click', (e) => this.showPropertyVisibilityPopup(propsButton, e));
 
         // Settings
         const settingsButton = rightControls.createEl('button', { cls: 'json-table-btn json-table-btn--icon json-table-settings-button', attr: { 'aria-label': 'Table settings', title: 'Table settings' } });
-        const settingsIcon = createIconElement(ICON_NAMES.moreVertical, 16, 'icon-settings');
+        const settingsIcon = createIconElement(ICON_NAMES.moreVertical, 14, 'icon-settings');
         settingsButton.appendChild(settingsIcon);
         settingsButton.addEventListener('click', (e) => this.showSettingsPopup(settingsButton, e));
 
@@ -256,10 +256,9 @@ export abstract class AbstractTableRenderer {
         const menuEl = document.createElement('div');
         menuEl.addClass('menu');
         menuEl.addClass('json-table-props-menu');
-        menuEl.style.position = 'fixed';
-        menuEl.style.zIndex = '9999';
-        menuEl.style.maxHeight = '400px';
-        menuEl.style.width = '240px';
+        menuEl.addClass('json-table-popup-menu');
+        menuEl.addClass('json-table-menu-width-240');
+        menuEl.addClass('json-table-menu-max-height-400');
 
         // Scrollable content
         const scrollContainer = menuEl.createDiv({ cls: 'menu-scroll' });
@@ -302,7 +301,7 @@ export abstract class AbstractTableRenderer {
                 // Checkbox — RIGHT side
                 const checkbox = itemEl.createEl('input', { type: 'checkbox' });
                 checkbox.checked = !isHidden;
-                checkbox.style.pointerEvents = 'none';
+                checkbox.addClass('json-table-pointer-none');
 
                 // Click handler — toggle visibility
                 itemEl.addEventListener('click', async (ev) => {
@@ -356,9 +355,8 @@ export abstract class AbstractTableRenderer {
         const menuEl = document.createElement('div');
         menuEl.addClass('menu');
         menuEl.addClass('json-table-settings-menu');
-        menuEl.style.position = 'fixed';
-        menuEl.style.zIndex = '9999';
-        menuEl.style.width = '220px';
+        menuEl.addClass('json-table-popup-menu');
+        menuEl.addClass('json-table-menu-width-220');
 
         const scrollContainer = menuEl.createDiv({ cls: 'menu-scroll' });
         const container = scrollContainer.createDiv({ cls: 'bases-toolbar-menu-container' });
@@ -369,7 +367,7 @@ export abstract class AbstractTableRenderer {
         const exportTableInfo = exportTableItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
         const exportTableIcon = exportTableInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
         setIcon(exportTableIcon, 'download');
-        exportTableInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Export Table as CSV' });
+        exportTableInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Export table as CSV' });
         exportTableItem.addEventListener('click', () => { cleanup(); this.exportToCsv(); });
 
         // Export View to CSV
@@ -377,7 +375,7 @@ export abstract class AbstractTableRenderer {
         const exportViewInfo = exportViewItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
         const exportViewIcon = exportViewInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
         setIcon(exportViewIcon, 'download');
-        exportViewInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Export View to CSV' });
+        exportViewInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Export view to CSV' });
         exportViewItem.addEventListener('click', () => { cleanup(); this.exportViewToCsv(); });
 
         // Position and insert
@@ -402,9 +400,8 @@ export abstract class AbstractTableRenderer {
         menuEl.addClass('menu');
         menuEl.addClass('bases-toolbar-menu'); // Requested class
         menuEl.addClass('json-table-column-menu');
-        menuEl.style.position = 'fixed';
-        menuEl.style.zIndex = '9999';
-        menuEl.style.width = '220px';
+        menuEl.addClass('json-table-popup-menu');
+        menuEl.addClass('json-table-menu-width-220');
 
         const scrollContainer = menuEl.createDiv({ cls: 'menu-scroll' });
         const menuContainer = scrollContainer.createDiv({ cls: 'bases-toolbar-menu-container' });
@@ -558,10 +555,7 @@ export abstract class AbstractTableRenderer {
 
                     // Color Dot
                     const iconWrap = info.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
-                    const dot = iconWrap.createDiv({ cls: `json-table-color-dot json-table-tag--${opt.style || 'default'}` });
-                    dot.style.width = '10px';
-                    dot.style.height = '10px';
-                    dot.style.borderRadius = '50%';
+                    const dot = iconWrap.createDiv({ cls: `json-table-color-dot is-small json-table-tag--${opt.style || 'default'}` });
                     // dot style handles background via class
 
                     info.createDiv({ cls: 'bases-toolbar-menu-item-name', text: opt.value });
@@ -636,8 +630,7 @@ export abstract class AbstractTableRenderer {
                         });
 
                         // 2. Delete Option Button
-                        const deleteBtn = editSection.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item mod-warning' });
-                        deleteBtn.style.marginBottom = '8px';
+                        const deleteBtn = editSection.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item mod-warning json-table-margin-bottom-8' });
                         const deleteInfo = deleteBtn.createDiv({ cls: 'bases-toolbar-menu-item-info' });
                         const deleteIcon = deleteInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
                         setIcon(deleteIcon, ICON_NAMES.trash);
@@ -669,9 +662,6 @@ export abstract class AbstractTableRenderer {
                             const colorInfo = colorItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
                             const colorIconWrap = colorInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
                             const colorDot = colorIconWrap.createDiv({ cls: `json-table-color-dot json-table-tag--${color}` });
-                            colorDot.style.width = '12px';
-                            colorDot.style.height = '12px';
-                            colorDot.style.borderRadius = '50%';
 
                             const colorName = color.charAt(0).toUpperCase() + color.slice(1);
                             colorInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: colorName });
@@ -757,9 +747,7 @@ export abstract class AbstractTableRenderer {
 
             // Display current value on the right if possible, or just a chevron
             const currentLabel = availableFormats.find(f => f.format === currentFormat)?.label || currentFormat;
-            const formatValue = formatItem.createDiv({ cls: 'bases-toolbar-menu-item-icon', text: currentLabel });
-            formatValue.style.fontSize = 'var(--font-smallest)';
-            formatValue.style.color = 'var(--text-muted)';
+            const formatValue = formatItem.createDiv({ cls: 'bases-toolbar-menu-item-icon json-table-menu-item-value', text: currentLabel });
             const chevron = formatItem.createDiv({ cls: 'clickable-icon bases-toolbar-menu-item-icon' });
             setIcon(chevron, 'chevron-right');
 
@@ -827,11 +815,11 @@ export abstract class AbstractTableRenderer {
             const suggestInfo = suggestItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
             const suggestIcon = suggestInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
             setIcon(suggestIcon, ICON_NAMES.link);
-            suggestInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Suggest All Files' });
+            suggestInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Suggest all files' });
 
             const checkbox = suggestItem.createEl('input', { type: 'checkbox' });
             checkbox.checked = suggestAll;
-            checkbox.style.pointerEvents = 'none';
+            checkbox.addClass('json-table-pointer-none');
 
             suggestItem.addEventListener('click', async () => {
                 const currentOpts = column.typeOptions as any || {};
@@ -858,12 +846,12 @@ export abstract class AbstractTableRenderer {
             const wrapInfo = wrapItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
             const wrapIcon = wrapInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
             setIcon(wrapIcon, ICON_NAMES.wrapText);
-            wrapInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Wrap Text' });
+            wrapInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Wrap text' });
 
             // Checkbox on right
             const wrapCheckbox = wrapItem.createEl('input', { type: 'checkbox' });
             wrapCheckbox.checked = isWrapped;
-            wrapCheckbox.style.pointerEvents = 'none';
+            wrapCheckbox.addClass('json-table-pointer-none');
 
             wrapItem.addEventListener('click', async () => {
                 const currentOpts = column.typeOptions as any || {};
@@ -879,7 +867,7 @@ export abstract class AbstractTableRenderer {
         const hideInfo = hideItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
         const hideIcon = hideInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
         setIcon(hideIcon, ICON_NAMES.eyeOff);
-        hideInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Hide Column' });
+        hideInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Hide column' });
         hideItem.addEventListener('click', async () => {
             const activeView = this.getActiveView();
             if (!activeView.hiddenColumns) activeView.hiddenColumns = [];
@@ -899,7 +887,7 @@ export abstract class AbstractTableRenderer {
         const deleteInfo = deleteItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
         const deleteIcon = deleteInfo.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
         setIcon(deleteIcon, ICON_NAMES.trash);
-        deleteInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Delete option' });
+        deleteInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Delete column' });
         deleteItem.addEventListener('click', async () => {
             data.columns.splice(colIndex, 1);
             data.rows.forEach(row => {
@@ -937,9 +925,8 @@ export abstract class AbstractTableRenderer {
         menuEl.addClass('bases-toolbar-menu'); // Requested class
         menuEl.addClass('json-table-add-column-menu');
 
-        menuEl.style.position = 'fixed';
-        menuEl.style.zIndex = '9999';
-        menuEl.style.width = '200px';
+        menuEl.addClass('json-table-popup-menu');
+        menuEl.addClass('json-table-menu-width-200');
 
         const scrollContainer = menuEl.createDiv({ cls: 'menu-scroll' });
         const menuContainer = scrollContainer.createDiv({ cls: 'bases-toolbar-menu-container' });
@@ -968,7 +955,7 @@ export abstract class AbstractTableRenderer {
             { type: 'checkbox' as const, name: 'Checkbox', icon: ICON_NAMES.checkbox },
             { type: 'dropdown' as const, name: 'Dropdown', icon: ICON_NAMES.dropdown },
             { type: 'multiselect' as const, name: 'Multi-select', icon: ICON_NAMES.multiselect },
-            { type: 'notelink' as const, name: 'Note Link', icon: ICON_NAMES.link },
+            { type: 'notelink' as const, name: 'Note link', icon: ICON_NAMES.link },
             { type: 'date' as const, name: 'Date', icon: ICON_NAMES.date },
             { type: 'number' as const, name: 'Number', icon: ICON_NAMES.number },
         ];

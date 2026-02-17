@@ -2,7 +2,7 @@
 
 import { TableData, ColumnDef, SortRule, ViewDef } from './types';
 import { JsonTableView } from './JsonTableView';
-import { ICON_NAMES } from './icons';
+import { ICON_NAMES, createIconElement } from './icons';
 import { setIcon } from 'obsidian';
 import { positionPopup } from './utils/popup';
 
@@ -54,9 +54,7 @@ export class SortHandler {
         const menuEl = document.createElement('div');
         menuEl.addClass('menu');
         menuEl.addClass('json-table-sort-menu');
-        menuEl.style.position = 'fixed';
-        menuEl.style.zIndex = '9999';
-        menuEl.style.minWidth = '300px';
+        menuEl.addClass('json-table-popup-menu');
 
         const scrollContainer = menuEl.createDiv({ cls: 'menu-scroll' });
 
@@ -80,13 +78,9 @@ export class SortHandler {
 
             if (currentRules.length === 0) {
                 statementsContainer.createDiv({ text: 'No sorts applied', cls: 'json-table-filter-empty' });
-                statementsContainer.style.padding = '4px 8px';
-                statementsContainer.style.color = 'var(--text-muted)';
-                statementsContainer.style.fontSize = 'var(--font-smallest)';
+                statementsContainer.addClass('is-empty');
             } else {
-                statementsContainer.style.padding = '';
-                statementsContainer.style.color = '';
-                statementsContainer.style.fontSize = '';
+                statementsContainer.removeClass('is-empty');
                 currentRules.forEach((rule, index) => {
                     const rowDiv = statementsContainer.createDiv({ cls: 'filter-row' });
 
@@ -128,7 +122,7 @@ export class SortHandler {
                     // Delete button
                     const rowActions = expression.createDiv({ cls: 'filter-row-actions' });
                     const deleteBtn = rowActions.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': 'Remove sort' } });
-                    setIcon(deleteBtn, 'trash-2');
+                    deleteBtn.appendChild(createIconElement(ICON_NAMES.trash, 14));
                     deleteBtn.addEventListener('click', async (e) => {
                         e.stopPropagation();
                         const rules = this.getCurrentSortRules();
@@ -148,7 +142,7 @@ export class SortHandler {
         const actionsDiv = sortGroup.createDiv({ cls: 'filter-group-actions' });
         const addSortBtn = actionsDiv.createDiv({ cls: 'text-icon-button', attr: { tabindex: '0' } });
         const addIcon = addSortBtn.createSpan({ cls: 'text-button-icon' });
-        setIcon(addIcon, 'plus');
+        addIcon.appendChild(createIconElement(ICON_NAMES.plus, 14));
         addSortBtn.createSpan({ cls: 'text-button-label', text: 'Add sort' });
 
         addSortBtn.addEventListener('click', (e) => {

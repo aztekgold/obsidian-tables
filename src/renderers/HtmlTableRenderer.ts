@@ -61,7 +61,7 @@ export class HtmlTableRenderer extends AbstractTableRenderer {
 
         if (!isSortActive && this.settings.enableBetaFeatures && !this.isInline) {
             const dragCol = this.colGroup.createEl('col');
-            dragCol.style.width = '30px';
+            dragCol.addClass('json-table-width-30');
             dragCol.addClass('json-table-drag-col');
         }
 
@@ -72,7 +72,7 @@ export class HtmlTableRenderer extends AbstractTableRenderer {
         });
 
         const addColEl = this.colGroup.createEl('col');
-        addColEl.style.width = '100px';
+        addColEl.addClass('json-table-width-100');
     }
 
     protected getHeaderCell(visualIndex: number): HTMLElement | null {
@@ -169,7 +169,7 @@ export class HtmlTableRenderer extends AbstractTableRenderer {
         const buttonContainer = buttonsTh.createEl('div', { cls: 'json-table-header-buttons-container' });
 
         const addColBtnDiv = buttonContainer.createEl('div', { cls: 'json-table-btn json-table-btn--icon', attr: { 'aria-label': 'Add column', title: 'Add column' } });
-        const plusIcon = createIconElement(ICON_NAMES.plus, 18);
+        const plusIcon = createIconElement(ICON_NAMES.plus, 14);
         addColBtnDiv.appendChild(plusIcon);
         let isAddColPopupOpen = false;
         addColBtnDiv.addEventListener('click', (e) => {
@@ -237,7 +237,7 @@ export class HtmlTableRenderer extends AbstractTableRenderer {
             const deleteCell = tr.createEl('td', { cls: 'json-table-row-actions-cell' });
             const cellContent = deleteCell.createEl('div', { cls: 'json-table-cell-content' });
             const deleteButton = cellContent.createEl('div', { cls: 'json-table-btn json-table-btn--icon', attr: { 'aria-label': 'Delete row', title: 'Delete row' } });
-            deleteButton.appendChild(createIconElement(ICON_NAMES.trash, 16));
+            deleteButton.appendChild(createIconElement(ICON_NAMES.trash, 14));
             deleteButton.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 if (originalRowIndex > -1) {
@@ -279,7 +279,7 @@ export class HtmlTableRenderer extends AbstractTableRenderer {
         const addBtn = wrapper.createEl('button', {
             cls: ['json-table-btn', 'json-table-btn--standard', 'json-table-add-row-btn']
         });
-        const icon = createIconElement(ICON_NAMES.plus, 16);
+        const icon = createIconElement(ICON_NAMES.plus, 14);
         addBtn.appendChild(icon);
         addBtn.appendChild(document.createTextNode(' Add row'));
 

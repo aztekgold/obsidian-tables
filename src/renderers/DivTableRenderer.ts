@@ -112,7 +112,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
             const deleteCell = tr.createDiv({ cls: 'json-table-div-cell json-table-row-actions-cell' });
             const cellContent = deleteCell.createDiv({ cls: 'json-table-cell-btn-wrapper' });
             const deleteButton = cellContent.createDiv({ cls: 'json-table-btn json-table-btn--icon', attr: { 'aria-label': 'Delete row', title: 'Delete row' } });
-            deleteButton.appendChild(createIconElement(ICON_NAMES.trash, 16));
+            deleteButton.appendChild(createIconElement(ICON_NAMES.trash, 14));
             deleteButton.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 if (originalRowIndex > -1) { this.data.rows.splice(originalRowIndex, 1); await this.view.saveTableData(this.data); this.render(); }
@@ -158,7 +158,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
         const addBtn = wrapper.createEl('button', {
             cls: ['json-table-btn', 'json-table-btn--standard', 'json-table-add-row-btn']
         });
-        const icon = createIconElement(ICON_NAMES.plus, 16);
+        const icon = createIconElement(ICON_NAMES.plus, 14);
         addBtn.appendChild(icon);
         addBtn.appendChild(document.createTextNode(' Add row'));
 
@@ -300,7 +300,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
         const buttonContainer = buttonsTh.createDiv({ cls: 'json-table-header-content' });
 
         const addColBtnDiv = buttonContainer.createDiv({ cls: 'json-table-btn json-table-btn--icon', attr: { 'aria-label': 'Add column', title: 'Add column' } });
-        addColBtnDiv.appendChild(createIconElement(ICON_NAMES.plus, 18));
+        addColBtnDiv.appendChild(createIconElement(ICON_NAMES.plus, 14));
         let isAddColPopupOpen = false;
         addColBtnDiv.addEventListener('click', (e) => {
             e.preventDefault(); e.stopPropagation(); if (isAddColPopupOpen) return;

@@ -601,7 +601,7 @@ export default class JsonTablePlugin extends Plugin {
         let fileContent = '';
         let counter = 1;
         let filePath = '';
-        const baseName = 'New Table';
+        const baseName = 'New table';
         // Determine folder path, handling root case correctly
         const folderPath = targetFolder.path === '/' ? '' : targetFolder.path;
 

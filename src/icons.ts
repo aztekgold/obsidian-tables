@@ -38,7 +38,7 @@ export const ICON_NAMES = {
  * @param className Optional additional CSS class name
  * @returns An HTMLElement with the icon
  */
-export function createIconElement(iconName: string, size: number = 16, className?: string): HTMLElement {
+export function createIconElement(iconName: string, size: number = 14, className?: string): HTMLElement {
   const iconContainer = document.createElement('span');
   iconContainer.classList.add('json-table-icon');
 

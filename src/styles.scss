@@ -68,6 +68,8 @@ input.json-table-rename-input:focus {
 
 .json-table-icon svg {
   display: block;
+  width: 14px;
+  height: 14px;
 }
 
 /* ==========================================================================
@@ -1807,7 +1809,75 @@ th.json-table-buttons-th {
 
 /* Color Dot */
 .json-table-color-dot {
-  /* Dimensions set inline in TS, but ensure block behavior */
   display: inline-block;
   vertical-align: middle;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.json-table-color-dot.is-small {
+  width: 10px;
+  height: 10px;
+}
+
+/* ==========================================================================
+   Popup Menus (Filter/Sort)
+   ========================================================================== */
+
+.json-table-popup-menu {
+  position: fixed;
+  z-index: 9999;
+}
+
+.json-table-filter-menu {
+  min-width: 340px;
+}
+
+.json-table-sort-menu {
+  min-width: 300px;
+}
+
+.json-table-menu-width-220 {
+  width: 220px;
+}
+
+.json-table-menu-width-240 {
+  width: 240px;
+}
+
+.json-table-menu-width-200 {
+  width: 200px;
+}
+
+.json-table-menu-max-height-400 {
+  max-height: 400px !important;
+}
+
+.json-table-width-30 {
+  width: 30px !important;
+}
+
+.json-table-width-100 {
+  width: 100px !important;
+}
+
+/* Empty state styling for filter/sort containers */
+.json-table-filter-group-statements.is-empty {
+  padding: 4px 8px;
+  color: var(--text-muted);
+  font-size: var(--font-smallest);
+}
+
+.json-table-menu-item-value {
+  font-size: var(--font-smallest);
+  color: var(--text-muted);
+}
+
+.json-table-pointer-none {
+  pointer-events: none !important;
+}
+
+.json-table-margin-bottom-8 {
+  margin-bottom: 8px !important;
 }

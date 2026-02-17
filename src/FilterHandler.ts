@@ -1,7 +1,7 @@
 // src/FilterHandler.ts
 import { TableData, ColumnDef, FilterRule, FilterOperator, CellData, ViewDef } from './types';
 import { JsonTableView } from './JsonTableView';
-import { ICON_NAMES } from './icons';
+import { ICON_NAMES, createIconElement } from './icons';
 import { setIcon } from 'obsidian';
 import { positionPopup } from './utils/popup';
 
@@ -52,9 +52,7 @@ export class FilterHandler {
     const menuEl = document.createElement('div');
     menuEl.addClass('menu');
     menuEl.addClass('json-table-filter-menu');
-    menuEl.style.position = 'fixed';
-    menuEl.style.zIndex = '9999';
-    menuEl.style.minWidth = '340px';
+    menuEl.addClass('json-table-popup-menu');
 
     const scrollContainer = menuEl.createDiv({ cls: 'menu-scroll' });
 
@@ -74,7 +72,7 @@ export class FilterHandler {
     const actionsDiv = filterGroup.createDiv({ cls: 'filter-group-actions' });
     const addFilterBtn = actionsDiv.createDiv({ cls: 'text-icon-button', attr: { tabindex: '0' } });
     const addIcon = addFilterBtn.createSpan({ cls: 'text-button-icon' });
-    setIcon(addIcon, 'plus');
+    addIcon.appendChild(createIconElement(ICON_NAMES.plus, 14));
     addFilterBtn.createSpan({ cls: 'text-button-label', text: 'Add filter' });
 
     addFilterBtn.addEventListener('click', (e) => {
@@ -121,13 +119,9 @@ export class FilterHandler {
 
     if (currentRules.length === 0) {
       filtersContainer.createDiv({ text: 'No filters applied', cls: 'json-table-filter-empty' });
-      filtersContainer.style.padding = '4px 8px';
-      filtersContainer.style.color = 'var(--text-muted)';
-      filtersContainer.style.fontSize = 'var(--font-smallest)';
+      filtersContainer.addClass('is-empty');
     } else {
-      filtersContainer.style.padding = '';
-      filtersContainer.style.color = '';
-      filtersContainer.style.fontSize = '';
+      filtersContainer.removeClass('is-empty');
       currentRules.forEach((rule, index) => {
         this.renderFilterRow(filtersContainer, rule, index);
       });
@@ -206,7 +200,7 @@ export class FilterHandler {
     // Delete Button (row actions)
     const rowActions = expression.createDiv({ cls: 'filter-row-actions' });
     const deleteBtn = rowActions.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': 'Remove filter' } });
-    setIcon(deleteBtn, 'trash-2');
+    deleteBtn.appendChild(createIconElement(ICON_NAMES.trash, 14));
     deleteBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const currentRules = this.getCurrentFilterRules();
