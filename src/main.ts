@@ -259,7 +259,7 @@ export default class JsonTablePlugin extends Plugin {
         });
 
         // Register Editor Extension for Live Preview
-        this.registerEditorExtension(tableEmbedExtension(this.app));
+        this.registerEditorExtension(tableEmbedExtension(this.app, this.settings));
 
         // --- Context Menus ---
         // For right-clicking on folders in the file explorer

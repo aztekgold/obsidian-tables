@@ -18,9 +18,12 @@
       "ES7"
     ],
     "rootDir": "src",
-    "outDir": "."
+    "noEmit": true
   },
   "include": [
     "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
   ]
 }

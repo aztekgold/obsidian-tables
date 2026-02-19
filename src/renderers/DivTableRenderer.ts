@@ -48,7 +48,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
         });
     }
 
-    protected getHeaderCell(visualIndex: number): HTMLElement | null {
+    public getHeaderCell(visualIndex: number): HTMLElement | null {
         // Check if drag handle exists
         const activeSort = this.sortHandler.getCurrentSortRules();
         const isSortActive = activeSort.length > 0 && activeSort[0].columnId !== null;

@@ -16,6 +16,7 @@ import {
     editorLivePreviewField
 } from 'obsidian';
 import { EmbedTableRenderer } from './EmbedTableRenderer';
+import { JsonTableSettings } from './types';
 
 // Regex to find embeds: ![[link]]
 const EMBED_REGEX = /!\[\[([^\[\]]+)\]\]/g;
@@ -24,7 +25,8 @@ class TableEmbedWidget extends WidgetType {
     constructor(
         private app: App,
         private file: TFile,
-        private src: string
+        private src: string,
+        private settings: JsonTableSettings
     ) {
         super();
     }
@@ -39,10 +41,18 @@ class TableEmbedWidget extends WidgetType {
         // This prevents the table from disappearing (due to cursor entering the embed range)
         container.addEventListener('mousedown', (e) => {
             const target = e.target as HTMLElement;
-            // Allow inputs and textareas to receive focus
-            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+            // Allow inputs, textareas, and contentEditable elements to receive focus
+            // Also allow clicking on labels and select elements
+            if (
+                target.tagName === 'INPUT' ||
+                target.tagName === 'TEXTAREA' ||
+                target.tagName === 'SELECT' ||
+                target.tagName === 'LABEL' ||
+                target.isContentEditable ||
+                target.closest('.json-table-div-cell') // Allow clicking anywhere in the cell (e.g. padding)
+            ) {
                 // We still stop propagation to prevent the editor from handling it (which might move the cursor out)
-                // But we DON'T prevent default, so the input gets focus.
+                // But we DON'T prevent default, so the element gets focus/active state.
                 e.stopPropagation();
                 return;
             }
@@ -53,7 +63,7 @@ class TableEmbedWidget extends WidgetType {
         });
 
         // Render the table
-        const renderer = new EmbedTableRenderer(container, this.app, this.file);
+        const renderer = new EmbedTableRenderer(container, this.app, this.file, this.settings);
 
         // Trigger load manually since we are not in a standard Obsidian lifecycle
         renderer.load();
@@ -66,7 +76,7 @@ class TableEmbedWidget extends WidgetType {
     }
 }
 
-const buildDecorations = (state: EditorState, app: App): DecorationSet => {
+const buildDecorations = (state: EditorState, app: App, settings: JsonTableSettings): DecorationSet => {
     // Only active in Live Preview
     if (!state.field(editorLivePreviewField)) {
         return Decoration.none;
@@ -110,7 +120,7 @@ const buildDecorations = (state: EditorState, app: App): DecorationSet => {
                 end,
                 end,
                 Decoration.widget({
-                    widget: new TableEmbedWidget(app, file, path),
+                    widget: new TableEmbedWidget(app, file, path, settings),
                     side: 1,
                     block: true
                 })
@@ -121,13 +131,13 @@ const buildDecorations = (state: EditorState, app: App): DecorationSet => {
     return builder.finish();
 };
 
-export const tableEmbedExtension = (app: App) => Prec.highest(StateField.define<DecorationSet>({
+export const tableEmbedExtension = (app: App, settings: JsonTableSettings) => Prec.highest(StateField.define<DecorationSet>({
     create(state) {
-        return buildDecorations(state, app);
+        return buildDecorations(state, app, settings);
     },
     update(oldState, transaction) {
         if (transaction.docChanged || transaction.selection) {
-            return buildDecorations(transaction.state, app);
+            return buildDecorations(transaction.state, app, settings);
         }
         return oldState;
     },

@@ -1,5 +1,5 @@
 import { MarkdownRenderChild, App, TFile, Notice } from 'obsidian';
-import { TableData, JsonTableSettings } from './types';
+import { TableData, JsonTableSettings, DEFAULT_SETTINGS } from './types';
 import { DivTableRenderer } from './renderers/DivTableRenderer';
 import { HtmlTableRenderer } from './renderers/HtmlTableRenderer';
 import { AbstractTableRenderer } from './renderers/AbstractTableRenderer';
@@ -18,6 +18,9 @@ export class EmbedTableRenderer extends MarkdownRenderChild {
         private settings: JsonTableSettings
     ) {
         super(containerEl);
+        if (!this.settings) {
+            this.settings = Object.assign({}, DEFAULT_SETTINGS);
+        }
     }
 
     async onload() {
@@ -85,7 +88,7 @@ export class EmbedTableRenderer extends MarkdownRenderChild {
             } else {
                 this.renderer = new HtmlTableRenderer(tableContainer, this.data, mockView, true, this.settings);
             }
-            this.renderer.render();
+            this.renderer?.render();
 
         } catch (error) {
             console.error('Error rendering embedded table:', error);

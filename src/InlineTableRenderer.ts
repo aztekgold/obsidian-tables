@@ -1,6 +1,6 @@
 // src/InlineTableRenderer.ts
 import { MarkdownRenderChild, MarkdownView } from 'obsidian';
-import { TableData, ColumnDef, CellData, JsonTableSettings } from './types';
+import { TableData, ColumnDef, CellData, JsonTableSettings, DEFAULT_SETTINGS } from './types';
 import { DivTableRenderer } from './renderers/DivTableRenderer';
 import { HtmlTableRenderer } from './renderers/HtmlTableRenderer';
 import { AbstractTableRenderer } from './renderers/AbstractTableRenderer';
@@ -25,6 +25,9 @@ export class InlineTableRenderer extends MarkdownRenderChild {
     private settings: JsonTableSettings
   ) {
     super(containerEl);
+    if (!this.settings) {
+      this.settings = Object.assign({}, DEFAULT_SETTINGS);
+    }
   }
 
   onload() {
@@ -75,7 +78,7 @@ export class InlineTableRenderer extends MarkdownRenderChild {
       } else {
         this.renderer = new HtmlTableRenderer(this.containerEl, this.data, mockView, true, this.settings);
       }
-      this.renderer.render();
+      this.renderer?.render();
 
     } catch (error) {
       console.error('Error rendering inline table:', error);
