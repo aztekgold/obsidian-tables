@@ -2,12 +2,9 @@
 import { ItemView, WorkspaceLeaf, TFile, App, ViewStateResult } from 'obsidian'; // Changed base class, added ViewStateResult
 import { TableData, VIEW_TYPE_JSON_TABLE, JsonTableSettings, DEFAULT_SETTINGS } from './types';
 import { AbstractTableRenderer } from './renderers/AbstractTableRenderer';
-import { HtmlTableRenderer } from './renderers/HtmlTableRenderer';
 import { DivTableRenderer } from './renderers/DivTableRenderer';
 import { ITableFileHandler } from './fileHandlers/ITableFileHandler';
-import { JsonFileHandler } from './fileHandlers/JsonFileHandler';
-import { MarkdownFileHandler } from './fileHandlers/MarkdownFileHandler';
-import { CsvFileHandler } from './fileHandlers/CsvFileHandler';
+import { getHandlerForFile } from './utils/fileUtils';
 
 // Define the expected state structure
 interface JsonTableViewState {
@@ -122,21 +119,7 @@ export class JsonTableView extends ItemView {
 
   /** Selects the appropriate file handler based on file extension and settings */
   private selectFileHandler(file: TFile) {
-    const useMarkdown = this.settings.tableRenderer === 'default';
-    const isMarkdownTableFile = file.name.endsWith('.table.md');
-    const isJsonTableFile = file.name.endsWith('.table.json');
-
-    this.fileHandler = null; // Reset
-
-    if (isMarkdownTableFile) {
-      // Always allow markdown handler for .table.md files
-      this.fileHandler = new MarkdownFileHandler(this.app);
-    } else if (isJsonTableFile) {
-      this.fileHandler = new JsonFileHandler(this.app);
-    } else if (file.name.endsWith('.csv') && this.settings.enableCsvSupport) {
-      this.fileHandler = new CsvFileHandler(this.app);
-    } else {
-    }
+    this.fileHandler = getHandlerForFile(this.app, file, this.settings);
   }
 
   // --- Rendering Logic ---
@@ -193,11 +176,9 @@ export class JsonTableView extends ItemView {
       }
 
 
-      if (this.settings.rendererType === 'div') {
-        this.renderer = new DivTableRenderer(container, this.data, this, false, this.settings);
-      } else {
-        this.renderer = new HtmlTableRenderer(container, this.data, this, false, this.settings);
-      }
+
+      // Always use DivTableRenderer
+      this.renderer = new DivTableRenderer(container, this.data, this, false, this.settings);
       this.renderer.render();
 
     } catch (e) {

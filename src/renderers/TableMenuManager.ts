@@ -4,7 +4,7 @@ import { TableData, ColumnDef, ViewDef } from '../types';
 import { JsonTableView } from '../JsonTableView';
 import { ICON_NAMES } from '../icons';
 import { setIcon, Notice } from 'obsidian';
-import { positionPopup } from '../utils/popup';
+import { positionPopup, attachPopupCleanup } from '../utils/popup';
 
 export interface IMenuManagerHost {
     data: TableData;
@@ -22,6 +22,7 @@ export class TableMenuManager {
 
     public showPropertyVisibilityPopup(button: HTMLElement, e: MouseEvent) {
         e.stopPropagation();
+        let cleanup: () => void = () => { };
         const activeView = this.host.getActiveView();
         if (!activeView.hiddenColumns) activeView.hiddenColumns = [];
 
@@ -62,29 +63,47 @@ export class TableMenuManager {
                 if (filter && !col.name.toLowerCase().includes(filterLower)) return;
 
                 const isHidden = activeView.hiddenColumns!.includes(col.id);
+                const isVisible = !isHidden;
 
-                // Use createMenuItem with isSelected to represent visibility state
-                // This replaces the manual checkbox construction with a standard confirmed checkmark
-                this.createMenuItem(
-                    itemsContainer,
-                    this.host.TYPE_ICONS[col.type] || ICON_NAMES.text,
-                    col.name,
-                    async (ev) => { // Click handler
-                        ev.stopPropagation();
-                        if (isHidden) {
-                            activeView.hiddenColumns = activeView.hiddenColumns!.filter(id => id !== col.id);
-                        } else {
-                            if (!activeView.hiddenColumns!.includes(col.id)) activeView.hiddenColumns!.push(col.id);
-                        }
-                        await this.host.view.saveTableData(this.host.data);
-                        this.host.render();
-                        renderItems(searchInput.value); // Re-render to update checkmarks
-                    },
-                    {
-                        isSelected: !isHidden,
-                        isWarning: isHidden // Optional: make hidden items look different? No, standard is gray vs checked.
+                // Manual checkbox item creation
+                const item = itemsContainer.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item' });
+
+                // Icon
+                const info = item.createDiv({ cls: 'bases-toolbar-menu-item-info' });
+                const iconWrapper = info.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
+                setIcon(iconWrapper, this.host.TYPE_ICONS[col.type] || ICON_NAMES.text);
+
+                // Name
+                info.createDiv({ cls: 'bases-toolbar-menu-item-name', text: col.name });
+
+                // Checkbox (replacing the check icon)
+                const checkboxWrapper = item.createDiv({ cls: 'bases-toolbar-menu-item-icon' });
+                const checkbox = checkboxWrapper.createEl('input', { type: 'checkbox' });
+                checkbox.checked = isVisible;
+
+                // Prevent checkbox click from bubbling efficiently or handle it
+                checkbox.onclick = (e) => e.stopPropagation();
+
+                // Handler
+                const toggleVisibility = async () => {
+                    if (isVisible) {
+                        // It was visible, now hidden
+                        if (!activeView.hiddenColumns!.includes(col.id)) activeView.hiddenColumns!.push(col.id);
+                    } else {
+                        // It was hidden, now visible
+                        activeView.hiddenColumns = activeView.hiddenColumns!.filter(id => id !== col.id);
                     }
-                );
+                    await this.host.view.saveTableData(this.host.data);
+                    this.host.render();
+                    renderItems(searchInput.value);
+                };
+
+                checkbox.onchange = toggleVisibility;
+                item.onclick = (e) => {
+                    e.stopPropagation();
+                    checkbox.checked = !checkbox.checked;
+                    toggleVisibility();
+                };
             });
         };
 
@@ -100,24 +119,14 @@ export class TableMenuManager {
         positionPopup(menuEl, button, { align: 'auto' });
 
         // Cleanup on outside click
-        const onOutsideClick = (ev: MouseEvent) => {
-            if (!menuEl.contains(ev.target as Node) && ev.target !== button) {
-                cleanup();
-            }
-        };
-        const cleanup = () => {
-            menuEl.remove();
-            document.removeEventListener('click', onOutsideClick, true);
-        };
-        setTimeout(() => {
-            document.addEventListener('click', onOutsideClick, true);
-        }, 0);
+        attachPopupCleanup(menuEl, button);
 
         setTimeout(() => searchInput.focus(), 50);
     }
 
     public showSettingsPopup(button: HTMLButtonElement, e: MouseEvent) {
         e.stopPropagation();
+        let cleanup: () => void = () => { };
 
         // Remove any existing popup
         document.querySelector('.json-table-settings-menu')?.remove();
@@ -148,14 +157,7 @@ export class TableMenuManager {
         document.body.appendChild(menuEl);
         positionPopup(menuEl, button, { align: 'auto' });
 
-        const onOutsideClick = (ev: MouseEvent) => {
-            if (!menuEl.contains(ev.target as Node) && ev.target !== button) cleanup();
-        };
-        const cleanup = () => {
-            menuEl.remove();
-            document.removeEventListener('click', onOutsideClick, true);
-        };
-        setTimeout(() => document.addEventListener('click', onOutsideClick, true), 0);
+        attachPopupCleanup(menuEl, button);
     }
 
     // --- Helper Methods ---
@@ -219,6 +221,7 @@ export class TableMenuManager {
 
     public showEditColumnDialog(headerCell: HTMLElement, column: ColumnDef, data: TableData, colIndex: number, deepLink?: { view: 'option-edit', optionIndex: number }) {
         // Remove any existing popup
+        let cleanup: () => void = () => { };
         document.querySelector('.json-table-column-menu')?.remove();
 
         const menuEl = document.createElement('div');
@@ -627,18 +630,12 @@ export class TableMenuManager {
         document.body.appendChild(menuEl);
         positionPopup(menuEl, headerCell, { align: 'auto' });
 
-        const onOutsideClick = (ev: MouseEvent) => {
-            if (!menuEl.contains(ev.target as Node) && ev.target !== headerCell) cleanup();
-        };
-        const cleanup = () => {
-            menuEl.remove();
-            document.removeEventListener('click', onOutsideClick, true);
-        };
-        setTimeout(() => document.addEventListener('click', onOutsideClick, true), 0);
+        cleanup = attachPopupCleanup(menuEl, headerCell);
         setTimeout(() => renameInput.focus(), 50);
     }
 
     public showAddColumnDialog(headerCell: HTMLElement, buttonDiv: HTMLElement, data: TableData, onClose: () => void) {
+        let cleanup: () => void = () => { };
         document.querySelector('.json-table-add-column-menu')?.remove();
 
         const menuEl = document.createElement('div');
@@ -678,11 +675,6 @@ export class TableMenuManager {
             { value: 'To Do', style: 'red' }, { value: 'In Progress', style: 'blue' }, { value: 'Done', style: 'green' }
         ];
 
-        const cleanup = () => {
-            menuEl.remove();
-            document.removeEventListener('click', onOutsideClick, true);
-            onClose();
-        };
 
         const addColumn = async (columnType: string, typeName: string, extraProps: Record<string, any> = {}) => {
             let columnName = nameInput.value.trim() || typeName;
@@ -720,10 +712,7 @@ export class TableMenuManager {
         document.body.appendChild(menuEl);
         positionPopup(menuEl, buttonDiv, { align: 'auto' });
 
-        const onOutsideClick = (ev: MouseEvent) => {
-            if (!menuEl.contains(ev.target as Node) && ev.target !== buttonDiv) cleanup();
-        };
-        setTimeout(() => document.addEventListener('click', onOutsideClick, true), 0);
+        cleanup = attachPopupCleanup(menuEl, buttonDiv, onClose);
         setTimeout(() => nameInput.focus(), 50);
     }
 }

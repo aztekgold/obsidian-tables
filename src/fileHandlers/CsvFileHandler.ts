@@ -2,6 +2,7 @@ import { TFile, App } from 'obsidian';
 import { ITableFileHandler } from './ITableFileHandler';
 import { TableData, ColumnDef, CellData } from '../types';
 import { parseCsv, generateCsv } from '../utils/csv';
+import { createDefaultView } from '../utils/fileUtils';
 
 export class CsvFileHandler implements ITableFileHandler {
     app: App;
@@ -39,12 +40,7 @@ export class CsvFileHandler implements ITableFileHandler {
         return {
             columns: columnDefs,
             rows: rowData,
-            views: [{
-                id: 'default',
-                name: 'Default',
-                sort: [],
-                filter: []
-            }]
+            views: [createDefaultView()]
         };
     }
 

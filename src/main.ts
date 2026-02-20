@@ -42,6 +42,8 @@ import {
     tableEmbedExtension
 } from './livePreviewExtension';
 import { around } from 'monkey-around';
+import { parseCsv } from './utils/csv';
+import { getHandlerForFile, createDefaultView } from './utils/fileUtils';
 
 
 
@@ -576,9 +578,7 @@ export default class JsonTablePlugin extends Plugin {
             rows: [
                 [{ column: colId1, value: "" }, { column: colId2, value: "" }]
             ],
-            views: [{
-                id: 'default_' + Date.now(), name: 'Default', sort: [], filter: []
-            }]
+            views: [createDefaultView()]
         };
     }
 
@@ -676,7 +676,7 @@ export default class JsonTablePlugin extends Plugin {
                 const text = await file.text();
 
                 // Parse CSV
-                const result = this.parseCSV(text);
+                const result = parseCsv(text);
                 if (!result) {
                     new Notice('Failed to parse CSV file. Check console for details.');
                     input.remove();
@@ -709,67 +709,6 @@ export default class JsonTablePlugin extends Plugin {
         input.click();
     }
 
-    /** Parse CSV content into columns and rows */
-    parseCSV(content: string): { columns: string[], rows: string[][] } | null {
-        try {
-            const lines = content.split('\n').filter(line => line.trim());
-            if (lines.length < 1) {
-                console.error('CSV file is empty');
-                return null;
-            }
-
-            // Parse header row
-            const headers = this.parseCSVLine(lines[0]);
-
-            // Parse data rows
-            const rows: string[][] = [];
-            for (let i = 1; i < lines.length; i++) {
-                const row = this.parseCSVLine(lines[i]);
-                // Only add rows with the correct number of columns
-                if (row.length === headers.length) {
-                    rows.push(row);
-                }
-            }
-
-            return { columns: headers, rows };
-        } catch (error) {
-            console.error('Error parsing CSV:', error);
-            return null;
-        }
-    }
-
-    /** Parse a single CSV line, handling quoted values */
-    parseCSVLine(line: string): string[] {
-        const result: string[] = [];
-        let current = '';
-        let inQuotes = false;
-
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            const nextChar = line[i + 1];
-
-            if (char === '"') {
-                if (inQuotes && nextChar === '"') {
-                    // Escaped quote
-                    current += '"';
-                    i++; // Skip next quote
-                } else {
-                    // Toggle quote state
-                    inQuotes = !inQuotes;
-                }
-            } else if (char === ',' && !inQuotes) {
-                // End of field
-                result.push(current.trim());
-                current = '';
-            } else {
-                current += char;
-            }
-        }
-
-        // Add last field
-        result.push(current.trim());
-        return result;
-    }
 
     /** Create table file from CSV data */
     async createTableFromCSV(targetFolder: TAbstractFile, csvFileName: string, csvData: { columns: string[], rows: string[][] }) {
@@ -809,12 +748,7 @@ export default class JsonTablePlugin extends Plugin {
         const tableData: TableData = {
             columns: columns,
             rows: rows,
-            views: [{
-                id: 'default_' + Date.now(),
-                name: 'Default',
-                sort: [],
-                filter: []
-            }]
+            views: [createDefaultView()]
         };
 
         // Create file content based on renderer setting
@@ -849,81 +783,11 @@ export default class JsonTablePlugin extends Plugin {
 
     /** Determines the correct file handler based on file extension */
     getHandlerForFile(file: TFile): ITableFileHandler | null {
-        if (file.name.endsWith('.table.md')) {
-            // Return handler only if setting allows it? Or always return if exists?
-            // Let's assume we always return if it's the right format, view handles setting.
-            return new MarkdownFileHandler(this.app);
-        } else if (file.name.endsWith('.table.json')) {
-            return new JsonFileHandler(this.app);
-        } else if (file.name.endsWith('.csv') && this.settings.enableCsvSupport) {
-            return new CsvFileHandler(this.app);
-        }
-        return null; // Not one of our managed table files
+        return getHandlerForFile(this.app, file, this.settings);
     }
 
-    /** Scans all relevant table files and updates links matching oldPath to newPath */
-    async updateLinksInAllTables(oldPath: string, newPath: string) {
-        // Get all files *once* for efficiency
-        const allFiles = this.app.vault.getFiles();
-        // Filter for potential table files
-        // Filter for potential table files
-        const tableFiles = allFiles.filter(f =>
-            f.name.endsWith('.table.json') ||
-            f.name.endsWith('.table.md') ||
-            (this.settings.enableCsvSupport && f.name.endsWith('.csv'))
-        );
-
-        if (tableFiles.length === 0) {
-            return;
-        }
-
-        // Process each potential table file
-        for (const file of tableFiles) {
-            // Skip the file that was just renamed — it doesn't need link updates
-            if (file.path === newPath) continue;
-            const handler = this.getHandlerForFile(file);
-            // Skip if it's not a recognized table file type managed by a handler
-            if (!handler) continue;
-
-            let data: TableData | null = null;
-            let dataChanged = false;
-
-            try {
-                data = await handler.read(file); // Use the appropriate handler to read
-                // Basic validation after read
-                if (!data || !data.columns || !data.rows) {
-                    console.warn(`Skipping invalid data structure in ${file.path}`);
-                    continue;
-                }
-
-                // Find which columns are 'notelink' type
-                const linkColumns = data.columns.filter(col => col.type === 'notelink').map(col => col.id);
-                // If no link columns in this table, skip the rest
-                if (linkColumns.length === 0) continue;
-
-                // Iterate through rows and cells to find and update matching links
-                data.rows.forEach(row => {
-                    row.forEach(cell => {
-                        if (linkColumns.includes(cell.column) && cell.value === oldPath) {
-                            cell.value = newPath; // Update the link value
-                            dataChanged = true;
-                        }
-                    });
-                });
-
-                // If any links were changed, save the file using the handler
-                if (dataChanged) {
-                    await handler.save(file, data);
-                }
-            } catch (e) {
-                // Log errors encountered during read/save but continue processing other files
-                console.error(`Failed to process links update in ${file.path}:`, e);
-            }
-        }
-    }
-
-    /** Scans all relevant table files and removes links pointing to the deletedPath */
-    async removeLinksInAllTables(deletedPath: string) {
+    /** Helper to process all table files and apply a transformation to link columns */
+    async processLinksInAllTables(predicate: (cellValue: string) => string | null) {
         const allFiles = this.app.vault.getFiles();
         const tableFiles = allFiles.filter(f =>
             f.name.endsWith('.table.json') ||
@@ -931,29 +795,28 @@ export default class JsonTablePlugin extends Plugin {
             (this.settings.enableCsvSupport && f.name.endsWith('.csv'))
         );
 
-        if (tableFiles.length === 0) {
-            return;
-        }
+        if (tableFiles.length === 0) return;
 
         for (const file of tableFiles) {
             const handler = this.getHandlerForFile(file);
             if (!handler) continue;
 
-            let data: TableData | null = null;
-            let dataChanged = false;
-
             try {
-                data = await handler.read(file);
+                const data = await handler.read(file);
                 if (!data || !data.columns || !data.rows) continue;
 
                 const linkColumns = data.columns.filter(col => col.type === 'notelink').map(col => col.id);
                 if (linkColumns.length === 0) continue;
 
+                let dataChanged = false;
                 data.rows.forEach(row => {
                     row.forEach(cell => {
-                        if (linkColumns.includes(cell.column) && cell.value === deletedPath) {
-                            cell.value = ""; // Clear the cell value for the deleted link
-                            dataChanged = true;
+                        if (linkColumns.includes(cell.column) && cell.value) {
+                            const newValue = predicate(cell.value);
+                            if (newValue !== null && newValue !== cell.value) {
+                                cell.value = newValue;
+                                dataChanged = true;
+                            }
                         }
                     });
                 });
@@ -962,10 +825,23 @@ export default class JsonTablePlugin extends Plugin {
                     await handler.save(file, data);
                 }
             } catch (e) {
-                console.error(`Failed to process link removal in ${file.path}:`, e);
+                console.error(`Failed to process links in ${file.path}:`, e);
             }
         }
     }
 
-} // End Plugin Class
+    /** Scans all relevant table files and updates links matching oldPath to newPath */
+    async updateLinksInAllTables(oldPath: string, newPath: string) {
+        await this.processLinksInAllTables((val) => {
+            return val === oldPath ? newPath : null;
+        });
+    }
 
+    /** Scans all relevant table files and removes links pointing to the deletedPath */
+    async removeLinksInAllTables(deletedPath: string) {
+        await this.processLinksInAllTables((val) => {
+            return val === deletedPath ? "" : null;
+        });
+    }
+
+} // End Plugin Class

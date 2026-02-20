@@ -3,7 +3,8 @@ import { TableData, ColumnDef, FilterRule, FilterOperator, CellData, ViewDef } f
 import { JsonTableView } from './JsonTableView';
 import { ICON_NAMES, createIconElement } from './icons';
 import { setIcon } from 'obsidian';
-import { positionPopup } from './utils/popup';
+import { positionPopup, attachPopupCleanup } from './utils/popup';
+import { createDefaultView } from './utils/fileUtils';
 
 /**
  * Handles the state, UI, and logic for filtering table rows.
@@ -18,7 +19,7 @@ export class FilterHandler {
     // Ensure default view and filter array exist
     if (!this.data.views || !Array.isArray(this.data.views) || this.data.views.length === 0) {
       console.warn("No views array found in data, creating default view.");
-      this.data.views = [{ id: 'default_' + Date.now(), name: 'Default', sort: [], filter: [] }];
+      this.data.views = [createDefaultView()];
     }
     // Ensure the active view has a filter array
     const activeView = this.getActiveView();
@@ -102,14 +103,7 @@ export class FilterHandler {
     document.body.appendChild(menuEl);
     positionPopup(menuEl, button, { align: 'auto' });
 
-    const onOutsideClick = (ev: MouseEvent) => {
-      if (!menuEl.contains(ev.target as Node) && ev.target !== button) cleanup();
-    };
-    const cleanup = () => {
-      menuEl.remove();
-      document.removeEventListener('click', onOutsideClick, true);
-    };
-    setTimeout(() => document.addEventListener('click', onOutsideClick, true), 0);
+    attachPopupCleanup(menuEl, button);
   }
 
   /** Helper to rebuild the filter rows UI within the popup */

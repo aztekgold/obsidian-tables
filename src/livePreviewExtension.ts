@@ -137,6 +137,11 @@ export const tableEmbedExtension = (app: App, settings: JsonTableSettings) => Pr
     },
     update(oldState, transaction) {
         if (transaction.docChanged || transaction.selection) {
+            // Performance optimization: Check if document contains any embeds before building decorations
+            const text = transaction.state.doc.sliceString(0, transaction.state.doc.length);
+            if (!text.includes('![[')) {
+                return Decoration.none;
+            }
             return buildDecorations(transaction.state, app, settings);
         }
         return oldState;

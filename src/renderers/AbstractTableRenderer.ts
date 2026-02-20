@@ -15,6 +15,7 @@ import { FilterHandler } from '../FilterHandler';
 import { ICON_NAMES, createIconElement } from '../icons';
 import { positionPopup } from '../utils/popup';
 import { generateCsv, downloadCsv } from '../utils/csv';
+import { createDefaultView } from '../utils/fileUtils';
 import { ViewManager, IViewManagerHost } from './ViewManager';
 import { TableMenuManager, IMenuManagerHost } from './TableMenuManager';
 
@@ -51,7 +52,7 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
         this.settings = settings;
 
         if (!this.data.views || this.data.views.length === 0) {
-            this.data.views = [{ id: 'default_' + Date.now(), name: 'Default', sort: [], filter: [] }];
+            this.data.views = [createDefaultView()];
         }
         this.activeViewId = this.data.views[0].id;
         this.viewManager = new ViewManager(this);

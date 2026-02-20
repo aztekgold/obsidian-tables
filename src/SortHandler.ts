@@ -5,6 +5,7 @@ import { JsonTableView } from './JsonTableView';
 import { ICON_NAMES, createIconElement } from './icons';
 import { setIcon } from 'obsidian';
 import { positionPopup } from './utils/popup';
+import { createDefaultView } from './utils/fileUtils';
 
 /**
  * Handles the state and UI logic for sorting the table based on view definitions.
@@ -22,7 +23,7 @@ export class SortHandler {
         // Ensure the views array and default view exist
         if (!this.data.views || !Array.isArray(this.data.views) || this.data.views.length === 0) {
             console.warn("No views array found in data, creating default view.");
-            this.data.views = [{ id: 'default_' + Date.now(), name: 'Default', sort: [], filter: [] }];
+            this.data.views = [createDefaultView()];
         }
         // Ensure the active view has a sort array
         const activeView = this.getActiveView();
@@ -42,6 +43,11 @@ export class SortHandler {
         } else {
             console.error("Cannot set sort rules: No active view found.");
         }
+    }
+
+    public isSortActive(): boolean {
+        const rules = this.getCurrentSortRules();
+        return rules.length > 0 && rules[0].columnId !== null;
     }
 
     // --- UI Method ---

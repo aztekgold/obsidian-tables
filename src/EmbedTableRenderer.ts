@@ -1,11 +1,10 @@
 import { MarkdownRenderChild, App, TFile, Notice } from 'obsidian';
 import { TableData, JsonTableSettings, DEFAULT_SETTINGS } from './types';
 import { DivTableRenderer } from './renderers/DivTableRenderer';
-import { HtmlTableRenderer } from './renderers/HtmlTableRenderer';
 import { AbstractTableRenderer } from './renderers/AbstractTableRenderer';
 import { JsonTableView } from './JsonTableView';
-import { MarkdownFileHandler } from './fileHandlers/MarkdownFileHandler';
-import { JsonFileHandler } from './fileHandlers/JsonFileHandler';
+import { getHandlerForFile } from './utils/fileUtils';
+import { createMockView } from './utils/viewUtils';
 
 export class EmbedTableRenderer extends MarkdownRenderChild {
     private renderer: AbstractTableRenderer | null = null;
@@ -40,26 +39,14 @@ export class EmbedTableRenderer extends MarkdownRenderChild {
             }
 
             // Create a mock view for the renderer
-            const mockView = {
+            const mockView = createMockView({
                 app: this.app,
                 saveTableData: async (data: TableData) => {
                     await this.saveToFile(data);
                 },
                 getFilePath: () => this.file.path,
-                renameFile: async (newName: string): Promise<boolean> => {
-                    // Renaming the embedded file from within the embed might be confusing or risky
-                    // For now, let's disable it or just return false
-                    new Notice("Renaming embedded files is not supported.");
-                    return false;
-                },
-                getRenderer: () => this.renderer,
-                renderContent: async (file: TFile) => {
-                    // Re-render the table
-                    if (this.renderer) {
-                        this.renderer.render();
-                    }
-                }
-            } as unknown as JsonTableView;
+                getRenderer: () => this.renderer
+            });
 
             // Clear the container (Obsidian might have put some default embed content)
             this.containerEl.empty();
@@ -83,11 +70,7 @@ export class EmbedTableRenderer extends MarkdownRenderChild {
             const tableContainer = this.containerEl.createDiv();
 
             // Render the table
-            if (this.settings.rendererType === 'div') {
-                this.renderer = new DivTableRenderer(tableContainer, this.data, mockView, true, this.settings);
-            } else {
-                this.renderer = new HtmlTableRenderer(tableContainer, this.data, mockView, true, this.settings);
-            }
+            this.renderer = new DivTableRenderer(tableContainer, this.data, mockView, true, this.settings);
             this.renderer?.render();
 
         } catch (error) {
@@ -100,12 +83,7 @@ export class EmbedTableRenderer extends MarkdownRenderChild {
     }
 
     private getHandlerForFile(file: TFile) {
-        if (file.name.endsWith('.table.md')) {
-            return new MarkdownFileHandler(this.app);
-        } else if (file.name.endsWith('.table.json')) {
-            return new JsonFileHandler(this.app);
-        }
-        return null;
+        return getHandlerForFile(this.app, file, this.settings);
     }
 
     private async saveToFile(data: TableData) {

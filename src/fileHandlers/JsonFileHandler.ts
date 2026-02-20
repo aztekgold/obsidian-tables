@@ -2,6 +2,7 @@
 import { App, TFile } from 'obsidian';
 import { TableData } from '../types';
 import { ITableFileHandler } from './ITableFileHandler';
+import { createDefaultView } from '../utils/fileUtils';
 
 /**
  * Handles reading and writing table data directly as JSON files (.table.json).
@@ -20,7 +21,7 @@ export class JsonFileHandler implements ITableFileHandler {
       return {
         columns: [],
         rows: [],
-        views: [{ id: 'default_' + Date.now(), name: 'Default', sort: [], filter: [] }]
+        views: [createDefaultView()]
       };
     }
 
@@ -31,13 +32,7 @@ export class JsonFileHandler implements ITableFileHandler {
 
       // 1. Ensure 'views' array and default view exist
       if (!data.views || !Array.isArray(data.views) || data.views.length === 0) {
-        data.views = [{
-          id: 'default_' + Date.now(),
-          name: 'Default',
-          sort: [],
-          filter: []
-          // hiddenColumns: [] // Add if implementing hidden columns later
-        }];
+        data.views = [createDefaultView()];
         // Ensure the first view has necessary properties if migrating
         if (!data.views[0].sort) data.views[0].sort = [];
         if (!data.views[0].filter) data.views[0].filter = [];
@@ -72,7 +67,7 @@ export class JsonFileHandler implements ITableFileHandler {
     try {
       // Ensure required structures exist before saving (belt-and-suspenders)
       if (!data.views || data.views.length === 0) {
-        data.views = [{ id: 'default_' + Date.now(), name: 'Default', sort: [], filter: [] }];
+        data.views = [createDefaultView()];
       }
       if (!data.views[0].sort) data.views[0].sort = [];
       if (!data.views[0].filter) data.views[0].filter = [];

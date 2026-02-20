@@ -2,10 +2,10 @@
 import { MarkdownRenderChild, MarkdownView } from 'obsidian';
 import { TableData, ColumnDef, CellData, JsonTableSettings, DEFAULT_SETTINGS } from './types';
 import { DivTableRenderer } from './renderers/DivTableRenderer';
-import { HtmlTableRenderer } from './renderers/HtmlTableRenderer';
 import { AbstractTableRenderer } from './renderers/AbstractTableRenderer';
 import { JsonTableView } from './JsonTableView';
 import { App, TFile } from 'obsidian';
+import { createMockView } from './utils/viewUtils';
 
 /**
  * Renders a table inline within a markdown note using a code block.
@@ -57,27 +57,20 @@ export class InlineTableRenderer extends MarkdownRenderChild {
       this.originalSourceHash = `${firstColId}:${firstColName}`;
 
       // Create a mock view for the renderer
-      // Inline tables don't support renaming, but we provide the interface
-      const mockView = {
+      const mockView = createMockView({
         app: this.app,
         saveTableData: async (data: TableData) => {
           // Save back to the code block in the file
           await this.saveToCodeBlock(data);
         },
         getFilePath: () => this.file.path,
-        renameFile: async (newName: string): Promise<boolean> => {
-          // Inline tables don't support renaming (they're part of the file)
-          return false;
-        }
-      } as unknown as JsonTableView;
+        getRenderer: () => this.renderer
+      });
 
       // Create and render the table
       this.containerEl.addClass('json-table-inline-container');
-      if (this.settings.rendererType === 'div') {
-        this.renderer = new DivTableRenderer(this.containerEl, this.data, mockView, true, this.settings);
-      } else {
-        this.renderer = new HtmlTableRenderer(this.containerEl, this.data, mockView, true, this.settings);
-      }
+      this.containerEl.addClass('json-table-inline-container');
+      this.renderer = new DivTableRenderer(this.containerEl, this.data, mockView, true, this.settings);
       this.renderer?.render();
 
     } catch (error) {

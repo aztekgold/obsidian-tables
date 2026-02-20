@@ -50,3 +50,28 @@ export function positionPopup(
     popup.style.top = `${top}px`;
     popup.style.left = `${left}px`;
 }
+
+/**
+ * Attaches a standard cleanup listener to remove the popup when clicking outside.
+ * @param popup The popup element to remove
+ * @param excludeEl An element (usually the trigger button) to exclude from the outside click check
+ * @param onClose Optional callback to run when closing
+ */
+export function attachPopupCleanup(popup: HTMLElement, excludeEl: HTMLElement, onClose?: () => void) {
+    const cleanup = () => {
+        popup.remove();
+        document.removeEventListener('click', onOutsideClick, true);
+        if (onClose) onClose();
+    };
+
+    const onOutsideClick = (ev: MouseEvent) => {
+        if (!popup.contains(ev.target as Node) && ev.target !== excludeEl && !excludeEl.contains(ev.target as Node)) {
+            cleanup();
+        }
+    };
+
+    // Use a small timeout to prevent the immediate click that opened the popup from closing it
+    setTimeout(() => document.addEventListener('click', onOutsideClick, true), 0);
+
+    return cleanup;
+}

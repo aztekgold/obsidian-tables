@@ -2,6 +2,7 @@
 import { App, TFile, parseYaml, stringifyYaml } from 'obsidian';
 import { TableData } from '../types'; // Adjust path if needed
 import { ITableFileHandler } from './ITableFileHandler'; // Adjust path if needed
+import { createDefaultView } from '../utils/fileUtils';
 
 // Define constants for code block delimiters
 const CODE_BLOCK_START = '```json-table';
@@ -77,7 +78,7 @@ export class MarkdownFileHandler implements ITableFileHandler {
     if (!jsonContent) {
       console.warn(`Empty json-table code block found in ${file.path}. Returning default structure.`);
       // Return a valid empty table structure
-      return { columns: [], rows: [], views: [{ id: 'default_' + Date.now(), name: 'Default', sort: [], filter: [] }] };
+      return { columns: [], rows: [], views: [createDefaultView()] };
     }
 
     try {
@@ -89,13 +90,7 @@ export class MarkdownFileHandler implements ITableFileHandler {
 
       // --- Ensure views array and default view exist (migration for older files) ---
       if (!data.views || !Array.isArray(data.views) || data.views.length === 0) {
-        data.views = [{
-          id: 'default_' + Date.now(),
-          name: 'Default',
-          sort: [],
-          filter: []
-          // hiddenColumns: [] // Add if needed
-        }];
+        data.views = [createDefaultView()];
       }
       // Ensure the first view has a sort array
       if (!data.views[0].sort) {
