@@ -3,8 +3,11 @@ import { TableData, ColumnDef, CellData, DEFAULT_SETTINGS, JsonTableSettings } f
 import { JsonTableView } from '../JsonTableView';
 import { AbstractTableRenderer, TYPE_ICONS } from './AbstractTableRenderer';
 import { createIconElement, ICON_NAMES } from '../icons';
+import { DropdownMenu } from '../ui/DropdownMenu';
 
 export class DivTableRenderer extends AbstractTableRenderer {
+
+    private selectedRows: Set<number> = new Set();
 
     constructor(
         container: Element,
@@ -39,6 +42,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
         this.renderBody(tableWrapper, rowsToRender);
 
         this.renderAddRowButton(this.container);
+        this.renderBulkActionBar();
 
         requestAnimationFrame(() => {
             if (tableWrapper) {
@@ -80,10 +84,32 @@ export class DivTableRenderer extends AbstractTableRenderer {
 
             // Drag Handle
             if (!isSortActive && this.settings.enableBetaFeatures && !this.isInline) {
-                tr.draggable = true;
                 const handleCell = tr.createDiv({ cls: 'json-table-div-cell json-table-drag-handle-cell' });
                 const handleContent = handleCell.createDiv({ cls: 'json-table-cell-btn-wrapper json-table-drag-handle-content' });
                 handleContent.appendChild(createIconElement(ICON_NAMES.gripVertical, 14, 'json-table-row-drag-icon'));
+
+                // Row Selection Checkbox
+                const checkboxWrapper = handleContent.createDiv({ cls: 'json-table-row-checkbox-wrapper' });
+                const checkbox = checkboxWrapper.createEl('input', {
+                    type: 'checkbox',
+                    cls: 'json-table-row-checkbox'
+                });
+                checkbox.checked = this.selectedRows.has(originalRowIndex);
+                checkbox.addEventListener('change', (e) => {
+                    const target = e.target as HTMLInputElement;
+                    if (target.checked) {
+                        this.selectedRows.add(originalRowIndex);
+                    } else {
+                        this.selectedRows.delete(originalRowIndex);
+                    }
+                    this.render(); // Re-render to update the bulk action bar
+                });
+                // Prevent drag from triggering on checkbox click
+                checkbox.addEventListener('mousedown', (e) => e.stopPropagation());
+
+                handleCell.addEventListener('mousedown', () => { tr.draggable = true; });
+                handleCell.addEventListener('mouseup', () => { tr.draggable = false; });
+                handleCell.addEventListener('mouseleave', () => { tr.draggable = false; });
 
                 tr.addEventListener('dragstart', (e) => { draggedRowIndex = originalRowIndex; tr.addClass('is-dragging'); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; });
                 tr.addEventListener('dragover', (e) => {
@@ -95,14 +121,14 @@ export class DivTableRenderer extends AbstractTableRenderer {
                 tr.addEventListener('dragleave', () => { tr.removeClass('is-dragover-top'); tr.removeClass('is-dragover-bottom'); });
                 tr.addEventListener('drop', async (e) => {
                     e.stopPropagation(); tr.removeClass('is-dragover-top'); tr.removeClass('is-dragover-bottom');
-                    const currentIndex = draggedRowIndex; draggedRowIndex = null;
+                    const currentIndex = draggedRowIndex; draggedRowIndex = null; tr.draggable = false;
                     if (currentIndex === null || currentIndex === originalRowIndex) return;
                     const movedRow = this.data.rows.splice(currentIndex, 1)[0];
                     this.data.rows.splice(originalRowIndex, 0, movedRow);
                     await this.view.saveTableData(this.data);
                     this.render();
                 });
-                tr.addEventListener('dragend', () => { tr.removeClass('is-dragging'); tr.removeClass('is-dragover-top'); tr.removeClass('is-dragover-bottom'); draggedRowIndex = null; });
+                tr.addEventListener('dragend', () => { tr.draggable = false; tr.removeClass('is-dragging'); tr.removeClass('is-dragover-top'); tr.removeClass('is-dragover-bottom'); draggedRowIndex = null; });
             }
 
             // Data Cells
@@ -176,6 +202,99 @@ export class DivTableRenderer extends AbstractTableRenderer {
         });
     }
 
+    private renderBulkActionBar() {
+        // Remove existing if any
+        let actionBar = document.body.querySelector('.json-table-bulk-action-bar');
+        if (actionBar) {
+            actionBar.remove();
+        }
+
+        if (this.selectedRows.size === 0) return;
+
+        actionBar = document.body.createDiv({ cls: 'json-table-bulk-action-bar' });
+
+        const countDisplay = actionBar.createDiv({ cls: 'json-table-bulk-action-count' });
+        countDisplay.setText(`${this.selectedRows.size} Selected`);
+
+        const actionsContainer = actionBar.createDiv({ cls: 'json-table-bulk-actions' });
+
+        const selectableColumns = this.getVisibleColumns().filter(
+            c => c.type === 'select' || c.type === 'dropdown' || c.type === 'multi-select' || c.type === 'multiselect'
+        );
+
+        selectableColumns.forEach(col => {
+            const btn = actionsContainer.createEl('button', {
+                cls: ['json-table-btn', 'json-table-btn--standard', 'json-table-bulk-action-btn']
+            });
+            const iconSvg = TYPE_ICONS[col.type];
+            if (iconSvg) {
+                const iconEl = createIconElement(iconSvg, 14, `icon-col-${col.type}`);
+                if (iconEl) btn.appendChild(iconEl);
+            }
+            btn.appendChild(document.createTextNode(` ${col.name}`));
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+
+                const isMulti = col.type === 'multi-select' || col.type === 'multiselect';
+
+                // Collect existing values to seed the dropdown - we'll just use empty for mass update starting point
+                // Or you could find common values if you wanted to be fancy.
+
+                new DropdownMenu({
+                    app: this.view.app,
+                    anchor: btn,
+                    options: (col.typeOptions as any)?.options || [],
+                    selectedValues: [], // Start empty for mass update
+                    multiSelect: isMulti,
+                    onSelect: async (selectedValue) => {
+                        for (const rowIndex of this.selectedRows) {
+                            const row = this.data.rows[rowIndex];
+                            if (!row) continue;
+                            const cell = row.find(c => c.column === col.id);
+
+                            if (isMulti) {
+                                // For multi-select, append if not present (simple mass add behavior)
+                                let currentValues = cell?.value ? cell.value.split(',').filter(Boolean) : [];
+                                if (!currentValues.includes(selectedValue)) {
+                                    currentValues.push(selectedValue);
+                                    if (cell) cell.value = currentValues.join(',');
+                                    else row.push({ column: col.id, value: currentValues.join(',') });
+                                }
+                            } else {
+                                // For single select, override
+                                if (cell) cell.value = selectedValue;
+                                else row.push({ column: col.id, value: selectedValue });
+                            }
+                        }
+
+                        await this.view.saveTableData(this.data);
+
+                        if (!isMulti) {
+                            // DropdownMenu closes automatically for single select
+                            this.render();
+                        } else {
+                            // Need to save but not re-render immediately to let user pick more options?
+                            // Re-rendering destroys the anchor btn and closes the menu. 
+                            // So let's just wait for onClose.
+                        }
+                    },
+                    onClose: () => {
+                        this.render();
+                    }
+                });
+            });
+        });
+
+        // Close / Uncheck all button
+        const closeBtn = actionBar.createDiv({ cls: ['json-table-btn', 'json-table-btn--icon', 'json-table-bulk-close-btn'] });
+        closeBtn.appendChild(createIconElement('x' as any, 14));
+        closeBtn.addEventListener('click', () => {
+            this.selectedRows.clear();
+            this.render();
+        });
+    }
+
     private onResizeStart(e: MouseEvent, column: ColumnDef, headerCell: HTMLElement) {
         this.isResizing = true;
         e.preventDefault(); e.stopPropagation();
@@ -227,7 +346,45 @@ export class DivTableRenderer extends AbstractTableRenderer {
 
         // Drag Handle Header
         if (!isSortActive && this.settings.enableBetaFeatures && !this.isInline) {
-            headerRow.createDiv({ cls: 'json-table-div-header-cell json-table-div-drag-handle-header' });
+            const handleHeader = headerRow.createDiv({ cls: 'json-table-div-header-cell json-table-div-drag-handle-header' });
+
+            // Replicate the row's inner wrapper structure exactly for perfect alignment
+            const handleContent = handleHeader.createDiv({ cls: 'json-table-cell-btn-wrapper json-table-drag-handle-content' });
+            const dummyIcon = createIconElement(ICON_NAMES.gripVertical, 14, 'json-table-row-drag-icon');
+            dummyIcon.style.visibility = 'hidden'; // Hide the icon so we just get the spacing
+            dummyIcon.style.pointerEvents = 'none';
+            handleContent.appendChild(dummyIcon);
+
+            // Checkbox Wrapper
+            const checkboxWrapper = handleContent.createDiv({ cls: 'json-table-row-checkbox-wrapper' });
+            const checkbox = checkboxWrapper.createEl('input', {
+                type: 'checkbox',
+                cls: 'json-table-row-checkbox'
+            });
+
+            // Check if all filtered rows are selected
+            const rowsToRender = this.filterHandler.getFilteredRows();
+            const allSelected = rowsToRender.length > 0 &&
+                rowsToRender.every(row => {
+                    const originalIndex = this.data.rows.indexOf(row);
+                    return this.selectedRows.has(originalIndex);
+                });
+            checkbox.checked = allSelected;
+
+            checkbox.addEventListener('change', (e) => {
+                const target = e.target as HTMLInputElement;
+                if (target.checked) {
+                    rowsToRender.forEach(row => {
+                        const originalIndex = this.data.rows.indexOf(row);
+                        if (originalIndex !== -1) {
+                            this.selectedRows.add(originalIndex);
+                        }
+                    });
+                } else {
+                    this.selectedRows.clear();
+                }
+                this.render();
+            });
         }
 
         visibleColumns.forEach((col, visibleIndex) => {

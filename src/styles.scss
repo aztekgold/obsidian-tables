@@ -218,9 +218,9 @@ div.json-table-btn--active:hover {
 
 /* Drag Handle Cell */
 .json-table-drag-handle-cell {
-  width: 30px;
-  min-width: 30px;
-  padding: 0 !important;
+  width: 44px;
+  min-width: 44px;
+  padding: 0 8px !important;
   cursor: grab;
   background-color: var(--background-primary);
   border-right: 1px solid var(--background-modifier-border);
@@ -234,6 +234,19 @@ div.json-table-btn--active:hover {
 .json-table-drag-handle-content:hover {
   color: var(--text-normal);
   background-color: var(--background-modifier-hover);
+}
+
+.json-table-row-checkbox-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.json-table-row-checkbox {
+  margin: 0;
+  cursor: pointer;
+  /* Slightly space it from the grip icon */
+  margin-left: 8px;
 }
 
 /* Dragging State */
@@ -304,6 +317,51 @@ div.json-table-btn--active:hover {
   width: 50px;
   min-width: 50px;
   background: var(--background-primary-alt);
+}
+
+/* ==========================================================================
+   Bulk Action Bar
+   ========================================================================== */
+
+.json-table-bulk-action-bar {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.json-table-bulk-action-count {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-normal);
+  white-space: nowrap;
+}
+
+.json-table-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-left: 1px solid var(--background-modifier-border);
+  padding-left: 12px;
+}
+
+.json-table-bulk-action-btn {
+  white-space: nowrap;
+}
+
+.json-table-bulk-close-btn {
+  margin-left: 4px;
 }
 
 /* ==========================================================================
@@ -1732,10 +1790,10 @@ th.json-table-buttons-th {
 
 /* Drag Handle Cell */
 .json-table-div-cell.json-table-drag-handle-cell {
-  width: 30px !important;
-  flex: 0 0 30px !important;
-  min-width: 30px !important;
-  max-width: 30px !important;
+  width: 44px !important;
+  flex: 0 0 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
   justify-content: center;
   background-color: var(--background-primary);
   cursor: grab;
@@ -1744,9 +1802,9 @@ th.json-table-buttons-th {
 }
 
 .json-table-div-header-cell.json-table-div-drag-handle-header {
-  width: 30px !important;
-  flex: 0 0 30px !important;
-  min-width: 30px !important;
+  width: 44px !important;
+  flex: 0 0 44px !important;
+  min-width: 44px !important;
   border-right: 1px solid var(--background-modifier-border);
   padding: 0;
 }
