@@ -1,6 +1,10 @@
 # Tables for Obsidian
 
-A powerful table plugin for Obsidian that lets you create, manage, and visualize structured data with an intuitive interface.
+I built this to fill a gap in my own workflow — somewhere between a spreadsheet and Obsidian Bases. Sometimes you have structured data that doesn't warrant a Markdown file for every row: a book list, a project tracker, a contacts sheet, a product catalogue. That's what Tables is for.
+
+Because the data lives in a single JSON file, it stays portable and future-proof. You can open it in any text editor and read it without Obsidian. In some ways it's more resilient than a Base — if Obsidian ever disappeared, the relationships between Markdown files would go with it, but everything in a Table stays intact in one place. And whenever you need to get the data out, you can export to CSV in a single click.
+
+Think of it as the middle ground: more structure than free-form notes, more portable than a database, less overhead than a spreadsheet. Without the functions, for now. 🙂
 
 ![Tables Showcase](images/obsidian-tables-showcase.png)
 
@@ -16,23 +20,30 @@ If you enjoy using Obsidian Tables consider [Buy me a coffee](https://www.buymea
 
 ### Multiple Column Types
 - **Text** - Simple text input
-- **Checkbox** - Boolean values
-- **Dropdown** - Single selection from predefined options
-- **Multi-select** - Multiple selections from predefined options
+- **Number** - Numeric values with keyboard and clipboard validation
+- **Checkbox** - Boolean toggle
+- **Select** - Single selection from predefined options with custom colours
+- **Multi-select** - Multiple selections from predefined options with custom colours
+- **URL** - Renders as a clickable external link when the value matches a URL pattern
+- **Email** - Renders as a `mailto:` link when the value matches an email address
 - **Note Link** - Link to other notes in your vault
-- **Date** - Date picker with customizable format
+- **Date** - Date picker with customisable format
 
 ### 📊 Views & Embeds
 - **Multiple Views**: Create different perspectives of your data (e.g., "Active Tasks", "Completed Items") within the same table file.
 - **Inline Tables**: Tables render directly in Live Preview for seamless editing.
-- **Linked Embeds**: Embed your table in any other note using standard Obsidian embed syntax `![[MyTable.table]]`. The embedded table is fully interactive!
+- **Linked Embeds**: Embed your table in any other note using standard Obsidian embed syntax `![[MyTable.table.md]]`. The embedded table is fully interactive.
+- **Embed View Pinning**: Use the alias slot to target a specific view — or create a new one automatically:
+  - `![[MyTable.table.md|Sprint Board]]` — pins the embed to the "Sprint Board" view, creating it if it doesn't exist.
+  - `![[MyTable.table.md]]` — renders the default (first) view.
 
 ### 🎯 Table Management
 - **Add/Delete Rows & Columns** - Flexible data structure management
-- **Drag to Reorder** - Intuitive drag-and-drop column reordering
+- **Drag to Reorder Rows** - Intuitive drag-and-drop row reordering
+- **Drag to Reorder Columns** - Rearrange columns by dragging the header
 - **Resize Columns** - Adjust column widths to fit your content
 - **Inline Renaming** - Rename tables directly in the view
-- **Smart Linking** - Automatic backlink updates when notes are renamed or deleted (only for non inline tables)
+- **Smart Linking** - Automatic backlink updates when notes are renamed or deleted
 - **Advanced Sorting** - Multi-level sorting with ascending/descending order
 - **Powerful Filtering** - Complex filter rules with multiple conditions
 - **Real-time Updates** - Changes save automatically as you type
@@ -58,8 +69,8 @@ Tables integrate with Obsidian's graph view through note link columns:
 
 **Add a Column**
 - Click the **"+"** button in the table header
-- Choose from 6 column types: Text, Checkbox, Dropdown, Multi-select, Note Link, or Date
-- Customize options for dropdown and multi-select columns
+- Choose from 9 column types: Text, Number, Checkbox, Select, Multi-select, URL, Email, Note Link, or Date
+- Customise options and colours for Select and Multi-select columns
 
 **Edit a Column**
 - Click the column name to rename or modify column properties
@@ -70,7 +81,7 @@ Tables integrate with Obsidian's graph view through note link columns:
 **Rows**
 - **Add**: Click "Add row" at the bottom
 - **Delete**: Click the trash icon on any row
-- **Reorder**: Use drag handles (coming soon)
+- **Reorder**: Drag rows using the handle on the left (enable in settings)
 
 **Filtering & Sorting**
 - **Filter**: Build complex queries with multiple conditions (equals, contains, greater than, etc.)
