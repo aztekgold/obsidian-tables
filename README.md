@@ -1,14 +1,14 @@
 # Tables for Obsidian
 
-Notion-style tables for Obsidian.
+Portable, single-file, feature-rich tables for Obsidian without the need for a file for every row.
 
-I built this to fill a gap in my own workflow, somewhere between a spreadsheet and Obsidian Bases. Sometimes you have structured data that doesn't warrant a Markdown file for every row: a book list, a project tracker, a contacts sheet, a product catalogue. That's what Tables is for.
+Obsidian Tables fills the gap between spreadsheets and Obsidian Bases, giving you structured data without creating a Markdown file for every row. Perfect for things like book lists, project trackers, contacts, and content calendars.
 
-Because the data lives in a single JSON file, it stays portable and future-proof. You can open it in any text editor and read it without Obsidian. In some ways it's more resilient than a Base. If Obsidian ever disappeared, the relationships between Markdown files would go with it, but everything in a Table stays intact in one place. And whenever you need to get the data out, you can export to CSV in a single click.
+Data is stored in a single JSON file, making it portable, readable, and future-proof. Open it in any text editor, export to CSV in one click, and keep everything intact even outside Obsidian.
 
-Being a single self-contained file also makes it a natural fit for agentic workflows. An agent can read, create, update, and reason over your table data without needing to traverse a web of linked notes.
+The single-file approach also makes Tables a natural fit for agentic workflows, allowing agents to read, update, and reason over your data without traversing linked notes.
 
-Think of it as the middle ground: more functionality than Markdown tables, more structure than free-form notes, more portable than a database, less overhead than a spreadsheet. Without the functions, for now. 🙂
+Think of it as Notion-style tables for Obsidian: more powerful than Markdown tables and more structured than free-form notes, without the overhead of a spreadsheet. Minus the formulas — for now. 🙂
 
 ![Tables Showcase](images/obsidian-tables-showcase.png)
 
