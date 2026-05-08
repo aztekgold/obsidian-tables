@@ -6,6 +6,8 @@ I built this to fill a gap in my own workflow, somewhere between a spreadsheet a
 
 Because the data lives in a single JSON file, it stays portable and future-proof. You can open it in any text editor and read it without Obsidian. In some ways it's more resilient than a Base. If Obsidian ever disappeared, the relationships between Markdown files would go with it, but everything in a Table stays intact in one place. And whenever you need to get the data out, you can export to CSV in a single click.
 
+Being a single self-contained file also makes it a natural fit for agentic workflows. An agent can read, create, update, and reason over your table data without needing to traverse a web of linked notes.
+
 Think of it as the middle ground: more functionality than Markdown tables, more structure than free-form notes, more portable than a database, less overhead than a spreadsheet. Without the functions, for now. 🙂
 
 ![Tables Showcase](images/obsidian-tables-showcase.png)
