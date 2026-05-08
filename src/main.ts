@@ -71,19 +71,6 @@ class JsonTableSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('Renderer Type')
-            .setDesc('Use the legacy HTML table renderer if you experience stability issues with the default renderer.')
-            .addDropdown(dropdown => dropdown
-                .addOption('div', 'Default')
-                .addOption('table', 'HTML Table (Legacy)')
-                .setValue(this.plugin.settings.rendererType)
-                .onChange(async (value) => {
-                    this.plugin.settings.rendererType = value as 'table' | 'div';
-                    await this.plugin.saveSettings();
-                    // Reload active views? For now just save.
-                }));
-
-        new Setting(containerEl)
             .setName('Sticky Action Column')
             .setDesc('Keep the action column (add/delete row) visible when scrolling horizontally.')
             .addToggle(toggle => toggle

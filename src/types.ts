@@ -100,7 +100,6 @@ export type TableRenderer = 'default' | 'json';
 
 export interface JsonTableSettings {
   tableRenderer: TableRenderer;
-  rendererType: 'table' | 'div';
   enableBetaFeatures: boolean;
   enableCsvSupport: boolean;
   stickyActionColumn: boolean;
@@ -108,7 +107,6 @@ export interface JsonTableSettings {
 
 export const DEFAULT_SETTINGS: JsonTableSettings = {
   tableRenderer: 'default',
-  rendererType: 'table',
   enableBetaFeatures: false,
   enableCsvSupport: false,
   stickyActionColumn: false,
