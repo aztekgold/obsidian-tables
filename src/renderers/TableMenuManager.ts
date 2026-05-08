@@ -1,9 +1,9 @@
 // src/renderers/TableMenuManager.ts
 
-import { TableData, ColumnDef, ViewDef } from '../types';
+import { TableData, ColumnDef, ViewDef, DropdownOption } from '../types';
 import { JsonTableView } from '../JsonTableView';
 import { ICON_NAMES } from '../icons';
-import { setIcon, Notice } from 'obsidian';
+import { setIcon } from 'obsidian';
 import { positionPopup, attachPopupCleanup } from '../utils/popup';
 import { generateColId } from '../utils/migrateUtils';
 
@@ -23,7 +23,6 @@ export class TableMenuManager {
 
     public showPropertyVisibilityPopup(button: HTMLElement, e: MouseEvent) {
         e.stopPropagation();
-        let cleanup: () => void = () => { };
         const activeView = this.host.getActiveView();
         if (!activeView.hiddenColumns) activeView.hiddenColumns = [];
 
@@ -63,7 +62,8 @@ export class TableMenuManager {
             this.host.data.columns.forEach(col => {
                 if (filter && !col.name.toLowerCase().includes(filterLower)) return;
 
-                const isHidden = activeView.hiddenColumns!.includes(col.id);
+                const hiddenCols = activeView.hiddenColumns ?? [];
+                const isHidden = hiddenCols.includes(col.id);
                 const isVisible = !isHidden;
 
                 // Manual checkbox item creation
@@ -87,12 +87,13 @@ export class TableMenuManager {
 
                 // Handler
                 const toggleVisibility = async () => {
+                    if (!activeView.hiddenColumns) activeView.hiddenColumns = [];
                     if (isVisible) {
                         // It was visible, now hidden
-                        if (!activeView.hiddenColumns!.includes(col.id)) activeView.hiddenColumns!.push(col.id);
+                        if (!activeView.hiddenColumns.includes(col.id)) activeView.hiddenColumns.push(col.id);
                     } else {
                         // It was hidden, now visible
-                        activeView.hiddenColumns = activeView.hiddenColumns!.filter(id => id !== col.id);
+                        activeView.hiddenColumns = activeView.hiddenColumns.filter(id => id !== col.id);
                     }
                     await this.host.view.saveTableData(this.host.data);
                     this.host.render();
@@ -103,7 +104,7 @@ export class TableMenuManager {
                 item.onclick = (e) => {
                     e.stopPropagation();
                     checkbox.checked = !checkbox.checked;
-                    toggleVisibility();
+                    void toggleVisibility();
                 };
             });
         };
@@ -127,7 +128,7 @@ export class TableMenuManager {
 
     public showSettingsPopup(button: HTMLButtonElement, e: MouseEvent) {
         e.stopPropagation();
-        let cleanup: () => void = () => { };
+        let cleanup: () => void = () => { /* will be replaced by attachPopupCleanup */ };
 
         // Remove any existing popup
         document.querySelector('.json-table-settings-menu')?.remove();
@@ -158,7 +159,7 @@ export class TableMenuManager {
         document.body.appendChild(menuEl);
         positionPopup(menuEl, button, { align: 'auto' });
 
-        attachPopupCleanup(menuEl, button);
+        cleanup = attachPopupCleanup(menuEl, button);
     }
 
     // --- Helper Methods ---
@@ -180,7 +181,7 @@ export class TableMenuManager {
         container: HTMLElement,
         iconName: string | undefined,
         text: string,
-        onClick: (e: MouseEvent) => void,
+        onClick: (e: MouseEvent) => unknown,
         options: { isSelected?: boolean; endIcon?: string; isWarning?: boolean; subText?: string; valueLabel?: string } = {}
     ): HTMLElement {
         const item = container.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item' });
@@ -248,15 +249,17 @@ export class TableMenuManager {
         renameInput.spellcheck = false;
         renameInput.addEventListener('click', (ev) => ev.stopPropagation());
         renameInput.addEventListener('mousedown', (ev) => ev.stopPropagation());
-        renameInput.addEventListener('keydown', async (ev) => {
+        renameInput.addEventListener('keydown', (ev) => {
             ev.stopPropagation();
             if (ev.key === 'Enter') {
                 ev.preventDefault();
                 const newName = renameInput.value.trim();
                 if (newName && newName !== column.name) {
                     column.name = newName;
-                    await this.host.view.saveTableData(data);
-                    this.host.render();
+                    void (async () => {
+                        await this.host.view.saveTableData(data);
+                        this.host.render();
+                    })();
                 }
                 cleanup();
             }
@@ -357,7 +360,7 @@ export class TableMenuManager {
             const renderInlineOptions = () => {
                 optionsList.empty();
 
-                options.forEach((opt: any, index: number) => {
+                options.forEach((opt: DropdownOption, index: number) => {
                     const item = optionsList.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item' });
 
                     if (deepLink?.view === 'option-edit' && deepLink.optionIndex === index) {
@@ -409,18 +412,18 @@ export class TableMenuManager {
                                 nameInput.blur();
                             }
                         });
-                        nameInput.addEventListener('change', async () => {
+                        nameInput.addEventListener('change', () => {
                             const newValue = nameInput.value.trim();
                             if (newValue === opt.value) return;
-
                             opt.value = newValue;
-                            await this.host.view.saveTableData(data);
-                            this.host.render();
-
-                            setTimeout(() => {
-                                const newHeader = this.host.getHeaderCell(colIndex);
-                                if (newHeader) positionPopup(menuEl, newHeader, { align: 'auto' });
-                            }, 0);
+                            void (async () => {
+                                await this.host.view.saveTableData(data);
+                                this.host.render();
+                                setTimeout(() => {
+                                    const newHeader = this.host.getHeaderCell(colIndex);
+                                    if (newHeader) positionPopup(menuEl, newHeader, { align: 'auto' });
+                                }, 0);
+                            })();
                         });
 
                         this.createMenuItem(
@@ -460,24 +463,25 @@ export class TableMenuManager {
                                 setIcon(check, 'check');
                             }
 
-                            colorItem.addEventListener('click', async () => {
+                            colorItem.addEventListener('click', () => {
                                 opt.color = color;
-                                await this.host.view.saveTableData(data);
-                                this.host.render();
-
-                                const newHeader = this.host.getHeaderCell(colIndex);
-                                if (newHeader) {
-                                    positionPopup(menuEl, newHeader, { align: 'auto' });
-                                    const allItems = colorList.querySelectorAll('.suggestion-item');
-                                    allItems.forEach(el => el.removeClass('is-selected'));
-                                    colorItem.addClass('is-selected');
-                                    allItems.forEach(el => {
-                                        const icon = el.querySelector('.clickable-icon');
-                                        if (icon) icon.remove();
-                                    });
-                                    const newCheck = colorItem.createDiv({ cls: 'clickable-icon bases-toolbar-menu-item-icon' });
-                                    setIcon(newCheck, 'check');
-                                }
+                                void (async () => {
+                                    await this.host.view.saveTableData(data);
+                                    this.host.render();
+                                    const newHeader = this.host.getHeaderCell(colIndex);
+                                    if (newHeader) {
+                                        positionPopup(menuEl, newHeader, { align: 'auto' });
+                                        const allItems = colorList.querySelectorAll('.suggestion-item');
+                                        allItems.forEach(el => el.removeClass('is-selected'));
+                                        colorItem.addClass('is-selected');
+                                        allItems.forEach(el => {
+                                            const icon = el.querySelector('.clickable-icon');
+                                            if (icon) icon.remove();
+                                        });
+                                        const newCheck = colorItem.createDiv({ cls: 'clickable-icon bases-toolbar-menu-item-icon' });
+                                        setIcon(newCheck, 'check');
+                                    }
+                                })();
                             });
                         });
                     });
@@ -492,28 +496,29 @@ export class TableMenuManager {
             setIcon(addIcon, ICON_NAMES.plus);
             addInfo.createDiv({ cls: 'bases-toolbar-menu-item-name', text: 'Add option' });
 
-            addItem.addEventListener('click', async () => {
+            addItem.addEventListener('click', () => {
                 if (!column.constraints) column.constraints = {};
                 if (!column.constraints.options) column.constraints.options = [];
                 column.constraints.options.push({ value: 'New option', color: 'default' });
-                await this.host.view.saveTableData(data);
-                this.host.render();
-
-                const newHeader = this.host.getHeaderCell(colIndex);
-                if (newHeader) {
-                    cleanup();
-                    this.showEditColumnDialog(newHeader, column, data, colIndex, {
-                        view: 'option-edit',
-                        optionIndex: column.constraints.options.length - 1
-                    });
-                }
+                void (async () => {
+                    await this.host.view.saveTableData(data);
+                    this.host.render();
+                    const newHeader = this.host.getHeaderCell(colIndex);
+                    if (newHeader) {
+                        cleanup();
+                        this.showEditColumnDialog(newHeader, column, data, colIndex, {
+                            view: 'option-edit',
+                            optionIndex: column.constraints!.options!.length - 1
+                        });
+                    }
+                })();
             });
         } else if (column.type === 'date') {
             const propsSection = this.createMenuSection(menuContainer, 'Date properties');
 
             const currentFormat = column.display?.dateFormat || 'YYYY/MM/DD';
 
-            const availableFormats: { label: string; format: any }[] = [
+            const availableFormats: { label: string; format: string }[] = [
                 { label: 'Full Date', format: 'MMMM D, YYYY' },
                 { label: 'Short Date', format: 'MMM D' },
                 { label: 'Day/Month/Year', format: 'DD/MM/YYYY' },
@@ -683,7 +688,7 @@ export class TableMenuManager {
             { value: 'To Do', color: 'red' }, { value: 'In Progress', color: 'blue' }, { value: 'Done', color: 'green' }
         ];
 
-        const addColumn = async (columnType: string, typeName: string, extraProps: Record<string, any> = {}) => {
+        const addColumn = async (columnType: string, typeName: string, extraProps: Record<string, unknown> = {}) => {
             const columnName = nameInput.value.trim() || typeName;
             const columnId = generateColId(new Set(data.columns.map(c => c.id)));
             data.columns.push({ id: columnId, name: columnName, type: columnType, display: { width: 150 }, ...extraProps });
@@ -700,17 +705,17 @@ export class TableMenuManager {
                 name,
                 (e) => {
                     e.stopPropagation();
-                    let extraProps: Record<string, any> = {};
+                    let extraProps: Record<string, unknown> = {};
                     if (type === 'select') extraProps = { constraints: { options: defaultSelectOptions } };
                     else if (type === 'select-multi') extraProps = { constraints: { options: defaultSelectOptions, multiSelect: true } };
                     else if (type === 'date') extraProps = { display: { width: 150, dateFormat: 'YYYY/MM/DD' } };
-                    addColumn(type === 'select-multi' ? 'select' : type, name, extraProps);
+                    void addColumn(type === 'select-multi' ? 'select' : type, name, extraProps);
                 }
             );
         });
 
         nameInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') { e.stopPropagation(); e.preventDefault(); addColumn('text', 'Text', {}); }
+            if (e.key === 'Enter') { e.stopPropagation(); e.preventDefault(); void addColumn('text', 'Text', {}); }
             e.stopPropagation();
         });
 

@@ -1,5 +1,5 @@
 import { App, TFile, Notice } from 'obsidian';
-import { TableData, ViewDef } from '../types';
+import { TableData } from '../types';
 import { JsonTableView } from '../JsonTableView';
 import { AbstractTableRenderer } from '../renderers/AbstractTableRenderer';
 
@@ -21,20 +21,21 @@ export function createMockView(options: MockViewOptions): JsonTableView {
         app,
         saveTableData,
         getFilePath,
-        renameFile: async (newName: string): Promise<boolean> => {
+        renameFile: (newName: string): Promise<boolean> => {
             // Renaming is generally not supported in embedded/inline contexts
             // or should be handled by the parent view/file explorer
             new Notice("Renaming from within this view is not supported.");
-            return false;
+            return Promise.resolve(false);
         },
         getRenderer,
-        renderContent: async (file: TFile) => {
+        renderContent: (file: TFile): Promise<void> => {
             // Trigger a re-render of the table component
             const renderer = getRenderer();
             if (renderer) {
                 renderer.render();
             }
             if (onRender) onRender();
+            return Promise.resolve();
         },
         // Mock other methods if necessary, defaulting to no-ops or appropriate behavior
     } as unknown as JsonTableView;

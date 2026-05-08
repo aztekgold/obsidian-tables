@@ -30,12 +30,7 @@ export class DropdownMenu {
         this.menuEl.addClass('menu');
         this.menuEl.addClass('json-table-dropdown-menu'); // Custom class for specific styling if needed
         this.menuEl.addClass('bases-toolbar-menu'); // Requested class
-        // Use fixed positioning like AbstractTableRenderer
-        this.menuEl.style.position = 'fixed';
-        this.menuEl.style.zIndex = '9999';
-        this.menuEl.style.width = '220px'; // Match column menu width or auto? 220px is good standard.
-        // Actually for dropdowns, maybe match anchor width? Or min-width?
-        // Let's start with standard menu width.
+        this.menuEl.addClass('json-table-dropdown-menu-popup'); // Provides fixed positioning + z-index via CSS
 
         this.scrollContainer = this.menuEl.createDiv({ cls: 'menu-scroll' });
         const menuContainer = this.scrollContainer.createDiv({ cls: 'bases-toolbar-menu-container' });

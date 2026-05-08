@@ -8,9 +8,9 @@ export class CheckboxRenderer implements ICellRenderer {
   public render(
     app: App,
     container: HTMLElement,
-    value: any,
+    value: unknown,
     column: ColumnDef,
-    onChange: (newValue: any) => void
+    onChange: (newValue: unknown) => void
   ): void {
 
     // Create cell content wrapper

@@ -78,7 +78,7 @@ export interface ColumnDef {
 
 export interface AgentableRow {
   id: string;
-  cells: Record<string, any>;
+  cells: Record<string, unknown>;
 }
 
 // --- Root ---

@@ -64,7 +64,7 @@ export class FilterHandler {
       currentRules.push(newRule);
       this.setCurrentFilterRules(currentRules);
       this.rebuildFilterListUI(statementsContainer);
-      this.applyFiltersAndRerender();
+      void this.applyFiltersAndRerender();
     });
 
     menuEl.addEventListener('click', (e) => e.stopPropagation());
@@ -106,7 +106,7 @@ export class FilterHandler {
     columnSelect.addEventListener('mousedown', (e) => e.stopPropagation());
     columnSelect.addEventListener('change', () => {
       rule.columnId = columnSelect.value;
-      this.applyFiltersAndRerender();
+      void this.applyFiltersAndRerender();
     });
 
     const operatorSelect = expression.createEl('select', { cls: 'dropdown' });
@@ -133,7 +133,7 @@ export class FilterHandler {
       } else {
         valueInput.removeClass('json-table-is-hidden');
       }
-      this.applyFiltersAndRerender();
+      void this.applyFiltersAndRerender();
     });
 
     const valueInput = expression.createEl('input', {

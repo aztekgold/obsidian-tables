@@ -8,7 +8,6 @@ import {
     Setting,
     Notice,
     TAbstractFile, // Represents files OR folders
-    ItemView // Base class used by JsonTableView now
 } from 'obsidian';
 import {
     JsonTableView
@@ -56,7 +55,7 @@ class JsonTableSettingTab extends PluginSettingTab {
         containerEl.empty();
 
         new Setting(containerEl)
-            .setName('Default File Format')
+            .setName('Default file format')
             .setDesc(
                 'By default, Tables uses .table.md to maximise compatibility and incorporate Obsidian backlink functionality. ' +
                 'This setting only affects creation of new tables.'
@@ -71,7 +70,7 @@ class JsonTableSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('Sticky Action Column')
+            .setName('Sticky action column')
             .setDesc('Keep the action column (add/delete row) visible when scrolling horizontally.')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.stickyActionColumn)
@@ -89,7 +88,7 @@ class JsonTableSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('Enable CSV Support')
+            .setName('Enable CSV support')
             .setDesc('Allow opening and editing .csv files directly in the table view. Note: Original formatting like extra whitespace might not be preserved perfectly.')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableCsvSupport)
@@ -106,7 +105,7 @@ class JsonTableSettingTab extends PluginSettingTab {
         experimentalHeading.createDiv({ cls: 'setting-item-control' });
 
         new Setting(containerEl)
-            .setName('Row Reordering')
+            .setName('Row reordering')
             .setDesc('Enable row reordering via drag-and-drop. This feature is experimental and may be unstable.')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.enableBetaFeatures)
@@ -131,21 +130,24 @@ export default class JsonTablePlugin extends Plugin {
     // Safely patch setViewState to intercept .table.md files before they open as markdown.
     // This eliminates the "flash" of the markdown view.
     patchSetViewState() {
-        const self = this;
+        const plugin = this;
         const patch = around(WorkspaceLeaf.prototype, {
             setViewState(next) {
-                return function (this: any, viewState: any, ...args: any[]) {
+                        // The wrapper must match the original signature for monkey-around
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                return function (this: WorkspaceLeaf, viewState: any, ...args: any[]) {
                     // Check if Obsidian is trying to open a file
-                    if (viewState && viewState.state && viewState.state.file) {
-                        const filePath = viewState.state.file;
+                    const stateObj: Record<string, unknown> | undefined = viewState?.state;
+                    if (viewState && stateObj && stateObj.file) {
+                        const filePath = stateObj.file;
                         if (typeof filePath === 'string') {
 
                             // Case 1: .table.md (Prevent Markdown Flash)
                             if (viewState.type === 'markdown' && filePath.endsWith('.table.md')) {
                                 // Verify it's one of our tables using metadata cache (fast)
-                                const file = self.app.vault.getAbstractFileByPath(filePath);
+                                const file = plugin.app.vault.getAbstractFileByPath(filePath);
                                 if (file instanceof TFile) {
-                                    const cache = self.app.metadataCache.getFileCache(file);
+                                    const cache = plugin.app.metadataCache.getFileCache(file);
                                     if (cache?.frontmatter?.['json-table-plugin']) {
                                         // FORCE the view type to be our custom view
                                         viewState.type = VIEW_TYPE_JSON_TABLE;
@@ -315,7 +317,7 @@ export default class JsonTablePlugin extends Plugin {
                 if (targetFolder && !(targetFolder instanceof TFile)) {
                     if (!checking) {
                         // If not just checking, execute the creation in the determined folder
-                        this.createNewTable(targetFolder);
+                        void this.createNewTable(targetFolder);
                     }
                     return true; // Command is valid in this context
                 }
@@ -353,7 +355,7 @@ export default class JsonTablePlugin extends Plugin {
             this.app.vault.on('rename', (file, oldPath) => {
                 // Check if it's a TFile before accessing path
                 if (file instanceof TFile) {
-                    this.updateLinksInAllTables(oldPath, file.path);
+                    void this.updateLinksInAllTables(oldPath, file.path);
                 }
             })
         );
@@ -361,7 +363,7 @@ export default class JsonTablePlugin extends Plugin {
             this.app.vault.on('delete', (file) => {
                 // Check if it's a TFile before accessing path
                 if (file instanceof TFile) {
-                    this.removeLinksInAllTables(file.path);
+                    void this.removeLinksInAllTables(file.path);
                 }
             })
         );
@@ -635,12 +637,12 @@ export default class JsonTablePlugin extends Plugin {
 
     // --- CSV Import ---
     /** Import CSV file and create a new table file */
-    async importCSVFile() {
+    importCSVFile() {
         // Create hidden file input element
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.csv';
-        input.style.display = 'none';
+        input.addClass('json-table-is-hidden');
 
         // Handle file selection
         input.onchange = async (e) => {

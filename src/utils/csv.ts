@@ -2,7 +2,7 @@
  * Utility functions for handling CSV parsing and generation.
  */
 
-import { TableData, ColumnDef, AgentableRow } from '../types';
+import { ColumnDef, AgentableRow } from '../types';
 
 /**
  * Escapes a string for use in a CSV field.

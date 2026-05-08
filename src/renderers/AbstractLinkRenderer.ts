@@ -8,9 +8,9 @@ export abstract class AbstractLinkRenderer implements ICellRenderer {
   public render(
     app: App,
     container: HTMLElement,
-    value: any,
+    value: unknown,
     column: ColumnDef,
-    onChange: (newValue: any) => void
+    onChange: (newValue: unknown) => void
   ): void {
     container.empty();
 
@@ -24,13 +24,12 @@ export abstract class AbstractLinkRenderer implements ICellRenderer {
     };
     renderDisplay(stringValue);
 
-    const span = container.createEl('span', { cls: 'json-table-text-span' });
+    const span = container.createEl('span', { cls: 'json-table-text-span json-table-is-hidden' });
     span.contentEditable = 'true';
-    span.style.display = 'none';
 
     const startEdit = () => {
-      displayEl.style.display = 'none';
-      span.style.display = '';
+      displayEl.addClass('json-table-is-hidden');
+      span.removeClass('json-table-is-hidden');
       span.setText(currentValue);
       setTimeout(() => {
         span.focus();
@@ -49,8 +48,8 @@ export abstract class AbstractLinkRenderer implements ICellRenderer {
         currentValue = newValue;
         onChange(newValue);
       }
-      span.style.display = 'none';
-      displayEl.style.display = '';
+      span.addClass('json-table-is-hidden');
+      displayEl.removeClass('json-table-is-hidden');
       renderDisplay(currentValue);
     };
 

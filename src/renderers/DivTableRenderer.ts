@@ -238,32 +238,31 @@ export class DivTableRenderer extends AbstractTableRenderer {
                     options: col.constraints?.options || [],
                     selectedValues: [],
                     multiSelect: isMulti,
-                    onSelect: async (selectedValue) => {
-                        for (const rowIndex of this.selectedRows) {
-                            const row = this.data.rows[rowIndex];
-                            if (!row) continue;
+                    onSelect: (selectedValue) => {
+                        void (async () => {
+                            for (const rowIndex of this.selectedRows) {
+                                const row = this.data.rows[rowIndex];
+                                if (!row) continue;
 
-                            if (isMulti) {
-                                const currentValues = row.cells[col.id] ? String(row.cells[col.id]).split(',').filter(Boolean) : [];
-                                if (!currentValues.includes(selectedValue)) {
-                                    currentValues.push(selectedValue);
-                                    row.cells[col.id] = currentValues.join(',');
+                                if (isMulti) {
+                                    const currentValues = row.cells[col.id] ? String(row.cells[col.id]).split(',').filter(Boolean) : [];
+                                    if (!currentValues.includes(selectedValue)) {
+                                        currentValues.push(selectedValue);
+                                        row.cells[col.id] = currentValues.join(',');
+                                    }
+                                } else {
+                                    row.cells[col.id] = selectedValue;
                                 }
-                            } else {
-                                row.cells[col.id] = selectedValue;
                             }
-                        }
 
-                        await this.view.saveTableData(this.data);
+                            await this.view.saveTableData(this.data);
 
-                        if (!isMulti) {
-                            // DropdownMenu closes automatically for single select
-                            this.render();
-                        } else {
-                            // Need to save but not re-render immediately to let user pick more options?
-                            // Re-rendering destroys the anchor btn and closes the menu. 
-                            // So let's just wait for onClose.
-                        }
+                            if (!isMulti) {
+                                // DropdownMenu closes automatically for single select
+                                this.render();
+                            }
+                            // For multi-select, wait for onClose to re-render
+                        })();
                     },
                     onClose: () => {
                         this.render();
@@ -310,7 +309,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
             const finalWidth = parseFloat(wrapper.style.getPropertyValue(`--col-width-${columnId}`)) || headerCell.offsetWidth;
 
             column.display = { ...column.display, width: finalWidth };
-            this.view.saveTableData(this.data);
+            void this.view.saveTableData(this.data);
             setTimeout(() => { this.isResizing = false; }, 0);
         };
         document.addEventListener('mousemove', onMouseMove);
@@ -420,7 +419,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
                 if (fromIndex === -1 || toIndex === -1) return;
                 const draggedColumn = this.data.columns.splice(fromIndex, 1)[0];
                 this.data.columns.splice(toIndex, 0, draggedColumn);
-                this.view.saveTableData(this.data);
+                void this.view.saveTableData(this.data);
                 this.render();
             });
 

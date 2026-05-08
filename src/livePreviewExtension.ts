@@ -19,7 +19,7 @@ import { EmbedTableRenderer } from './EmbedTableRenderer';
 import { JsonTableSettings } from './types';
 
 // Regex to find embeds: ![[link]]
-const EMBED_REGEX = /!\[\[([^\[\]]+)\]\]/g;
+const EMBED_REGEX = /!\[\[([^[\]]+)\]\]/g;
 
 class TableEmbedWidget extends WidgetType {
     constructor(

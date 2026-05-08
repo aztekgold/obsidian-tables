@@ -9,9 +9,9 @@ export class MultiSelectRenderer implements ICellRenderer {
   public render(
     app: App,
     container: HTMLElement, // This is the <td>
-    value: any, // e.g., "apple,pear,orange"
+    value: unknown, // e.g., "apple,pear,orange"
     column: ColumnDef,
-    onChange: (newValue: any) => void
+    onChange: (newValue: unknown) => void
   ): void {
     container.empty();
 
@@ -36,9 +36,9 @@ export class MultiSelectRenderer implements ICellRenderer {
   private renderDisplay(
     app: App,
     wrapper: HTMLElement,
-    value: any,
+    value: unknown,
     column: ColumnDef,
-    onChange: (newValue: any) => void
+    onChange: (newValue: unknown) => void
   ) {
     wrapper.empty();
     wrapper.removeClass('is-editing');
@@ -57,9 +57,9 @@ export class MultiSelectRenderer implements ICellRenderer {
   private renderEdit(
     app: App,
     wrapper: HTMLElement,
-    value: any,
+    value: unknown,
     column: ColumnDef,
-    onChange: (newValue: any) => void
+    onChange: (newValue: unknown) => void
   ) {
     // Clone wrapper to remove old listeners
     const parent = wrapper.parentNode;
@@ -126,7 +126,7 @@ export class MultiSelectRenderer implements ICellRenderer {
   /**
    * Helper to get values array from the comma-separated string
    */
-  private getValues(value: any): string[] {
+  private getValues(value: unknown): string[] {
     if (typeof value !== 'string') return [];
     return value ? value.split(',').filter(Boolean) : [];
   }
@@ -140,7 +140,7 @@ export class MultiSelectRenderer implements ICellRenderer {
    */
   private renderTags(
     wrapper: HTMLElement,
-    value: any,
+    value: unknown,
     column: ColumnDef,
     onRemove?: (valueToRemove: string) => void
   ) {

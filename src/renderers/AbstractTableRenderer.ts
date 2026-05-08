@@ -1,7 +1,7 @@
 
 import { TableData, ColumnDef, AgentableRow, ViewDef, JsonTableSettings, DEFAULT_SETTINGS } from '../types';
 import { JsonTableView } from '../JsonTableView';
-import { Notice, setIcon } from 'obsidian';
+// (no direct obsidian imports needed here)
 import { ICellRenderer } from './ICellRenderer';
 import { TextRenderer } from './TextRenderer';
 import { CheckboxRenderer } from './CheckboxRenderer';

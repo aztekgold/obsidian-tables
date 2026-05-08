@@ -33,7 +33,7 @@ export class JsonTableView extends ItemView {
     return VIEW_TYPE_JSON_TABLE;
   }
 
-  getDisplayText(): any {
+  getDisplayText(): string {
     // Get basename from path stored in state if file object isn't ready
     const path = this.currentFilePath;
     if (path) {
@@ -55,21 +55,21 @@ export class JsonTableView extends ItemView {
     // If view is active, re-evaluate and re-render if necessary
     const activeView = this.app.workspace.getActiveViewOfType(JsonTableView);
     if (this.currentFilePath && activeView === this) {
-      this.loadFileAndRender(this.currentFilePath); // Reload based on path
+      void this.loadFileAndRender(this.currentFilePath); // Reload based on path
     }
   }
 
   // --- State Management (Replaces FileView's file handling) ---
 
-  async setState(state: any, result: ViewStateResult): Promise<void> {
+  async setState(state: Record<string, unknown>, result: ViewStateResult): Promise<void> {
 
-    const newFilePath = state.file || null;
+    const newFilePath = typeof state.file === 'string' ? state.file : null;
     const fileChanged = newFilePath !== this.currentFilePath;
 
     this.currentFilePath = newFilePath;
 
     // Call parent setState
-    await super.setState(state, result);
+    await super.setState(state as Record<string, unknown>, result);
 
     // Only load and render if:
     // 1. The file path has changed, OR
@@ -81,11 +81,10 @@ export class JsonTableView extends ItemView {
       if (container) {
         this.showError(container, "No file specified in view state.", false);
       }
-    } else {
     }
   }
 
-  getState(): any {
+  getState(): Record<string, unknown> {
     // Save the current file path
     return {
       file: this.currentFilePath
@@ -245,7 +244,7 @@ export class JsonTableView extends ItemView {
           // Update internal path first so setState doesn't trigger a full reload
           this.currentFilePath = file.path;
           // Persist the new path in the view state (survives restarts)
-          this.leaf.setViewState({
+          void this.leaf.setViewState({
             type: VIEW_TYPE_JSON_TABLE,
             state: { file: file.path }
           });
@@ -264,8 +263,9 @@ export class JsonTableView extends ItemView {
   }
 
   // Called when view is detached
-  async onClose() {
+  onClose(): Promise<void> {
     this.clearView();
+    return Promise.resolve();
   }
 
   // --- File Rename ---
@@ -364,7 +364,7 @@ export class JsonTableView extends ItemView {
       });
       openAsTextBtn.addEventListener('click', () => {
         if (this.leaf) {
-          this.leaf.setViewState({
+          void this.leaf.setViewState({
             type: 'plaintext',
             state: { file: filePathToShow } // Pass file path
           });

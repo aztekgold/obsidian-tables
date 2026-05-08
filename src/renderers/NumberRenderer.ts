@@ -7,9 +7,9 @@ export class NumberRenderer implements ICellRenderer {
     public render(
         app: App,
         container: HTMLElement,
-        value: any,
+        value: unknown,
         column: ColumnDef,
-        onChange: (newValue: any) => void
+        onChange: (newValue: unknown) => void
     ): void {
         container.empty();
 
@@ -125,6 +125,7 @@ export class NumberRenderer implements ICellRenderer {
         span.addEventListener('paste', (e) => {
             e.preventDefault();
             const clipboardData = e.clipboardData;
+            if (!clipboardData) return;
             const pastedData = clipboardData.getData('text');
 
             // Simple check: is it a valid number part?

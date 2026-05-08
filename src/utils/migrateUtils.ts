@@ -12,7 +12,7 @@ import {
 } from '@aztekgold/agentable/dist/utils';
 import { createDefaultView } from './fileUtils';
 
-export function isOldFormat(raw: any): boolean {
+export function isOldFormat(raw: Record<string, unknown>): boolean {
   if (!raw.version) return true;
   if (Array.isArray(raw.rows) && raw.rows.length > 0 && Array.isArray(raw.rows[0])) return true;
   return false;
@@ -51,40 +51,43 @@ const OPERATOR_MAP: Record<string, FilterOperator> = {
   notEqual: 'isNot',
 };
 
-export function migrateToAgentable(raw: any, filename: string): TableData {
+export function migrateToAgentable(raw: Record<string, unknown>, filename: string): TableData {
   const title = filename.replace(/\.(table\.json|table\.md)$/i, '');
 
-  const columns: ColumnDef[] = (raw.columns || []).map((col: any): ColumnDef => {
-    const opts = col.typeOptions || {};
+  const columns: ColumnDef[] = ((raw.columns as unknown[]) || []).map((col: unknown): ColumnDef => {
+    const c = col as Record<string, unknown>;
+    const opts = (c.typeOptions as Record<string, unknown>) || {};
     const constraints: ColumnConstraints = {};
     const display: ColumnDisplay = {};
 
-    if (col.width != null) display.width = col.width;
-    if (col.display?.width != null) display.width = col.display.width;
+    if (c.width != null) display.width = c.width as number;
+    const colDisplay = c.display as Record<string, unknown> | undefined;
+    if (colDisplay?.width != null) display.width = colDisplay.width as number;
 
     // dateFormat lives in display per Agentable spec
-    if (opts.dateFormat) display.dateFormat = opts.dateFormat;
-    if (col.display?.dateFormat) display.dateFormat = col.display.dateFormat;
+    if (opts.dateFormat) display.dateFormat = opts.dateFormat as string;
+    if (colDisplay?.dateFormat) display.dateFormat = colDisplay.dateFormat as string;
     // migrate if dateFormat was incorrectly stored in constraints
-    if (col.constraints?.dateFormat) {
-      display.dateFormat = col.constraints.dateFormat;
+    const colConstraints = c.constraints as Record<string, unknown> | undefined;
+    if (colConstraints?.dateFormat) {
+      display.dateFormat = colConstraints.dateFormat as string;
     }
 
     if (opts.options) {
-      constraints.options = opts.options.map((o: any) => ({
-        value: o.value,
-        color: o.style ?? o.color,
+      constraints.options = (opts.options as Record<string, unknown>[]).map((o) => ({
+        value: o.value as string,
+        color: (o.style ?? o.color) as string | undefined,
       }));
     }
-    if (col.constraints?.options) constraints.options = col.constraints.options;
-    if (opts.suggestAllFiles != null) constraints.suggestAllFiles = opts.suggestAllFiles;
-    if (col.constraints?.suggestAllFiles != null) constraints.suggestAllFiles = col.constraints.suggestAllFiles;
-    if (opts.wrap != null) constraints.wrap = opts.wrap;
-    if (col.constraints?.wrap != null) constraints.wrap = col.constraints.wrap;
-    if (opts.multiSelect != null) constraints.multiSelect = opts.multiSelect;
-    if (col.constraints?.multiSelect != null) constraints.multiSelect = col.constraints.multiSelect;
+    if (colConstraints?.options) constraints.options = colConstraints.options as ColumnConstraints['options'];
+    if (opts.suggestAllFiles != null) constraints.suggestAllFiles = opts.suggestAllFiles as boolean;
+    if (colConstraints?.suggestAllFiles != null) constraints.suggestAllFiles = colConstraints.suggestAllFiles as boolean;
+    if (opts.wrap != null) constraints.wrap = opts.wrap as boolean;
+    if (colConstraints?.wrap != null) constraints.wrap = colConstraints.wrap as boolean;
+    if (opts.multiSelect != null) constraints.multiSelect = opts.multiSelect as boolean;
+    if (colConstraints?.multiSelect != null) constraints.multiSelect = colConstraints.multiSelect as boolean;
 
-    let type: string = col.type;
+    let type: string = c.type as string;
     if (type === 'checkbox') type = 'boolean';
     else if (type === 'dropdown') type = 'select';
     else if (type === 'multiselect' || type === 'multi-select') {
@@ -92,47 +95,57 @@ export function migrateToAgentable(raw: any, filename: string): TableData {
       constraints.multiSelect = true;
     } else if (type === 'notelink' || type === 'wikilink') type = 'link';
 
-    const colId: `col_${string}` = col.id?.startsWith('col_') ? col.id : `col_${col.id ?? _generateColId()}`;
+    const colId = c.id as string | undefined;
+    const colIdTyped: `col_${string}` = colId?.startsWith('col_') ? (colId as `col_${string}`) : `col_${colId ?? _generateColId()}`;
 
     return {
-      id: colId,
-      name: col.name,
+      id: colIdTyped,
+      name: c.name as string,
       type,
       ...(Object.keys(display).length > 0 ? { display } : {}),
       ...(Object.keys(constraints).length > 0 ? { constraints } : {}),
     };
   });
 
-  const rows: AgentableRow[] = (raw.rows || []).map((oldRow: any): AgentableRow => {
+  const rows: AgentableRow[] = ((raw.rows as unknown[]) || []).map((oldRow: unknown): AgentableRow => {
     if (Array.isArray(oldRow)) {
-      const cells: Record<string, any> = {};
-      oldRow.forEach((cell: any) => { cells[cell.column] = cell.value; });
+      const cells: Record<string, unknown> = {};
+      (oldRow as Array<Record<string, unknown>>).forEach((cell) => { cells[cell.column as string] = cell.value; });
       return { id: generateRowId(), cells };
     }
-    return { id: oldRow.id ?? generateRowId(), cells: oldRow.cells ?? {} };
+    const r = oldRow as Record<string, unknown>;
+    return { id: (r.id as string) ?? generateRowId(), cells: (r.cells as Record<string, unknown>) ?? {} };
   });
 
   const existingSortIds = new Set<string>();
-  const views: ViewDef[] = (raw.views && raw.views.length > 0)
-    ? raw.views.map((v: any): ViewDef => {
-        const sorts: SortRule[] = (v.sort ?? v.sorts ?? []).map((s: any): SortRule => {
-          const sid = (s.id?.startsWith('srt_') ? s.id : generateSortId(existingSortIds)) as `srt_${string}`;
+  const views: ViewDef[] = (raw.views && (raw.views as unknown[]).length > 0)
+    ? (raw.views as unknown[]).map((v: unknown): ViewDef => {
+        const vObj = v as Record<string, unknown>;
+        const sorts: SortRule[] = ((vObj.sort ?? vObj.sorts ?? []) as unknown[]).map((s: unknown): SortRule => {
+          const sObj = s as Record<string, unknown>;
+          const sId = sObj.id as string | undefined;
+          const sid = (sId?.startsWith('srt_') ? sId : generateSortId(existingSortIds)) as `srt_${string}`;
           existingSortIds.add(sid);
-          return { id: sid, columnId: s.columnId, direction: s.direction };
+          return { id: sid, columnId: sObj.columnId as string, direction: sObj.direction as 'asc' | 'desc' };
         });
-        const viewId: `view_${string}` = v.id?.startsWith('view_') ? v.id : `view_${v.id ?? _generateViewId()}`;
+        const vId = vObj.id as string | undefined;
+        const viewId: `view_${string}` = vId?.startsWith('view_') ? (vId as `view_${string}`) : `view_${vId ?? _generateViewId()}`;
         return {
           id: viewId,
-          name: v.name,
+          name: vObj.name as string,
           sorts,
-          filters: (v.filter ?? v.filters ?? []).map((f: any): FilterRule => ({
-            id: f.id?.startsWith('flt_') ? f.id : `flt_${f.id ?? _generateFilterId()}`,
-            columnId: f.columnId,
-            operator: OPERATOR_MAP[f.operator] ?? f.operator,
-            value: f.value,
-          })),
-          hiddenColumns: v.hiddenColumns ?? [],
-          columnOrder: v.columnOrder ?? [],
+          filters: ((vObj.filter ?? vObj.filters ?? []) as unknown[]).map((f: unknown): FilterRule => {
+            const fObj = f as Record<string, unknown>;
+            const fId = fObj.id as string | undefined;
+            return {
+              id: (fId?.startsWith('flt_') ? fId : `flt_${fId ?? _generateFilterId()}`) as `flt_${string}`,
+              columnId: fObj.columnId as string,
+              operator: (OPERATOR_MAP[fObj.operator as string] ?? fObj.operator) as FilterOperator,
+              value: fObj.value as string | undefined,
+            };
+          }),
+          hiddenColumns: (vObj.hiddenColumns as string[]) ?? [],
+          columnOrder: (vObj.columnOrder as string[]) ?? [],
         };
       })
     : [createDefaultView()];
@@ -157,12 +170,13 @@ export function ensureViewsValid(data: TableData): void {
     if (!v.columnOrder) v.columnOrder = [];
     // Ensure sort rules have IDs — mutate in place to preserve popup references
     v.sorts.forEach(s => {
-      if (!(s as any).id?.startsWith('srt_')) (s as any).id = _generateSortId();
+      if (!s.id?.startsWith('srt_')) (s as unknown as Record<string, unknown>).id = _generateSortId();
     });
     // Ensure filter rules have prefixed IDs — mutate in place to preserve popup references
     v.filters.forEach(f => {
-      if (!(f as any).id?.startsWith('flt_')) {
-        (f as any).id = `flt_${(f as any).id ?? _generateFilterId()}`;
+      if (!f.id?.startsWith('flt_')) {
+        const fAny = f as unknown as Record<string, unknown>;
+        fAny.id = `flt_${f.id ?? _generateFilterId()}`;
       }
     });
   });
@@ -170,11 +184,12 @@ export function ensureViewsValid(data: TableData): void {
   data.columns?.forEach(col => {
     if (col.type === 'notelink' || col.type === 'wikilink') col.type = 'link';
     // Migrate dateFormat from constraints to display if present
-    if ((col.constraints as any)?.dateFormat) {
-      col.display = { ...col.display, dateFormat: (col.constraints as any).dateFormat };
-      const c = { ...col.constraints } as any;
+    const constraintsAny = col.constraints as unknown as Record<string, unknown> | undefined;
+    if (constraintsAny?.dateFormat) {
+      col.display = { ...col.display, dateFormat: constraintsAny.dateFormat as string };
+      const c = { ...(col.constraints as unknown as Record<string, unknown>) };
       delete c.dateFormat;
-      col.constraints = c;
+      col.constraints = c as typeof col.constraints;
     }
   });
 }

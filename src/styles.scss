@@ -960,6 +960,13 @@ div.json-table-btn--active:hover {
   display: none !important;
 }
 
+// Dropdown popup menu — static positioning properties moved out of JS
+.json-table-dropdown-menu-popup {
+  position: fixed;
+  z-index: 9999;
+  width: 220px;
+}
+
 .json-table-is-dimmed {
   opacity: 0.5;
 }

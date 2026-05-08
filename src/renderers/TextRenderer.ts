@@ -6,9 +6,9 @@ export class TextRenderer implements ICellRenderer {
   public render(
     app: App,
     container: HTMLElement,
-    value: any,
+    value: unknown,
     column: ColumnDef,
-    onChange: (newValue: any) => void
+    onChange: (newValue: unknown) => void
   ): void {
     const isWrapped = column.constraints?.wrap || false;
 
@@ -46,7 +46,7 @@ export class TextRenderer implements ICellRenderer {
     span.addEventListener('blur', () => {
       span.scrollLeft = 0; // Reset scroll position to beginning
       const newValue = span.innerText; // innerText preserves newlines
-      if (newValue !== value) {
+      if (newValue !== stringValue) {
         onChange(newValue);
       }
     });
@@ -66,7 +66,7 @@ export class TextRenderer implements ICellRenderer {
       // Escape: Revert
       if (e.key === 'Escape') {
         e.preventDefault();
-        span.setText(value);
+        span.setText(stringValue);
         span.blur();
       }
     });

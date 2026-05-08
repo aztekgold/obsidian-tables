@@ -23,9 +23,9 @@ export class DateRenderer implements ICellRenderer {
   public render(
     app: App,
     container: HTMLElement, // This is the <td>
-    value: any, // Stored as timestamp string (or number)
+    value: unknown, // Stored as timestamp string (or number)
     column: ColumnDef, // Full column definition including typeOptions
-    onChange: (newValue: any) => void
+    onChange: (newValue: unknown) => void
   ): void {
     container.empty();
     container.addClass('json-table-date-cell'); // Style the TD directly
@@ -42,7 +42,7 @@ export class DateRenderer implements ICellRenderer {
     const formatString = this.formatMap[currentFormat];
 
     // Parse timestamp - handle both number and string for compatibility
-    const timestamp = typeof value === 'number' ? value : parseInt(value, 10);
+    const timestamp = typeof value === 'number' ? value : parseInt(String(value ?? ''), 10);
     let displayDate = ''; // Placeholder for empty/invalid
     let currentDate: Date | null = null;
 

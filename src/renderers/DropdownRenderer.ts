@@ -9,9 +9,9 @@ export class DropdownRenderer implements ICellRenderer {
   public render(
     app: App,
     container: HTMLElement, // This is the <td>
-    value: any,
+    value: unknown,
     column: ColumnDef,
-    onChange: (newValue: any) => void
+    onChange: (newValue: unknown) => void
   ): void {
     container.empty();
 
@@ -36,9 +36,9 @@ export class DropdownRenderer implements ICellRenderer {
   private renderDisplay(
     app: App,
     wrapper: HTMLElement,
-    value: any,
+    value: unknown,
     column: ColumnDef,
-    onChange: (newValue: any) => void
+    onChange: (newValue: unknown) => void
   ) {
     wrapper.empty();
     wrapper.removeClass('is-editing');
@@ -57,9 +57,9 @@ export class DropdownRenderer implements ICellRenderer {
   private renderEdit(
     app: App,
     wrapper: HTMLElement,
-    value: any,
+    value: unknown,
     column: ColumnDef,
-    onChange: (newValue: any) => void
+    onChange: (newValue: unknown) => void
   ) {
     // Clone wrapper to remove old listeners
     const parent = wrapper.parentNode;
@@ -86,7 +86,7 @@ export class DropdownRenderer implements ICellRenderer {
       app,
       anchor: newWrapper,
       options: column.constraints?.options || [],
-      selectedValues: value ? [value] : [],
+      selectedValues: value ? [String(value)] : [],
       multiSelect: false,
       onSelect: (selectedValue) => {
         value = selectedValue;
@@ -114,16 +114,17 @@ export class DropdownRenderer implements ICellRenderer {
    */
   private renderTags(
     wrapper: HTMLElement,
-    value: any,
+    value: unknown,
     column: ColumnDef,
     onRemove?: () => void
   ) {
     const allOptions = column.constraints?.options || [];
 
+    const strValue = value == null ? '' : String(value);
     wrapper.empty();
 
     // Show empty state if no value
-    if (!value) {
+    if (!strValue) {
       if (!onRemove) {
         // Display mode - show placeholder
         wrapper.createEl('span', {
@@ -136,7 +137,7 @@ export class DropdownRenderer implements ICellRenderer {
     }
 
     // Find the option for styling
-    const option = allOptions.find(opt => opt.value === value);
+    const option = allOptions.find(opt => opt.value === strValue);
 
     const tagContainer = wrapper.createEl('span', {
       cls: 'json-table-dropdown-tag'
@@ -149,7 +150,7 @@ export class DropdownRenderer implements ICellRenderer {
     }
 
     // Add the text
-    tagContainer.createEl('span', { text: value });
+    tagContainer.createEl('span', { text: strValue });
 
     // If onRemove callback is provided (edit mode), add the "x" button
     if (onRemove) {

@@ -1,10 +1,8 @@
 // src/InlineTableRenderer.ts
-import { MarkdownRenderChild } from 'obsidian';
+import { MarkdownRenderChild, App, TFile } from 'obsidian';
 import { TableData, JsonTableSettings, DEFAULT_SETTINGS } from './types';
 import { DivTableRenderer } from './renderers/DivTableRenderer';
 import { AbstractTableRenderer } from './renderers/AbstractTableRenderer';
-import { JsonTableView } from './JsonTableView';
-import { App, TFile } from 'obsidian';
 import { createMockView } from './utils/viewUtils';
 
 /**
@@ -126,7 +124,7 @@ export class InlineTableRenderer extends MarkdownRenderChild {
 
               matches.push({ match, parsed: parsedMatch, hash: matchHash });
             }
-          } catch (e) {
+          } catch {
             // Skip invalid JSON blocks
             continue;
           }

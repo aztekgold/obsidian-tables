@@ -25,7 +25,7 @@ export class MarkdownFileHandler implements ITableFileHandler {
     if (!frontmatter) {
       const fmMatch = content.match(/^---\s*([\s\S]*?)\s*---/);
       if (fmMatch) {
-        try { frontmatter = parseYaml(fmMatch[1]); } catch (e) { /* ignore */ }
+        try { frontmatter = parseYaml(fmMatch[1]); } catch { /* ignore */ }
       }
     }
 
@@ -106,7 +106,7 @@ export class MarkdownFileHandler implements ITableFileHandler {
   }
 
   private updateMarkdownContent(existingContent: string, newJsonString: string, linkPaths: string[]): string {
-    let frontmatter: Record<string, any> = {};
+    let frontmatter: Record<string, unknown> = {};
     let body = existingContent;
 
     if (existingContent.startsWith('---')) {
@@ -115,7 +115,7 @@ export class MarkdownFileHandler implements ITableFileHandler {
         try {
           frontmatter = parseYaml(fmMatch[1]) || {};
           body = existingContent.substring(fmMatch[0].length).trimStart();
-        } catch (e) {
+        } catch {
           frontmatter = {};
           body = existingContent;
         }

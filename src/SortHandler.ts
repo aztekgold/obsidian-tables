@@ -1,4 +1,4 @@
-import { TableData, ColumnDef, SortRule, ViewDef, AgentableRow } from './types';
+import { TableData, SortRule, ViewDef, AgentableRow } from './types';
 import { JsonTableView } from './JsonTableView';
 import { ICON_NAMES, createIconElement } from './icons';
 import { positionPopup } from './utils/popup';
@@ -77,10 +77,12 @@ export class SortHandler {
           });
           columnSelect.addEventListener('click', (e) => e.stopPropagation());
           columnSelect.addEventListener('mousedown', (e) => e.stopPropagation());
-          columnSelect.addEventListener('change', async () => {
+          columnSelect.addEventListener('change', () => {
             rule.columnId = columnSelect.value;
-            await this.view.saveTableData(this.data);
-            this.triggerRender();
+            void (async () => {
+              await this.view.saveTableData(this.data);
+              this.triggerRender();
+            })();
           });
 
           const directionSelect = expression.createEl('select', { cls: 'dropdown' });
@@ -90,23 +92,27 @@ export class SortHandler {
           else descOpt.selected = true;
           directionSelect.addEventListener('click', (e) => e.stopPropagation());
           directionSelect.addEventListener('mousedown', (e) => e.stopPropagation());
-          directionSelect.addEventListener('change', async () => {
+          directionSelect.addEventListener('change', () => {
             rule.direction = directionSelect.value as 'asc' | 'desc';
-            await this.view.saveTableData(this.data);
-            this.triggerRender();
+            void (async () => {
+              await this.view.saveTableData(this.data);
+              this.triggerRender();
+            })();
           });
 
           const rowActions = expression.createDiv({ cls: 'filter-row-actions' });
           const deleteBtn = rowActions.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': 'Remove sort' } });
           deleteBtn.appendChild(createIconElement(ICON_NAMES.trash, 14));
-          deleteBtn.addEventListener('click', async (e) => {
+          deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             const rules = this.getCurrentSortRules();
             rules.splice(index, 1);
             this.setCurrentSortRules(rules);
-            await this.view.saveTableData(this.data);
-            this.triggerRender();
-            rebuildSortRows();
+            void (async () => {
+              await this.view.saveTableData(this.data);
+              this.triggerRender();
+              rebuildSortRows();
+            })();
           });
         });
       }
@@ -154,9 +160,12 @@ export class SortHandler {
     if (!sortColumn) return [...this.data.rows];
 
     const stripEmojis = (str: string): string =>
-      str.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE0F}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}]/gu, '').trim();
+      str
+        .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}]/gu, '')
+        .replace(/️/g, '')
+        .trim();
 
-    const sortKeys = new Map<AgentableRow, any>();
+    const sortKeys = new Map<AgentableRow, number | string | null>();
 
     this.data.rows.forEach(row => {
       const rawValue = row.cells[columnId] ?? '';
@@ -188,17 +197,18 @@ export class SortHandler {
     });
 
     return [...this.data.rows].sort((rowA, rowB) => {
-      const valA = sortKeys.get(rowA);
-      const valB = sortKeys.get(rowB);
+      const valA = sortKeys.get(rowA) ?? null;
+      const valB = sortKeys.get(rowB) ?? null;
 
       if (valA === null && valB === null) return 0;
       if (valA === null) return 1;
       if (valB === null) return -1;
 
+      // At this point valA and valB are non-null number | string
       let comparison = 0;
       if (typeof valA === 'string' && typeof valB === 'string') {
         comparison = valA.localeCompare(valB);
-      } else {
+      } else if (typeof valA === 'number' && typeof valB === 'number') {
         comparison = valA < valB ? -1 : valA > valB ? 1 : 0;
       }
 

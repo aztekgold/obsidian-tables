@@ -35,7 +35,7 @@ export class ViewManager {
             columnOrder: [],
         });
         this.host.activeViewId = newViewId;
-        this.host.view.saveTableData(this.host.data);
+        void this.host.view.saveTableData(this.host.data);
         this.host.render();
     }
 
@@ -50,7 +50,7 @@ export class ViewManager {
             if (this.host.activeViewId === viewId) {
                 this.host.activeViewId = this.host.data.views[0].id;
             }
-            this.host.view.saveTableData(this.host.data);
+            void this.host.view.saveTableData(this.host.data);
             this.host.render();
         }
     }
@@ -59,7 +59,7 @@ export class ViewManager {
         const view = this.host.data.views.find(v => v.id === viewId);
         if (view) {
             view.name = newName;
-            this.host.view.saveTableData(this.host.data);
+            void this.host.view.saveTableData(this.host.data);
             this.host.render();
         }
     }
@@ -133,13 +133,13 @@ export class ViewManager {
 
             if (this.host.data.views.length > 1) {
                 const deleteBtn = tab.createDiv({ cls: 'json-table-view-delete' });
-                deleteBtn.innerHTML = '&times;';
+                deleteBtn.setText('×');
                 deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); this.deleteView(view.id); });
             }
         });
 
         const addBtn = tabsContainer.createDiv({ cls: 'json-table-view-add-btn', attr: { title: 'Add view' } });
-        addBtn.innerHTML = '+';
+        addBtn.setText('+');
         addBtn.addEventListener('click', () => { this.createNewView(); });
     }
 }
