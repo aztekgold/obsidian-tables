@@ -2,7 +2,7 @@
 
 import { App } from 'obsidian';
 import { ICellRenderer } from './ICellRenderer';
-import { ColumnDef, NoteLinkTypeOptions } from '../types'; // Import NoteLinkTypeOptions
+import { ColumnDef } from '../types';
 import { FileSuggest } from '../suggesters/FileSuggest';
 
 export class NoteLinkRenderer implements ICellRenderer {
@@ -58,7 +58,7 @@ export class NoteLinkRenderer implements ICellRenderer {
       link.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation(); // Stop click bubbling to wrapper
-        app.workspace.openLinkText(value, "", false);
+        void app.workspace.openLinkText(value, "", false);
       });
 
     } else {
@@ -120,9 +120,7 @@ export class NoteLinkRenderer implements ICellRenderer {
       this.renderDisplay(app, newWrapper, savePath, column, onChange);
     };
 
-    // --- Instantiate the suggester using typeOptions ---
-    const typeOpts = column.typeOptions as NoteLinkTypeOptions | undefined;
-    const suggestAll = !!typeOpts?.suggestAllFiles; // Read from typeOptions, default false
+    const suggestAll = !!column.constraints?.suggestAllFiles;
 
     const suggester = new FileSuggest(
       app,

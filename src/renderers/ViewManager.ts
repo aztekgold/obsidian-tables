@@ -3,12 +3,14 @@
 import { TableData, ViewDef } from '../types';
 import { JsonTableView } from '../JsonTableView';
 import { Notice } from 'obsidian';
+import { generateViewId } from '../utils/migrateUtils';
 
 export interface IViewManagerHost {
     data: TableData;
     view: JsonTableView;
     activeViewId: string;
     isInline: boolean;
+    lockToView: boolean;
     render(): void;
     setActiveView(viewId: string): void;
     container: Element;
@@ -22,13 +24,15 @@ export class ViewManager {
     }
 
     public createNewView() {
-        const newViewId = 'view_' + Date.now();
+        const newViewId = generateViewId(new Set(this.host.data.views.map(v => v.id)));
         const newViewName = `View ${this.host.data.views.length + 1}`;
         this.host.data.views.push({
             id: newViewId,
             name: newViewName,
-            sort: [],
-            filter: []
+            sorts: [],
+            filters: [],
+            hiddenColumns: [],
+            columnOrder: [],
         });
         this.host.activeViewId = newViewId;
         this.host.view.saveTableData(this.host.data);
@@ -95,7 +99,8 @@ export class ViewManager {
 
     public renderViewTabs() {
         const currentFilePath = this.host.view.getFilePath();
-        if (currentFilePath && currentFilePath.endsWith('.csv')) return; // Hide views for CSV files
+        if (currentFilePath && currentFilePath.endsWith('.csv')) return;
+        if (this.host.lockToView) return;
 
         const tabsContainer = this.host.container.createDiv({ cls: 'json-table-view-tabs' });
         this.host.data.views.forEach(view => {

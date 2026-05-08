@@ -10,6 +10,7 @@ interface DropdownMenuProps {
     onSelect: (value: string) => void;
     onClose: () => void;
     multiSelect?: boolean;
+    onCreateOption?: (value: string) => void;
 }
 
 export class DropdownMenu {
@@ -115,42 +116,27 @@ export class DropdownMenu {
     private renderItems(filter: string) {
         this.itemsContainer.empty();
         const lowerFilter = filter.toLowerCase();
+        const trimmedFilter = filter.trim();
 
         const filteredOptions = this.allOptions.filter(opt =>
             opt.value.toLowerCase().includes(lowerFilter)
         );
 
-        if (filteredOptions.length === 0) {
+        if (filteredOptions.length === 0 && !trimmedFilter) {
             const emptyEl = this.itemsContainer.createDiv({ cls: 'menu-item is-disabled' });
             emptyEl.setText('No options found');
-            return;
         }
 
         filteredOptions.forEach(opt => {
             const isSelected = this.props.selectedValues.includes(opt.value);
 
-            // Use 'suggestion-item' and 'bases-toolbar-menu-item' for consistent look
             const item = this.itemsContainer.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item' });
             if (isSelected) item.addClass('is-selected');
 
             const info = item.createDiv({ cls: 'bases-toolbar-menu-item-info' });
 
-            // Color indicator icon
             const iconWrap = info.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
-            // Use dot or custom style? 
-            // Existing dropdown relies on tags.
-            // Let's render a mini tag or colored dot.
-            // bases-toolbar usually uses icons.
-            // We can create a colored dot via style.
-            const dot = iconWrap.createDiv({ cls: `json-table-color-dot json-table-tag--${opt.style || 'default'}` });
-            dot.style.width = '10px';
-            dot.style.height = '10px';
-            dot.style.borderRadius = '50%';
-
-
-            // Note: dropdown-tag classes set background-color and color.
-            // dot needs background-color.
-            // If dropdown-tag sets background-color, dot will inherit it.
+            iconWrap.createDiv({ cls: `json-table-color-dot is-small json-table-tag--${opt.color || 'default'}` });
 
             info.createDiv({ cls: 'bases-toolbar-menu-item-name', text: opt.value });
 
@@ -167,20 +153,33 @@ export class DropdownMenu {
                 if (!this.props.multiSelect) {
                     this.close();
                 } else {
-                    // Update selection state internally for visual feedback
                     if (isSelected) {
                         this.props.selectedValues = this.props.selectedValues.filter(v => v !== opt.value);
                     } else {
                         this.props.selectedValues.push(opt.value);
                     }
-                    // Re-render to show updated checks
-                    // Maintain scroll position?
-                    // Currently re-renders list, scroll might jump if top items change?
-                    // But filter is same.
                     this.renderItems(this.searchInput.value);
                 }
             });
         });
+
+        // "Create X" row — shown when there's input and no exact match
+        const exactMatch = this.allOptions.some(opt => opt.value.toLowerCase() === lowerFilter);
+        if (trimmedFilter && !exactMatch && this.props.onCreateOption) {
+            const createItem = this.itemsContainer.createDiv({ cls: 'suggestion-item bases-toolbar-menu-item json-table-create-option' });
+
+            const info = createItem.createDiv({ cls: 'bases-toolbar-menu-item-info' });
+            const iconWrap = info.createDiv({ cls: 'bases-toolbar-menu-item-info-icon' });
+            setIcon(iconWrap, 'plus');
+            info.createDiv({ cls: 'bases-toolbar-menu-item-name', text: `Create "${trimmedFilter}"` });
+
+            createItem.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                this.props.onCreateOption!(trimmedFilter);
+                this.close();
+            });
+        }
     }
 
     public close() {

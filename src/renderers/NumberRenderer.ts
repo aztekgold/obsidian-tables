@@ -124,7 +124,7 @@ export class NumberRenderer implements ICellRenderer {
         // Handle Paste: Only allow if clipboard content is numeric
         span.addEventListener('paste', (e) => {
             e.preventDefault();
-            const clipboardData = (e.clipboardData || (window as any).clipboardData);
+            const clipboardData = e.clipboardData;
             const pastedData = clipboardData.getData('text');
 
             // Simple check: is it a valid number part?

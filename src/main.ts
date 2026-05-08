@@ -16,22 +16,14 @@ import {
 import {
     VIEW_TYPE_JSON_TABLE,
     TableData,
-    JsonTableSettings, // Assuming moved to types.ts
-    DEFAULT_SETTINGS // Assuming moved to types.ts
-} from './types'; // Central types file
+    JsonTableSettings,
+    DEFAULT_SETTINGS,
+    AGENTABLE_VERSION
+} from './types';
 // --- Import Handlers ---
 import {
     ITableFileHandler
 } from './fileHandlers/ITableFileHandler';
-import {
-    JsonFileHandler
-} from './fileHandlers/JsonFileHandler';
-import {
-    MarkdownFileHandler
-} from './fileHandlers/MarkdownFileHandler';
-import {
-    CsvFileHandler
-} from './fileHandlers/CsvFileHandler';
 import {
     InlineTableRenderer
 } from './InlineTableRenderer';
@@ -44,6 +36,7 @@ import {
 import { around } from 'monkey-around';
 import { parseCsv } from './utils/csv';
 import { getHandlerForFile, createDefaultView } from './utils/fileUtils';
+import { generateRowId, generateColId } from './utils/migrateUtils';
 
 
 
@@ -61,11 +54,6 @@ class JsonTableSettingTab extends PluginSettingTab {
             containerEl
         } = this;
         containerEl.empty();
-        const mainHeading = containerEl.createDiv({ cls: 'setting-item setting-item-heading' });
-        const mainInfo = mainHeading.createDiv({ cls: 'setting-item-info' });
-        mainInfo.createDiv({ cls: 'setting-item-name', text: 'Tables Settings' });
-        mainInfo.createDiv({ cls: 'setting-item-description' });
-        mainHeading.createDiv({ cls: 'setting-item-control' });
 
         new Setting(containerEl)
             .setName('Default File Format')
@@ -106,7 +94,9 @@ class JsonTableSettingTab extends PluginSettingTab {
                     // Reload active views
                     this.plugin.app.workspace.iterateAllLeaves(leaf => {
                         if (leaf.view.getViewType() === VIEW_TYPE_JSON_TABLE) {
-                            (leaf.view as any).render();
+                            const tableView = leaf.view as JsonTableView;
+                            const filePath = tableView.getFilePath();
+                            if (filePath) void tableView.loadFileAndRender(filePath);
                         }
                     });
                 }));
@@ -273,9 +263,10 @@ export default class JsonTablePlugin extends Plugin {
                     menu.addItem((item) => {
                         item
                             .setTitle('New table')
-                            .setIcon('table') // Use built-in table icon
+                            .setIcon('table')
+                            .setSection('action-primary')
                             .onClick(async () => {
-                                await this.createNewTable(file); // Pass the TAbstractFile (folder)
+                                await this.createNewTable(file);
                             });
                     });
                 }
@@ -313,8 +304,9 @@ export default class JsonTablePlugin extends Plugin {
                         item
                             .setTitle('New table')
                             .setIcon('table')
+                            .setSection('action-primary')
                             .onClick(async () => {
-                                await this.createNewTable(targetFolder); // Pass the TAbstractFile (folder)
+                                await this.createNewTable(targetFolder);
                             });
                     });
                 }
@@ -565,18 +557,18 @@ export default class JsonTablePlugin extends Plugin {
 
     /** Returns the default empty table structure */
     getDefaultTableData(): TableData {
-        const colId1 = "col" + Date.now() + "_1";
-        const colId2 = "col" + Date.now() + "_2";
+        const usedColIds = new Set<string>();
+        const colId1 = generateColId(usedColIds); usedColIds.add(colId1);
+        const colId2 = generateColId(usedColIds);
         return {
-            columns: [{
-                id: colId1, name: "Column 1", type: "text", width: 150,
-                typeOptions: {}
-            }, {
-                id: colId2, name: "Column 2", type: "text", width: 150,
-                typeOptions: {}
-            }],
+            version: AGENTABLE_VERSION,
+            metadata: { title: 'New Table' },
+            columns: [
+                { id: colId1, name: "Column 1", type: "text", display: { width: 150 } },
+                { id: colId2, name: "Column 2", type: "text", display: { width: 150 } }
+            ],
             rows: [
-                [{ column: colId1, value: "" }, { column: colId2, value: "" }]
+                { id: generateRowId(), cells: { [colId1]: "", [colId2]: "" } }
             ],
             views: [createDefaultView()]
         };
@@ -730,22 +722,22 @@ export default class JsonTablePlugin extends Plugin {
 
         // Create columns from CSV headers
         const columns = csvData.columns.map((header, index) => ({
-            id: `col_${index}`,
+            id: `col_${index.toString(36)}` as `col_${string}`,
             name: header,
             type: 'text' as const,
-            width: 150
+            display: { width: 150 }
         }));
 
         // Create rows from CSV data
-        const rows = csvData.rows.map((row) =>
-            row.map((value, colIndex) => ({
-                column: `col_${colIndex}`,
-                value: value
-            }))
-        );
+        const rows = csvData.rows.map((row) => ({
+            id: generateRowId(),
+            cells: Object.fromEntries(row.map((value, colIndex) => [`col_${colIndex.toString(36)}`, value]))
+        }));
 
         // Create TableData structure
         const tableData: TableData = {
+            version: AGENTABLE_VERSION,
+            metadata: { title: baseName },
             columns: columns,
             rows: rows,
             views: [createDefaultView()]
@@ -754,9 +746,6 @@ export default class JsonTablePlugin extends Plugin {
         // Create file content based on renderer setting
         let fileContent: string;
         if (this.settings.tableRenderer === 'default') {
-            // Create Markdown file with frontmatter and JSON block
-            const handler = new MarkdownFileHandler(this.app);
-            // We need a temporary file to use the handler, so let's construct it manually
             const frontmatter = `json-table-plugin: true\ntable-links: []\n`;
             const jsonBlock = `\`\`\`json-table\n${JSON.stringify(tableData, null, 2)}\n\`\`\`\n`;
             fileContent = `---\n${frontmatter}---\n${jsonBlock}`;
@@ -805,16 +794,17 @@ export default class JsonTablePlugin extends Plugin {
                 const data = await handler.read(file);
                 if (!data || !data.columns || !data.rows) continue;
 
-                const linkColumns = data.columns.filter(col => col.type === 'notelink').map(col => col.id);
+                const linkColumns = data.columns.filter(col => col.type === 'link' || col.type === 'wikilink' || col.type === 'notelink').map(col => col.id);
                 if (linkColumns.length === 0) continue;
 
                 let dataChanged = false;
                 data.rows.forEach(row => {
-                    row.forEach(cell => {
-                        if (linkColumns.includes(cell.column) && cell.value) {
-                            const newValue = predicate(cell.value);
-                            if (newValue !== null && newValue !== cell.value) {
-                                cell.value = newValue;
+                    linkColumns.forEach(colId => {
+                        const val = row.cells[colId];
+                        if (val) {
+                            const newValue = predicate(String(val));
+                            if (newValue !== null && newValue !== val) {
+                                row.cells[colId] = newValue;
                                 dataChanged = true;
                             }
                         }

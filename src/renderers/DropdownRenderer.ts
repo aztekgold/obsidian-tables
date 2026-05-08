@@ -1,7 +1,7 @@
 // src/renderers/DropdownRenderer.ts
 import { App } from 'obsidian';
 import { ICellRenderer } from './ICellRenderer';
-import { ColumnDef, DropdownOption, SelectTypeOptions } from '../types';
+import { ColumnDef } from '../types';
 
 import { DropdownMenu } from '../ui/DropdownMenu';
 
@@ -81,25 +81,27 @@ export class DropdownRenderer implements ICellRenderer {
     // 1. Render tag with "x" button if value exists
     this.renderTags(newWrapper, value, column, handleRemove);
 
-    const typeOpts = column.typeOptions as SelectTypeOptions | undefined;
-
     // 2. Show the menu with available options
     new DropdownMenu({
       app,
       anchor: newWrapper,
-      options: typeOpts?.options || [],
+      options: column.constraints?.options || [],
       selectedValues: value ? [value] : [],
       multiSelect: false,
       onSelect: (selectedValue) => {
         value = selectedValue;
         onChange(selectedValue);
-        // Menu closes automatically handling by DropdownMenu
-        // onClose will be called to return to display mode
       },
       onClose: () => {
-        // Return to display mode
         this.renderDisplay(app, newWrapper, value, column, onChange);
-      }
+      },
+      onCreateOption: (newValue) => {
+        if (!column.constraints) column.constraints = {};
+        if (!column.constraints.options) column.constraints.options = [];
+        column.constraints.options.push({ value: newValue, color: 'default' });
+        value = newValue;
+        onChange(newValue);
+      },
     });
   }
 
@@ -116,8 +118,7 @@ export class DropdownRenderer implements ICellRenderer {
     column: ColumnDef,
     onRemove?: () => void
   ) {
-    const typeOpts = column.typeOptions as SelectTypeOptions | undefined;
-    const allOptions = typeOpts?.options || [];
+    const allOptions = column.constraints?.options || [];
 
     wrapper.empty();
 
@@ -141,9 +142,8 @@ export class DropdownRenderer implements ICellRenderer {
       cls: 'json-table-dropdown-tag'
     });
 
-    // Apply style based on definition or default
-    if (option && option.style) {
-      tagContainer.addClass(`json-table-tag--${option.style}`);
+    if (option && option.color) {
+      tagContainer.addClass(`json-table-tag--${option.color}`);
     } else {
       tagContainer.addClass('json-table-tag--default');
     }

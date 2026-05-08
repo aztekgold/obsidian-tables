@@ -1,17 +1,11 @@
 // src/JsonTableView.ts
-import { ItemView, WorkspaceLeaf, TFile, App, ViewStateResult } from 'obsidian'; // Changed base class, added ViewStateResult
+import { ItemView, WorkspaceLeaf, TFile, Notice, ViewStateResult } from 'obsidian';
 import { TableData, VIEW_TYPE_JSON_TABLE, JsonTableSettings, DEFAULT_SETTINGS } from './types';
 import { AbstractTableRenderer } from './renderers/AbstractTableRenderer';
 import { DivTableRenderer } from './renderers/DivTableRenderer';
 import { ITableFileHandler } from './fileHandlers/ITableFileHandler';
 import { getHandlerForFile } from './utils/fileUtils';
 
-// Define the expected state structure
-interface JsonTableViewState {
-  file: string | null; // Store file path in state
-}
-
-// Change base class from FileView to ItemView
 export class JsonTableView extends ItemView {
   private renderer: AbstractTableRenderer | null = null;
   private fileHandler: ITableFileHandler | null = null;
@@ -194,14 +188,14 @@ export class JsonTableView extends ItemView {
     // Use the file path stored in state to get the TFile object
     if (!this.currentFilePath) {
       console.error("Cannot save: No file path associated with the view.");
-      this.app.workspace.trigger('notice', 'Error: Cannot save, no file loaded.');
+      new Notice('Error: Cannot save, no file loaded.');
       return;
     }
     const file = this.app.vault.getAbstractFileByPath(this.currentFilePath);
 
     if (!(file instanceof TFile)) {
       console.error(`Cannot save: File not found at path "${this.currentFilePath}".`);
-      this.app.workspace.trigger('notice', 'Error: File to save not found.');
+      new Notice('Error: File to save not found.');
       return;
     }
 
@@ -210,7 +204,7 @@ export class JsonTableView extends ItemView {
 
     if (!this.fileHandler || !dataToSave || !this.checkIfHandlerIsValid(file)) {
       console.error('Cannot save: No valid handler, data, or settings mismatch.', { file: file, handler: this.fileHandler, data: dataToSave });
-      this.app.workspace.trigger('notice', 'Error: Could not save table data.');
+      new Notice('Error: Could not save table data.');
       return;
     }
 
@@ -227,7 +221,7 @@ export class JsonTableView extends ItemView {
       this.data = dataToSave; // Keep internal data in sync
     } catch (e) {
       console.error('Error saving table data:', e);
-      this.app.workspace.trigger('notice', `Error saving table: ${(e as Error).message}`);
+      new Notice(`Error saving table: ${(e as Error).message}`);
     }
   }
 
@@ -267,17 +261,6 @@ export class JsonTableView extends ItemView {
         }
       })
     );
-  }
-
-  updateTitle() {
-    // Force leaf to update its title
-    // @ts-ignore - updateTitle is protected/private in some versions but accessible
-    if (this.leaf.view === this) {
-      // Trigger a title update
-      this.app.workspace.requestSaveLayout(); // Indirectly triggers updates?
-      // Or just let Obsidian handle it via setViewState which we called.
-      // Actually setViewState should trigger a title update.
-    }
   }
 
   // Called when view is detached
@@ -351,7 +334,6 @@ export class JsonTableView extends ItemView {
 
   /** Checks if the currently selected handler is valid for the file and settings */
   private checkIfHandlerIsValid(file: TFile): boolean {
-    const useMarkdown = this.settings.tableRenderer === 'default';
     const isMarkdownTableFile = file.name.endsWith('.table.md');
     const isJsonTableFile = file.name.endsWith('.table.json');
 

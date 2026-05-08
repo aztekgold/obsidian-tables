@@ -1,7 +1,7 @@
 // src/renderers/DateRenderer.ts
 import { App } from 'obsidian';
 import { ICellRenderer } from './ICellRenderer';
-import { ColumnDef, DateFormat, DateTypeOptions } from '../types'; // Import DateTypeOptions
+import { ColumnDef, DateFormat } from '../types';
 import flatpickr from 'flatpickr';
 // flatpickr CSS is included in styles.scss
 import { format } from 'date-fns';
@@ -38,11 +38,8 @@ export class DateRenderer implements ICellRenderer {
     }
     // --- End cleanup ---
 
-    // --- Read dateFormat from typeOptions ---
-    const typeOpts = column.typeOptions as DateTypeOptions | undefined;
-    const currentFormat = typeOpts?.dateFormat || 'YYYY/MM/DD'; // Default format
+    const currentFormat = (column.display?.dateFormat || 'YYYY/MM/DD') as DateFormat;
     const formatString = this.formatMap[currentFormat];
-    // --- End Read ---
 
     // Parse timestamp - handle both number and string for compatibility
     const timestamp = typeof value === 'number' ? value : parseInt(value, 10);
@@ -97,7 +94,7 @@ export class DateRenderer implements ICellRenderer {
             if (selectedDates.length > 0) {
               const selectedDate = selectedDates[0];
               const newTimestampMs = selectedDate.getTime();
-              const updatedFormatString = this.formatMap[(column.typeOptions as DateTypeOptions)?.dateFormat || 'YYYY/MM/DD'];
+              const updatedFormatString = this.formatMap[(column.display?.dateFormat || 'YYYY/MM/DD') as DateFormat];
               dateSpan.setText(format(selectedDate, updatedFormatString));
               onChange(newTimestampMs.toString());
             } else {

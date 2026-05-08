@@ -1,5 +1,5 @@
 
-import { TableData, ColumnDef, CellData, ViewDef, JsonTableSettings, DEFAULT_SETTINGS } from '../types';
+import { TableData, ColumnDef, AgentableRow, ViewDef, JsonTableSettings, DEFAULT_SETTINGS } from '../types';
 import { JsonTableView } from '../JsonTableView';
 import { Notice, setIcon } from 'obsidian';
 import { ICellRenderer } from './ICellRenderer';
@@ -8,24 +8,31 @@ import { CheckboxRenderer } from './CheckboxRenderer';
 import { DropdownRenderer } from './DropdownRenderer';
 import { MultiSelectRenderer } from './MultiSelectRenderer';
 import { NoteLinkRenderer } from './NoteLinkRenderer';
+import { UrlRenderer } from './UrlRenderer';
+import { EmailRenderer } from './EmailRenderer';
 import { DateRenderer } from './DateRenderer';
 import { NumberRenderer } from './NumberRenderer';
 import { SortHandler } from '../SortHandler';
 import { FilterHandler } from '../FilterHandler';
 import { ICON_NAMES, createIconElement } from '../icons';
-import { positionPopup } from '../utils/popup';
 import { generateCsv, downloadCsv } from '../utils/csv';
 import { createDefaultView } from '../utils/fileUtils';
 import { ViewManager, IViewManagerHost } from './ViewManager';
 import { TableMenuManager, IMenuManagerHost } from './TableMenuManager';
 
-export const TYPE_ICONS: Record<string, string> = { // Exported for use in subclasses if needed
+export const TYPE_ICONS: Record<string, string> = {
     text: ICON_NAMES.text,
-    dropdown: ICON_NAMES.dropdown,
-    multiselect: ICON_NAMES.multiselect,
-    checkbox: ICON_NAMES.checkbox,
+    select: ICON_NAMES.dropdown,
+    dropdown: ICON_NAMES.dropdown,   // legacy alias
+    multiselect: ICON_NAMES.multiselect, // legacy alias
+    boolean: ICON_NAMES.checkbox,
+    checkbox: ICON_NAMES.checkbox,   // legacy alias
     date: ICON_NAMES.date,
-    notelink: ICON_NAMES.link,
+    link: ICON_NAMES.link,
+    wikilink: ICON_NAMES.link,   // legacy alias
+    notelink: ICON_NAMES.link,   // legacy alias
+    url: ICON_NAMES.url,
+    email: ICON_NAMES.email,
     number: ICON_NAMES.number,
 };
 
@@ -36,6 +43,7 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
     protected filterHandler: FilterHandler;
     public activeViewId: string;
     public isInline: boolean;
+    public lockToView: boolean = false;
     protected settings: JsonTableSettings;
     protected viewManager: ViewManager;
     protected menuManager: TableMenuManager;
@@ -68,7 +76,7 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
     // --- Abstract Methods ---
     public abstract render(): void;
     protected abstract renderHeader(container: HTMLElement): void;
-    protected abstract renderBody(container: HTMLElement, rowsToRender: CellData[][]): void;
+    protected abstract renderBody(container: HTMLElement, rowsToRender: AgentableRow[]): void;
     public abstract getHeaderCell(visualIndex: number): HTMLElement | null; // For refreshing menu position
 
     // --- Shared Methods ---
@@ -96,12 +104,25 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
 
     protected registerRenderers() {
         this.cellRenderers.set('text', new TextRenderer());
-        this.cellRenderers.set('checkbox', new CheckboxRenderer());
-        this.cellRenderers.set('dropdown', new DropdownRenderer());
-        this.cellRenderers.set('multiselect', new MultiSelectRenderer());
-        this.cellRenderers.set('notelink', new NoteLinkRenderer());
+        this.cellRenderers.set('boolean', new CheckboxRenderer());
+        this.cellRenderers.set('checkbox', new CheckboxRenderer());    // legacy alias
+        this.cellRenderers.set('select', new DropdownRenderer());
+        this.cellRenderers.set('dropdown', new DropdownRenderer());    // legacy alias
+        this.cellRenderers.set('multiselect', new MultiSelectRenderer()); // legacy alias
+        this.cellRenderers.set('link', new NoteLinkRenderer());
+        this.cellRenderers.set('wikilink', new NoteLinkRenderer());  // legacy alias
+        this.cellRenderers.set('notelink', new NoteLinkRenderer());  // legacy alias
+        this.cellRenderers.set('url', new UrlRenderer());
+        this.cellRenderers.set('email', new EmailRenderer());
         this.cellRenderers.set('date', new DateRenderer());
         this.cellRenderers.set('number', new NumberRenderer());
+    }
+
+    protected getCellRenderer(col: ColumnDef): ICellRenderer | undefined {
+        if (col.type === 'select' && col.constraints?.multiSelect) {
+            return this.cellRenderers.get('multiselect');
+        }
+        return this.cellRenderers.get(col.type);
     }
 
     protected getVisibleColumns(): ColumnDef[] {
@@ -142,7 +163,7 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
         // Show/Hide
         const propsButton = leftControls.createEl('button', { cls: 'json-table-btn json-table-btn--standard json-table-props-button', attr: { 'aria-label': 'Column visibility' } });
         const propsIcon = createIconElement(ICON_NAMES.eye, 14, 'icon-props');
-        propsButton.appendChild(propsIcon); propsButton.appendText(' Show/Hide');
+        propsButton.appendChild(propsIcon); propsButton.appendText(' Show/hide');
         propsButton.addEventListener('click', (e) => this.showPropertyVisibilityPopup(propsButton, e));
 
         // Settings
@@ -181,7 +202,7 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
     }
 
     public exportViewToCsv() {
-        const csvContent = generateCsv(this.getVisibleColumns(), this.filterHandler.getFilteredRows());
+        const csvContent = generateCsv(this.getVisibleColumns(), this.filterHandler.getFilteredRows(this.sortHandler.getSortedRows()));
         const filename = (this.view.getDisplayText() || 'view_export') + '_view.csv';
         downloadCsv(filename, csvContent);
     }

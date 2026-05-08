@@ -1,9 +1,10 @@
 
-import { TableData, ColumnDef, CellData, DEFAULT_SETTINGS, JsonTableSettings } from '../types';
+import { TableData, ColumnDef, AgentableRow, DEFAULT_SETTINGS, JsonTableSettings } from '../types';
 import { JsonTableView } from '../JsonTableView';
 import { AbstractTableRenderer, TYPE_ICONS } from './AbstractTableRenderer';
 import { createIconElement, ICON_NAMES } from '../icons';
 import { DropdownMenu } from '../ui/DropdownMenu';
+import { generateRowId } from '../utils/migrateUtils';
 
 export class DivTableRenderer extends AbstractTableRenderer {
 
@@ -35,8 +36,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
             tableWrapper.addClass('is-sticky-actions');
         }
 
-        this.sortHandler.sortDataInMemory();
-        const rowsToRender = this.filterHandler.getFilteredRows();
+        const rowsToRender = this.filterHandler.getFilteredRows(this.sortHandler.getSortedRows());
 
         this.renderHeader(tableWrapper);
         this.renderBody(tableWrapper, rowsToRender);
@@ -69,11 +69,11 @@ export class DivTableRenderer extends AbstractTableRenderer {
 
 
 
-    protected renderBody(container: HTMLElement, rowsToRender: CellData[][]) {
+    protected renderBody(container: HTMLElement, rowsToRender: AgentableRow[]) {
         const tbody = container.createDiv({ cls: 'json-table-div-body' });
         const visibleColumns = this.getVisibleColumns();
         let draggedRowIndex: number | null = null;
-        const rowIndexMap = new Map<CellData[], number>();
+        const rowIndexMap = new Map<AgentableRow, number>();
         this.data.rows.forEach((row, idx) => rowIndexMap.set(row, idx));
         const activeSort = this.sortHandler.getCurrentSortRules();
         const isSortActive = activeSort.length > 0 && activeSort[0].columnId !== null;
@@ -146,29 +146,21 @@ export class DivTableRenderer extends AbstractTableRenderer {
         });
     }
 
-    private renderRow(tr: HTMLElement, row: CellData[], columns: ColumnDef[], isSorted: boolean) {
-        const cellMap = new Map<string, string>();
-        row.forEach(cell => cellMap.set(cell.column, cell.value));
-
+    private renderRow(tr: HTMLElement, row: AgentableRow, columns: ColumnDef[], isSorted: boolean) {
         columns.forEach(col => {
-            const value = cellMap.get(col.id) || '';
+            const value = row.cells[col.id] ?? '';
             const td = tr.createDiv({ cls: 'json-table-div-cell' });
 
-            // USE CSS VARIABLE FOR WIDTH
-            // The container (tableWrapper) will have --col-width-{id} set
-            // We just need to map this cell to that variable via style
             td.style.width = `var(--col-width-${col.id}, 150px)`;
-            td.style.flex = `0 0 var(--col-width-${col.id}, 150px)`; // IMPORTANT: Prevent growing/shrinking
+            td.style.flex = `0 0 var(--col-width-${col.id}, 150px)`;
 
-            td.setAttribute('data-col-id', col.id); // Keep for reference if needed
+            td.setAttribute('data-col-id', col.id);
 
-            let renderer = this.cellRenderers.get(col.type) || this.cellRenderers.get('text');
+            const renderer = this.getCellRenderer(col) || this.cellRenderers.get('text');
             if (!renderer) return;
 
             const onCellChange = async (newValue: string) => {
-                const cellData = row.find(c => c.column === col.id);
-                if (cellData) { cellData.value = newValue; }
-                else { row.push({ column: col.id, value: newValue }); }
+                row.cells[col.id] = newValue;
                 await this.view.saveTableData(this.data);
                 if (isSorted || this.filterHandler.hasActiveFilters()) {
                     this.render();
@@ -194,8 +186,10 @@ export class DivTableRenderer extends AbstractTableRenderer {
             cls: 'json-table-row-count'
         });
         addBtn.addEventListener('click', async () => {
-            const newRow: CellData[] = [];
-            this.data.columns.forEach(col => newRow.push({ column: col.id, value: '' }));
+            const newRow: AgentableRow = {
+                id: generateRowId(),
+                cells: Object.fromEntries(this.data.columns.map(col => [col.id, '']))
+            };
             this.data.rows.push(newRow);
             await this.view.saveTableData(this.data);
             this.render();
@@ -219,7 +213,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
         const actionsContainer = actionBar.createDiv({ cls: 'json-table-bulk-actions' });
 
         const selectableColumns = this.getVisibleColumns().filter(
-            c => c.type === 'select' || c.type === 'dropdown' || c.type === 'multi-select' || c.type === 'multiselect'
+            c => c.type === 'select' || c.type === 'dropdown' || c.type === 'multiselect'
         );
 
         selectableColumns.forEach(col => {
@@ -236,35 +230,27 @@ export class DivTableRenderer extends AbstractTableRenderer {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
 
-                const isMulti = col.type === 'multi-select' || col.type === 'multiselect';
-
-                // Collect existing values to seed the dropdown - we'll just use empty for mass update starting point
-                // Or you could find common values if you wanted to be fancy.
+                const isMulti = (col.type === 'select' && col.constraints?.multiSelect) || col.type === 'multiselect';
 
                 new DropdownMenu({
                     app: this.view.app,
                     anchor: btn,
-                    options: (col.typeOptions as any)?.options || [],
-                    selectedValues: [], // Start empty for mass update
+                    options: col.constraints?.options || [],
+                    selectedValues: [],
                     multiSelect: isMulti,
                     onSelect: async (selectedValue) => {
                         for (const rowIndex of this.selectedRows) {
                             const row = this.data.rows[rowIndex];
                             if (!row) continue;
-                            const cell = row.find(c => c.column === col.id);
 
                             if (isMulti) {
-                                // For multi-select, append if not present (simple mass add behavior)
-                                let currentValues = cell?.value ? cell.value.split(',').filter(Boolean) : [];
+                                const currentValues = row.cells[col.id] ? String(row.cells[col.id]).split(',').filter(Boolean) : [];
                                 if (!currentValues.includes(selectedValue)) {
                                     currentValues.push(selectedValue);
-                                    if (cell) cell.value = currentValues.join(',');
-                                    else row.push({ column: col.id, value: currentValues.join(',') });
+                                    row.cells[col.id] = currentValues.join(',');
                                 }
                             } else {
-                                // For single select, override
-                                if (cell) cell.value = selectedValue;
-                                else row.push({ column: col.id, value: selectedValue });
+                                row.cells[col.id] = selectedValue;
                             }
                         }
 
@@ -288,7 +274,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
 
         // Close / Uncheck all button
         const closeBtn = actionBar.createDiv({ cls: ['json-table-btn', 'json-table-btn--icon', 'json-table-bulk-close-btn'] });
-        closeBtn.appendChild(createIconElement('x' as any, 14));
+        closeBtn.appendChild(createIconElement('x', 14));
         closeBtn.addEventListener('click', () => {
             this.selectedRows.clear();
             this.render();
@@ -323,7 +309,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
             // (The header cell width is now controlled by the variable too)
             const finalWidth = parseFloat(wrapper.style.getPropertyValue(`--col-width-${columnId}`)) || headerCell.offsetWidth;
 
-            column.width = finalWidth;
+            column.display = { ...column.display, width: finalWidth };
             this.view.saveTableData(this.data);
             setTimeout(() => { this.isResizing = false; }, 0);
         };
@@ -339,9 +325,8 @@ export class DivTableRenderer extends AbstractTableRenderer {
         const activeSort = this.sortHandler.getCurrentSortRules();
         const isSortActive = activeSort.length > 0 && activeSort[0].columnId !== null;
 
-        // Set initial CSS variables on container for all visible columns
         visibleColumns.forEach(col => {
-            container.style.setProperty(`--col-width-${col.id}`, `${col.width || 150}px`);
+            container.style.setProperty(`--col-width-${col.id}`, `${col.display?.width || 150}px`);
         });
 
         // Drag Handle Header
@@ -350,9 +335,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
 
             // Replicate the row's inner wrapper structure exactly for perfect alignment
             const handleContent = handleHeader.createDiv({ cls: 'json-table-cell-btn-wrapper json-table-drag-handle-content' });
-            const dummyIcon = createIconElement(ICON_NAMES.gripVertical, 14, 'json-table-row-drag-icon');
-            dummyIcon.style.visibility = 'hidden'; // Hide the icon so we just get the spacing
-            dummyIcon.style.pointerEvents = 'none';
+            const dummyIcon = createIconElement(ICON_NAMES.gripVertical, 14, 'json-table-row-drag-icon json-table-drag-spacer');
             handleContent.appendChild(dummyIcon);
 
             // Checkbox Wrapper

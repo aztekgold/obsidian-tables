@@ -1,6 +1,6 @@
 // src/InlineTableRenderer.ts
-import { MarkdownRenderChild, MarkdownView } from 'obsidian';
-import { TableData, ColumnDef, CellData, JsonTableSettings, DEFAULT_SETTINGS } from './types';
+import { MarkdownRenderChild } from 'obsidian';
+import { TableData, JsonTableSettings, DEFAULT_SETTINGS } from './types';
 import { DivTableRenderer } from './renderers/DivTableRenderer';
 import { AbstractTableRenderer } from './renderers/AbstractTableRenderer';
 import { JsonTableView } from './JsonTableView';
@@ -14,7 +14,7 @@ import { createMockView } from './utils/viewUtils';
 export class InlineTableRenderer extends MarkdownRenderChild {
   private renderer: AbstractTableRenderer | null = null;
   private data: TableData | null = null;
-  private tableViewId: string = ''; // Store the view ID to uniquely identify this table instance
+  private tableViewId: `view_${string}` = 'view_'; // Store the view ID to uniquely identify this table instance
   private originalSourceHash: string = ''; // Store a hash of original source as fallback for duplicate IDs
 
   constructor(
@@ -92,7 +92,7 @@ export class InlineTableRenderer extends MarkdownRenderChild {
 
       // Ensure the data being saved has the same view ID (preserve identity)
       if (!data.views || data.views.length === 0) {
-        data.views = [{ id: this.tableViewId, name: 'Default', sort: [], filter: [] }];
+        data.views = [{ id: this.tableViewId, name: 'Default', sorts: [], filters: [], hiddenColumns: [], columnOrder: [] }];
       } else {
         // Preserve the view ID
         data.views[0].id = this.tableViewId;

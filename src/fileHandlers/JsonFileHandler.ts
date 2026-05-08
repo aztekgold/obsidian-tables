@@ -1,79 +1,53 @@
-// src/fileHandlers/JsonFileHandler.ts
 import { App, TFile } from 'obsidian';
-import { TableData } from '../types';
+import { TableData, AGENTABLE_VERSION } from '../types';
 import { ITableFileHandler } from './ITableFileHandler';
 import { createDefaultView } from '../utils/fileUtils';
+import { isOldFormat, migrateToAgentable, ensureViewsValid } from '../utils/migrateUtils';
 
-/**
- * Handles reading and writing table data directly as JSON files (.table.json).
- * Includes migration logic for older file formats.
- */
 export class JsonFileHandler implements ITableFileHandler {
 
-  constructor(private app: App) { }
+  constructor(private app: App) {}
 
   async read(file: TFile): Promise<TableData> {
     const content = await this.app.vault.read(file);
 
-    // Handle empty file - return default structure
     if (!content) {
-      console.warn(`File is empty: ${file.path}. Returning default structure.`);
       return {
+        version: AGENTABLE_VERSION,
+        metadata: { title: file.basename },
         columns: [],
         rows: [],
-        views: [createDefaultView()]
+        views: [createDefaultView()],
       };
     }
 
     try {
-      let data: TableData = JSON.parse(content);
+      const raw = JSON.parse(content);
 
-      // --- Migration Logic ---
-
-      // 1. Ensure 'views' array and default view exist
-      if (!data.views || !Array.isArray(data.views) || data.views.length === 0) {
-        data.views = [createDefaultView()];
-        // Ensure the first view has necessary properties if migrating
-        if (!data.views[0].sort) data.views[0].sort = [];
-        if (!data.views[0].filter) data.views[0].filter = [];
+      let data: TableData;
+      if (isOldFormat(raw)) {
+        data = migrateToAgentable(raw, file.name);
       } else {
-        // Ensure existing first view has sort/filter arrays
-        if (!data.views[0].sort) data.views[0].sort = [];
-        if (!data.views[0].filter) data.views[0].filter = [];
+        data = raw as TableData;
       }
 
+      ensureViewsValid(data);
 
-      // Ensure all columns have typeOptions initialized
-      data.columns.forEach(col => {
-        if (!col.typeOptions) {
-          col.typeOptions = {};
-        }
-      });
-
-
-      // Basic validation
       if (!data.columns || !data.rows || !data.views) {
-        throw new Error('Invalid table JSON structure: missing columns, rows, or views.');
+        throw new Error('Invalid table JSON: missing columns, rows, or views.');
       }
-      return data;
 
+      return data;
     } catch (e) {
-      console.error(`Error parsing JSON file ${file.path}:`, e);
+      console.error(`Error reading JSON file ${file.path}:`, e);
       throw new Error(`Invalid JSON: ${(e as Error).message}`);
     }
   }
 
   async save(file: TFile, data: TableData): Promise<void> {
     try {
-      // Ensure required structures exist before saving (belt-and-suspenders)
-      if (!data.views || data.views.length === 0) {
-        data.views = [createDefaultView()];
-      }
-      if (!data.views[0].sort) data.views[0].sort = [];
-      if (!data.views[0].filter) data.views[0].filter = [];
-      data.columns.forEach(col => { if (!col.typeOptions) col.typeOptions = {}; });
-
-      const jsonString = JSON.stringify(data, null, 2); // Pretty print
+      ensureViewsValid(data);
+      const jsonString = JSON.stringify(data, null, 2);
       await this.app.vault.process(file, () => jsonString);
     } catch (e) {
       console.error(`Error saving JSON file ${file.path}:`, e);

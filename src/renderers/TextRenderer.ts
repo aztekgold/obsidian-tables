@@ -1,6 +1,6 @@
 import { App } from 'obsidian';
 import { ICellRenderer } from './ICellRenderer';
-import { ColumnDef, TextTypeOptions } from '../types';
+import { ColumnDef } from '../types';
 
 export class TextRenderer implements ICellRenderer {
   public render(
@@ -10,8 +10,7 @@ export class TextRenderer implements ICellRenderer {
     column: ColumnDef,
     onChange: (newValue: any) => void
   ): void {
-    const typeOpts = column.typeOptions as TextTypeOptions | undefined;
-    const isWrapped = typeOpts?.wrap || false;
+    const isWrapped = column.constraints?.wrap || false;
 
     // Ensure value is a string for the span
     const stringValue = value === null || value === undefined ? "" : String(value);

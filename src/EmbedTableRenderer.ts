@@ -1,20 +1,23 @@
-import { MarkdownRenderChild, App, TFile, Notice } from 'obsidian';
+import { MarkdownRenderChild, App, TFile } from 'obsidian';
 import { TableData, JsonTableSettings, DEFAULT_SETTINGS } from './types';
 import { DivTableRenderer } from './renderers/DivTableRenderer';
 import { AbstractTableRenderer } from './renderers/AbstractTableRenderer';
 import { JsonTableView } from './JsonTableView';
 import { getHandlerForFile } from './utils/fileUtils';
 import { createMockView } from './utils/viewUtils';
+import { generateViewId } from './utils/migrateUtils';
 
 export class EmbedTableRenderer extends MarkdownRenderChild {
     private renderer: AbstractTableRenderer | null = null;
     private data: TableData | null = null;
+    private _active = true;
 
     constructor(
         containerEl: HTMLElement,
         private app: App,
         private file: TFile,
-        private settings: JsonTableSettings
+        private settings: JsonTableSettings,
+        private viewName: string | null = null
     ) {
         super(containerEl);
         if (!this.settings) {
@@ -58,19 +61,52 @@ export class EmbedTableRenderer extends MarkdownRenderChild {
                 text: this.file.basename,
                 cls: 'internal-link'
             });
+            if (this.viewName) {
+                headerEl.createSpan({ text: ' › ', cls: 'json-table-embed-title-sep' });
+                headerEl.createSpan({ text: this.viewName, cls: 'json-table-embed-title-view' });
+            }
 
             // Handle click to open file
             linkEl.addEventListener('click', (e) => {
                 e.preventDefault();
-                this.app.workspace.openLinkText(this.file.path, '', true);
+                void this.app.workspace.openLinkText(this.file.path, '', true);
             });
             // ------------------------
+
+            // Resolve or create the requested view
+            let lockedViewId: string | undefined;
+            if (this.viewName) {
+                const existing = this.data.views.find(
+                    v => v.name.toLowerCase() === this.viewName!.toLowerCase()
+                );
+                if (existing) {
+                    lockedViewId = existing.id;
+                } else {
+                    // Create the view immediately — the live preview extension only calls onload()
+                    // once the cursor has moved outside the ![[...]] range, so the name is complete
+                    const newId = generateViewId(new Set(this.data.views.map(v => v.id)));
+                    this.data.views.push({
+                        id: newId,
+                        name: this.viewName,
+                        sorts: [],
+                        filters: [],
+                        hiddenColumns: [],
+                        columnOrder: [],
+                    });
+                    await this.saveToFile(this.data);
+                    lockedViewId = newId;
+                }
+            }
 
             // Create a specific container for the table renderer so it doesn't clear our title
             const tableContainer = this.containerEl.createDiv();
 
             // Render the table
             this.renderer = new DivTableRenderer(tableContainer, this.data, mockView, true, this.settings);
+            if (lockedViewId) {
+                this.renderer.activeViewId = lockedViewId;
+                this.renderer.lockToView = true;
+            }
             this.renderer?.render();
 
         } catch (error) {
@@ -95,6 +131,7 @@ export class EmbedTableRenderer extends MarkdownRenderChild {
     }
 
     onunload() {
+        this._active = false;
         this.renderer = null;
         this.data = null;
     }

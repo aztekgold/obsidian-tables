@@ -2,7 +2,7 @@
  * Utility functions for handling CSV parsing and generation.
  */
 
-import { TableData, ColumnDef, CellData } from '../types';
+import { TableData, ColumnDef, AgentableRow } from '../types';
 
 /**
  * Escapes a string for use in a CSV field.
@@ -88,19 +88,14 @@ export function parseCsv(content: string): { columns: string[], rows: string[][]
 /**
  * Generates a CSV string from columns and rows.
  */
-export function generateCsv(columns: ColumnDef[], rows: CellData[][]): string {
+export function generateCsv(columns: ColumnDef[], rows: AgentableRow[]): string {
     const csvRows: string[] = [];
 
-    // Header
     const headerRow = columns.map(col => escapeCsvField(col.name)).join(',');
     csvRows.push(headerRow);
 
-    // Data
     rows.forEach(row => {
-        const rowData = columns.map(col => {
-            const cell = row.find((c: any) => c.column === col.id);
-            return escapeCsvField(cell?.value || '');
-        });
+        const rowData = columns.map(col => escapeCsvField(String(row.cells[col.id] ?? '')));
         csvRows.push(rowData.join(','));
     });
 

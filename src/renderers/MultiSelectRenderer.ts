@@ -1,7 +1,7 @@
 // src/renderers/MultiSelectRenderer.ts
 import { App } from 'obsidian';
 import { ICellRenderer } from './ICellRenderer';
-import { ColumnDef, DropdownOption, SelectTypeOptions } from '../types';
+import { ColumnDef } from '../types';
 
 import { DropdownMenu } from '../ui/DropdownMenu';
 
@@ -84,13 +84,11 @@ export class MultiSelectRenderer implements ICellRenderer {
     // 1. Render tags with "x" buttons
     this.renderTags(newWrapper, value, column, handleRemove);
 
-    const typeOpts = column.typeOptions as SelectTypeOptions | undefined;
-
     // 2. Show the menu with available options
     new DropdownMenu({
       app,
       anchor: newWrapper,
-      options: typeOpts?.options || [],
+      options: column.constraints?.options || [],
       selectedValues: this.getValues(value),
       multiSelect: true,
       onSelect: (clickedValue) => {
@@ -98,10 +96,8 @@ export class MultiSelectRenderer implements ICellRenderer {
         let newSelected: string[];
 
         if (selected.includes(clickedValue)) {
-          // Toggle off
           newSelected = selected.filter(v => v !== clickedValue);
         } else {
-          // Toggle on
           newSelected = [...selected, clickedValue];
         }
 
@@ -109,13 +105,21 @@ export class MultiSelectRenderer implements ICellRenderer {
         value = newValue;
         onChange(newValue);
 
-        // Re-render tags in the background (edit mode wrapper)
         this.renderTags(newWrapper, value, column, handleRemove);
       },
       onClose: () => {
-        // Return to display mode
         this.renderDisplay(app, newWrapper, value, column, onChange);
-      }
+      },
+      onCreateOption: (newValue) => {
+        if (!column.constraints) column.constraints = {};
+        if (!column.constraints.options) column.constraints.options = [];
+        column.constraints.options.push({ value: newValue, color: 'default' });
+        const selected = this.getValues(value);
+        const combined = [...selected, newValue].join(',');
+        value = combined;
+        onChange(combined);
+        this.renderTags(newWrapper, value, column, handleRemove);
+      },
     });
   }
 
@@ -140,8 +144,7 @@ export class MultiSelectRenderer implements ICellRenderer {
     column: ColumnDef,
     onRemove?: (valueToRemove: string) => void
   ) {
-    const typeOpts = column.typeOptions as SelectTypeOptions | undefined;
-    const allOptions = typeOpts?.options || [];
+    const allOptions = column.constraints?.options || [];
     const selectedValues = this.getValues(value);
 
     wrapper.empty();
@@ -166,9 +169,8 @@ export class MultiSelectRenderer implements ICellRenderer {
         cls: 'json-table-dropdown-tag'
       });
 
-      // Apply style based on definition or default
-      if (option && option.style) {
-        tagContainer.addClass(`json-table-tag--${option.style}`);
+      if (option && option.color) {
+        tagContainer.addClass(`json-table-tag--${option.color}`);
       } else {
         tagContainer.addClass('json-table-tag--default');
       }

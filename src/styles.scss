@@ -410,10 +410,13 @@ div.json-table-btn--active:hover {
 .json-table-text-span:focus {
   white-space: nowrap;
   overflow: auto;
-  /* Allow horizontal scrolling while editing */
   text-overflow: clip;
-  /* Show full text */
   flex: 1;
+  scrollbar-width: none;
+}
+
+.json-table-text-span:focus::-webkit-scrollbar {
+  display: none;
 }
 
 .json-table-text-span.is-wrapped {
@@ -425,11 +428,17 @@ div.json-table-btn--active:hover {
 
 
 
+.json-table-drag-spacer {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* When the cell is focused (via span), maybe highlight the cell? */
 .json-table-cell-content:has(.json-table-text-span:focus) {
   background: var(--background-modifier-form-field);
   box-shadow: inset 0 0 0 1px var(--interactive-accent);
 }
+
 
 /* ==========================================================================
    Cell Type: Checkbox

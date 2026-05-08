@@ -1,129 +1,115 @@
-// src/types.ts
+// src/types.ts — Agentable V1.0 aligned
 
-// --- Define Filter Structure ---
+export const AGENTABLE_VERSION = 'agentable-1.0.0';
+
+// --- Filter ---
+
 export type FilterOperator =
   | 'contains'
-  | 'doesNotContain'
+  | 'doesNotContain'  // plugin extension (not in Agentable spec — use with caution)
   | 'startsWith'
   | 'endsWith'
   | 'isEmpty'
   | 'isNotEmpty'
-  | 'equals' // Added for exact match
-  | 'notEqual'; // Added for exact non-match
+  | 'gt'
+  | 'lt'
+  | 'is'
+  | 'isNot';
 
 export interface FilterRule {
-  id: string; // Unique ID for the filter rule (e.g., filter_12345)
+  id: `flt_${string}`;
   columnId: string;
   operator: FilterOperator;
-  value?: string; // Value to compare against (not needed for empty/notEmpty)
+  value?: string;
 }
 
-// --- View Definitions ---
+// --- View ---
+
 export interface SortRule {
+  id: `srt_${string}`;
   columnId: string;
   direction: 'asc' | 'desc';
 }
 
 export interface ViewDef {
-  id: string; // Unique ID for the view (e.g., "default_12345")
-  name: string; // User-facing name (e.g., "Default View")
-  sort: SortRule[]; // Array to support multi-sort later
-  filter: FilterRule[]; // Array for filters
-  hiddenColumns?: string[]; // Optional array of hidden column IDs
+  id: `view_${string}`;
+  name: string;
+  sorts: SortRule[];
+  filters: FilterRule[];
+  hiddenColumns: string[];
+  columnOrder: string[];
 }
-// --- End View Definitions ---
 
+// --- Column ---
 
-// --- Column Type Specific Interfaces ---
-
-// Options for dropdown/multiselect
 export interface DropdownOption {
   value: string;
-  style?: string; // e.g., 'red', 'blue', 'default'
+  color?: string;
 }
 
-// Date format options
 export type DateFormat =
-  | 'MMMM D, YYYY' // Full Date: October 8, 2025
-  | 'MMM D'        // Short Date: Oct 8
-  | 'DD/MM/YYYY'   // Day/Month/Year: 01/12/2025
-  | 'MM/DD/YYYY'   // Month/Day/Year: 12/25/2025
-  | 'YYYY/MM/DD';  // Year/Month/Day: 2025/02/22
+  | 'MMMM D, YYYY'
+  | 'MMM D'
+  | 'DD/MM/YYYY'
+  | 'MM/DD/YYYY'
+  | 'YYYY/MM/DD';
 
-// Options specific to Date columns
-export interface DateTypeOptions {
-  dateFormat?: DateFormat;
-}
-
-// Options specific to Dropdown and MultiSelect columns
-export interface SelectTypeOptions {
+export interface ColumnConstraints {
   options?: DropdownOption[];
+  multiSelect?: boolean;
+  suggestAllFiles?: boolean;  // plugin extension for link columns
+  wrap?: boolean;             // plugin extension for text columns
 }
 
-// Options specific to NoteLink columns
-export interface NoteLinkTypeOptions {
-  suggestAllFiles?: boolean;
+export interface ColumnDisplay {
+  width?: number;
+  dateFormat?: string;  // moved from constraints per Agentable spec
 }
 
-// Options specific to Text columns
-export interface TextTypeOptions {
-  wrap?: boolean;
-}
-
-// Union type encompassing all possible type-specific options
-// Add other interfaces here if types like 'number' get options
-export type TypeOptions =
-  | DateTypeOptions
-  | SelectTypeOptions
-  | NoteLinkTypeOptions
-  | TextTypeOptions
-  | {}; // Empty object for types with no options (text, checkbox)
-
-// --- Core Data Structures ---
-
-// Defines a single column in the table
 export interface ColumnDef {
-  id: string; // Unique identifier for the column (e.g., "col_12345")
-  name: string; // User-facing column header name
-  type: string; // Data type (e.g., "text", "date", "dropdown", "multiselect", "checkbox", "notelink")
-  width?: number; // Optional column width in pixels
-  typeOptions?: TypeOptions; // Nested object for type-specific settings
+  id: `col_${string}`;
+  name: string;
+  type: string; // spec: 'text'|'number'|'select'|'date'|'boolean'|'url'|'link'; plugin adds legacy aliases
+  display?: ColumnDisplay;
+  constraints?: ColumnConstraints;
 }
 
-// Defines a single cell's data within a row
-export interface CellData {
-  column: string; // The ID of the column this cell belongs to
-  value: any; // The raw data stored for the cell (string, number, boolean, etc.)
+// --- Row ---
+
+export interface AgentableRow {
+  id: string;
+  cells: Record<string, any>;
 }
 
-// Represents the entire table data structure saved in the file
+// --- Root ---
+
 export interface TableData {
-  columns: ColumnDef[]; // Array of column definitions
-  rows: CellData[][]; // Array of rows, where each row is an array of cells
-  views: ViewDef[]; // Array of view configurations (sort, filter, hidden columns)
+  version: string;
+  metadata: { title: string };
+  policy?: { permissions?: { allowAgentRead?: boolean; allowAgentCreate?: boolean; allowAgentUpdate?: boolean; allowAgentDelete?: boolean } };
+  columns: ColumnDef[];
+  views: ViewDef[];
+  rows: AgentableRow[];
 }
 
-// --- Plugin Specific Constants and Settings ---
+// --- Plugin settings (unchanged) ---
 
-// Unique identifier for the custom view type registered with Obsidian
 export const VIEW_TYPE_JSON_TABLE = 'json-table-view';
 
-// Defines the structure for the plugin's settings
 export type TableRenderer = 'default' | 'json';
 
 export interface JsonTableSettings {
-  tableRenderer: TableRenderer; // 'default' uses .table.md, 'json' uses .table.json
-  rendererType: 'table' | 'div'; // 'table' uses <table>, 'div' uses <div>
-  enableBetaFeatures: boolean; // Toggle for experimental features like column dragging
-  enableCsvSupport: boolean; // Toggle for opening/editing .csv files directly
-  stickyActionColumn: boolean; // Toggle for sticky action column
+  tableRenderer: TableRenderer;
+  rendererType: 'table' | 'div';
+  enableBetaFeatures: boolean;
+  enableCsvSupport: boolean;
+  stickyActionColumn: boolean;
 }
 
-// Default values for the plugin settings
 export const DEFAULT_SETTINGS: JsonTableSettings = {
-  tableRenderer: 'default', // Default to using .table.md files for compatibility
+  tableRenderer: 'default',
   rendererType: 'table',
   enableBetaFeatures: false,
   enableCsvSupport: false,
-  stickyActionColumn: false
-}
+  stickyActionColumn: false,
+};

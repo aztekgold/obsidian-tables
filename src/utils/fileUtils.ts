@@ -4,6 +4,7 @@ import { MarkdownFileHandler } from '../fileHandlers/MarkdownFileHandler';
 import { JsonFileHandler } from '../fileHandlers/JsonFileHandler';
 import { CsvFileHandler } from '../fileHandlers/CsvFileHandler';
 import { ViewDef, JsonTableSettings } from '../types';
+import { generateViewId } from './migrateUtils';
 
 /**
  * Returns the appropriate file handler for a given file.
@@ -29,9 +30,11 @@ export function getHandlerForFile(app: App, file: TFile, settings?: JsonTableSet
  */
 export function createDefaultView(): ViewDef {
     return {
-        id: 'default_' + Date.now(),
+        id: generateViewId(),
         name: 'Default',
-        sort: [],
-        filter: []
+        sorts: [],
+        filters: [],
+        hiddenColumns: [],
+        columnOrder: [],
     };
 }

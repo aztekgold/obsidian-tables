@@ -26,7 +26,8 @@ class TableEmbedWidget extends WidgetType {
         private app: App,
         private file: TFile,
         private src: string,
-        private settings: JsonTableSettings
+        private settings: JsonTableSettings,
+        private viewName: string | null
     ) {
         super();
     }
@@ -34,45 +35,33 @@ class TableEmbedWidget extends WidgetType {
     toDOM(view: EditorView): HTMLElement {
         const container = document.createElement('div');
         container.addClass('json-table-embed-container');
-        // container.addClass('internal-embed'); // Remove this to avoid being hidden by our own CSS!
         container.setAttribute('src', this.src);
 
-        // Prevent click/mousedown from propagating to the editor and moving the cursor
-        // This prevents the table from disappearing (due to cursor entering the embed range)
         container.addEventListener('mousedown', (e) => {
             const target = e.target as HTMLElement;
-            // Allow inputs, textareas, and contentEditable elements to receive focus
-            // Also allow clicking on labels and select elements
             if (
                 target.tagName === 'INPUT' ||
                 target.tagName === 'TEXTAREA' ||
                 target.tagName === 'SELECT' ||
                 target.tagName === 'LABEL' ||
                 target.isContentEditable ||
-                target.closest('.json-table-div-cell') // Allow clicking anywhere in the cell (e.g. padding)
+                target.closest('.json-table-div-cell')
             ) {
-                // We still stop propagation to prevent the editor from handling it (which might move the cursor out)
-                // But we DON'T prevent default, so the element gets focus/active state.
                 e.stopPropagation();
                 return;
             }
-
-            // For everything else, prevent the editor from getting focus/cursor placement
             e.preventDefault();
             e.stopPropagation();
         });
 
-        // Render the table
-        const renderer = new EmbedTableRenderer(container, this.app, this.file, this.settings);
-
-        // Trigger load manually since we are not in a standard Obsidian lifecycle
+        const renderer = new EmbedTableRenderer(container, this.app, this.file, this.settings, this.viewName);
         renderer.load();
 
         return container;
     }
 
     eq(other: TableEmbedWidget): boolean {
-        return other.file.path === this.file.path;
+        return other.file.path === this.file.path && other.viewName === this.viewName;
     }
 }
 
@@ -93,34 +82,27 @@ const buildDecorations = (state: EditorState, app: App, settings: JsonTableSetti
         const end = start + match[0].length;
         const linkText = match[1];
 
-        // Parse link text to get path (handle aliases like [[path|alias]])
+        // Parse ![[filePath|viewName]] — the alias slot doubles as the view name
         const pipeIndex = linkText.indexOf('|');
-        const path = pipeIndex >= 0 ? linkText.substring(0, pipeIndex) : linkText;
+        const filePath = pipeIndex >= 0 ? linkText.substring(0, pipeIndex).trim() : linkText.trim();
+        const viewName = pipeIndex >= 0 ? linkText.substring(pipeIndex + 1).trim() || null : null;
 
-        // Get the file associated with this view (if possible)
-        // Note: In StateField, we don't have easy access to the "active file" of the specific view 
-        // if there are multiple views. But app.workspace.getActiveFile() is a reasonable fallback.
         const activeFile = app.workspace.getActiveFile();
         const sourcePath = activeFile ? activeFile.path : '';
 
-        const file = app.metadataCache.getFirstLinkpathDest(path, sourcePath);
+        const file = app.metadataCache.getFirstLinkpathDest(filePath, sourcePath);
 
         if (file instanceof TFile && (file.name.endsWith('.table.json') || file.name.endsWith('.table.md'))) {
-            // Check if the cursor is inside the range. If so, don't replace (allow editing).
-            // We relax the check to (to < end) so that if the cursor is AT the end (where the widget is),
-            // we still show the widget. This prevents the table from disappearing when interacting with it.
             const { from, to } = state.selection.main;
             if (from > start && to < end) {
                 continue;
             }
 
-            // Strategy: Render widget AFTER the embed link
-            // The CSS will hide the original .internal-embed
             builder.add(
                 end,
                 end,
                 Decoration.widget({
-                    widget: new TableEmbedWidget(app, file, path, settings),
+                    widget: new TableEmbedWidget(app, file, filePath, settings, viewName),
                     side: 1,
                     block: true
                 })

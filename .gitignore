@@ -30,4 +30,5 @@ coverage/
 # Temporary files
 *.tmp
 *.temp
+AGENTS.md
 
