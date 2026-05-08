@@ -1,10 +1,12 @@
 # Tables for Obsidian
 
-I built this to fill a gap in my own workflow — somewhere between a spreadsheet and Obsidian Bases. Sometimes you have structured data that doesn't warrant a Markdown file for every row: a book list, a project tracker, a contacts sheet, a product catalogue. That's what Tables is for.
+Notion-style tables for Obsidian.
 
-Because the data lives in a single JSON file, it stays portable and future-proof. You can open it in any text editor and read it without Obsidian. In some ways it's more resilient than a Base — if Obsidian ever disappeared, the relationships between Markdown files would go with it, but everything in a Table stays intact in one place. And whenever you need to get the data out, you can export to CSV in a single click.
+I built this to fill a gap in my own workflow, somewhere between a spreadsheet and Obsidian Bases. Sometimes you have structured data that doesn't warrant a Markdown file for every row: a book list, a project tracker, a contacts sheet, a product catalogue. That's what Tables is for.
 
-Think of it as the middle ground: more structure than free-form notes, more portable than a database, less overhead than a spreadsheet. Without the functions, for now. 🙂
+Because the data lives in a single JSON file, it stays portable and future-proof. You can open it in any text editor and read it without Obsidian. In some ways it's more resilient than a Base. If Obsidian ever disappeared, the relationships between Markdown files would go with it, but everything in a Table stays intact in one place. And whenever you need to get the data out, you can export to CSV in a single click.
+
+Think of it as the middle ground: more functionality than Markdown tables, more structure than free-form notes, more portable than a database, less overhead than a spreadsheet. Without the functions, for now. 🙂
 
 ![Tables Showcase](images/obsidian-tables-showcase.png)
 
