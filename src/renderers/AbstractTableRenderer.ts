@@ -14,6 +14,7 @@ import { DateRenderer } from './DateRenderer';
 import { NumberRenderer } from './NumberRenderer';
 import { SortHandler } from '../SortHandler';
 import { FilterHandler } from '../FilterHandler';
+import { SearchHandler } from '../SearchHandler';
 import { ICON_NAMES, createIconElement } from '../icons';
 import { generateCsv, downloadCsv } from '../utils/csv';
 import { createDefaultView } from '../utils/fileUtils';
@@ -41,6 +42,13 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
     protected isResizing: boolean = false;
     protected sortHandler: SortHandler;
     protected filterHandler: FilterHandler;
+    protected searchHandler: SearchHandler;
+    // Set at the start of render() when the search box currently has real DOM
+    // focus, so renderControls() can restore it after the DOM is rebuilt.
+    // Deliberately re-derived from document.activeElement every render instead
+    // of tracked via focus/blur listeners, so a stale value can never cause an
+    // unrelated re-render to steal focus back into the search box.
+    protected pendingSearchFocus: { cursor: number | null } | null = null;
     public activeViewId: string;
     public isInline: boolean;
     public lockToView: boolean = false;
@@ -71,6 +79,7 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
 
         this.sortHandler = new SortHandler(this.data, () => this.render(), this.view, () => this.getActiveView());
         this.filterHandler = new FilterHandler(this.data, () => this.render(), this.view, () => this.getActiveView());
+        this.searchHandler = new SearchHandler();
     }
 
     // --- Abstract Methods ---
@@ -131,6 +140,10 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
         return this.data.columns.filter(col => !hiddenCols.includes(col.id));
     }
 
+    protected getSearchFilteredRows(rows: AgentableRow[]): AgentableRow[] {
+        return this.searchHandler.getSearchedRows(rows, this.getVisibleColumns());
+    }
+
     // --- Shared Rendering Components ---
 
     protected renderRenameInput() {
@@ -165,6 +178,34 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
         const propsIcon = createIconElement(ICON_NAMES.eye, 14, 'icon-props');
         propsButton.appendChild(propsIcon); propsButton.appendText(' Show/hide');
         propsButton.addEventListener('click', (e) => this.showPropertyVisibilityPopup(propsButton, e));
+
+        // Search
+        const searchContainer = leftControls.createDiv({ cls: 'json-table-search-container' });
+        searchContainer.appendChild(createIconElement(ICON_NAMES.search, 14, 'icon-search'));
+        const searchInput = searchContainer.createEl('input', {
+            type: 'text',
+            cls: 'json-table-search-input',
+            attr: { placeholder: 'Search rows...' },
+        });
+        searchInput.value = this.searchHandler.getQuery();
+        searchInput.addEventListener('click', (e) => e.stopPropagation());
+        searchInput.addEventListener('mousedown', (e) => e.stopPropagation());
+
+        let searchDebounceTimer: ReturnType<typeof setTimeout>;
+        searchInput.addEventListener('input', () => {
+            this.searchHandler.setQuery(searchInput.value);
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => this.render(), 200);
+        });
+
+        // Restore focus/cursor only if the search box truly had focus right
+        // before this render rebuilt the DOM (see pendingSearchFocus above).
+        if (this.pendingSearchFocus) {
+            searchInput.focus();
+            if (typeof this.pendingSearchFocus.cursor === 'number') {
+                searchInput.setSelectionRange(this.pendingSearchFocus.cursor, this.pendingSearchFocus.cursor);
+            }
+        }
 
         // Settings
         const settingsButton = rightControls.createEl('button', { cls: 'json-table-btn json-table-btn--icon json-table-settings-button', attr: { 'aria-label': 'Table settings', title: 'Table settings' } });
@@ -202,7 +243,8 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
     }
 
     public exportViewToCsv() {
-        const csvContent = generateCsv(this.getVisibleColumns(), this.filterHandler.getFilteredRows(this.sortHandler.getSortedRows()));
+        const rows = this.getSearchFilteredRows(this.filterHandler.getFilteredRows(this.sortHandler.getSortedRows()));
+        const csvContent = generateCsv(this.getVisibleColumns(), rows);
         const filename = (this.view.getDisplayText() || 'view_export') + '_view.csv';
         downloadCsv(filename, csvContent);
     }

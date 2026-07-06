@@ -31,6 +31,7 @@ export const ICON_NAMES = {
   switch: 'repeat-2',
   wrapText: 'wrap-text',
   chevronRight: 'chevron-right',
+  search: 'search',
 } as const;
 
 /**
