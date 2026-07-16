@@ -1235,6 +1235,46 @@ div.json-table-btn--active:hover {
   gap: 8px;
 }
 
+.json-table-search-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+
+  .icon-search {
+    color: var(--text-faint);
+    display: flex;
+  }
+}
+
+// Obsidian's base theme styles bare `input[type="text"]` elements with a
+// border/background of their own, at a specificity that beats a single class
+// selector - so the reset has to be repeated across interaction states with
+// !important to reliably stay flat/borderless (Notion-style) in every theme.
+.json-table-search-input,
+.json-table-search-input:hover,
+.json-table-search-input:focus,
+.json-table-search-input:focus-visible {
+  border: none !important;
+  background: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.json-table-search-input {
+  font-size: inherit;
+  color: var(--text-normal);
+  width: 140px;
+  padding: 0;
+
+  &::placeholder {
+    color: var(--text-faint);
+  }
+}
+
 .json-table-header-buttons-container {
   display: flex;
   gap: 8px;

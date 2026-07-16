@@ -25,6 +25,16 @@ export class DivTableRenderer extends AbstractTableRenderer {
         const scrollLeft = existingWrapper?.scrollLeft ?? 0;
         const scrollTop = existingWrapper?.scrollTop ?? 0;
 
+        // Capture real focus state before the container (and the search input
+        // living inside it) gets destroyed and rebuilt below. This must be read
+        // fresh from the DOM on every render rather than tracked with a
+        // persistent focus/blur flag, otherwise a stale flag can cause an
+        // unrelated re-render (e.g. editing a cell) to steal focus back into
+        // the search box - which is exactly what breaks things like Cmd/Ctrl+A.
+        const activeEl = document.activeElement as HTMLInputElement | null;
+        const searchHadFocus = !!activeEl && this.container.contains(activeEl) && activeEl.classList.contains('json-table-search-input');
+        this.pendingSearchFocus = searchHadFocus ? { cursor: activeEl.selectionStart } : null;
+
         this.container.empty();
         this.renderRenameInput();
         this.renderViewTabs();
@@ -36,7 +46,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
             tableWrapper.addClass('is-sticky-actions');
         }
 
-        const rowsToRender = this.filterHandler.getFilteredRows(this.sortHandler.getSortedRows());
+        const rowsToRender = this.getSearchFilteredRows(this.filterHandler.getFilteredRows(this.sortHandler.getSortedRows()));
 
         this.renderHeader(tableWrapper);
         this.renderBody(tableWrapper, rowsToRender);
@@ -345,7 +355,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
             });
 
             // Check if all filtered rows are selected
-            const rowsToRender = this.filterHandler.getFilteredRows();
+            const rowsToRender = this.getSearchFilteredRows(this.filterHandler.getFilteredRows());
             const allSelected = rowsToRender.length > 0 &&
                 rowsToRender.every(row => {
                     const originalIndex = this.data.rows.indexOf(row);
