@@ -4,7 +4,6 @@ import { JsonTableView } from '../JsonTableView';
 import { AbstractTableRenderer, TYPE_ICONS } from './AbstractTableRenderer';
 import { createIconElement, ICON_NAMES } from '../icons';
 import { DropdownMenu } from '../ui/DropdownMenu';
-import { generateRowId } from '../utils/migrateUtils';
 
 export class DivTableRenderer extends AbstractTableRenderer {
 
@@ -195,15 +194,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
             text: `${rowCountValue} Row${rowCountValue !== 1 ? 's' : ''}`,
             cls: 'json-table-row-count'
         });
-        addBtn.addEventListener('click', async () => {
-            const newRow: AgentableRow = {
-                id: generateRowId(),
-                cells: Object.fromEntries(this.data.columns.map(col => [col.id, '']))
-            };
-            this.data.rows.push(newRow);
-            await this.view.saveTableData(this.data);
-            this.render();
-        });
+        addBtn.addEventListener('click', () => { void this.addNewRow(); });
     }
 
     private renderBulkActionBar() {

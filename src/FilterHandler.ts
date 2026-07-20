@@ -106,50 +106,100 @@ export class FilterHandler {
     columnSelect.addEventListener('mousedown', (e) => e.stopPropagation());
     columnSelect.addEventListener('change', () => {
       rule.columnId = columnSelect.value;
+      rebuildOperatorOptions();
+      updateValueVisibility();
+      updateValueInputMode();
       void this.applyFiltersAndRerender();
     });
 
-    const operatorSelect = expression.createEl('select', { cls: 'dropdown' });
-    const operators: { label: string; value: FilterOperator }[] = [
+    const getColumnType = () => this.data.columns.find(c => c.id === rule.columnId)?.type;
+    const isNumericColumn = () => getColumnType() === 'date' || getColumnType() === 'number';
+
+    // gt/lt only make sense as a numeric comparison, so they're only offered
+    // for date/number columns (date cells are stored as numeric timestamps).
+    const ALL_OPERATORS: { label: string; value: FilterOperator; numericOnly?: boolean }[] = [
       { label: 'Contains', value: 'contains' },
       { label: 'Does not contain', value: 'doesNotContain' },
       { label: 'Starts with', value: 'startsWith' },
       { label: 'Ends with', value: 'endsWith' },
+      { label: 'Greater than', value: 'gt', numericOnly: true },
+      { label: 'Less than', value: 'lt', numericOnly: true },
       { label: 'Is empty', value: 'isEmpty' },
       { label: 'Is not empty', value: 'isNotEmpty' },
       { label: 'Is', value: 'is' },
       { label: 'Is not', value: 'isNot' },
     ];
-    operators.forEach(op => {
-      const option = operatorSelect.createEl('option', { text: op.label, value: op.value });
-      if (op.value === rule.operator) option.selected = true;
-    });
+
+    const operatorSelect = expression.createEl('select', { cls: 'dropdown' });
+
+    const rebuildOperatorOptions = () => {
+      operatorSelect.empty();
+      const numeric = isNumericColumn();
+      const available = ALL_OPERATORS.filter(op => !op.numericOnly || numeric);
+      if (!available.some(op => op.value === rule.operator)) {
+        rule.operator = 'contains';
+      }
+      available.forEach(op => {
+        const option = operatorSelect.createEl('option', { text: op.label, value: op.value });
+        if (op.value === rule.operator) option.selected = true;
+      });
+    };
+    rebuildOperatorOptions();
+
     operatorSelect.addEventListener('click', (e) => e.stopPropagation());
     operatorSelect.addEventListener('mousedown', (e) => e.stopPropagation());
     operatorSelect.addEventListener('change', () => {
       rule.operator = operatorSelect.value as FilterOperator;
-      if (rule.operator === 'isEmpty' || rule.operator === 'isNotEmpty') {
-        valueInput.addClass('json-table-is-hidden');
-      } else {
-        valueInput.removeClass('json-table-is-hidden');
-      }
+      updateValueVisibility();
+      updateValueInputMode();
       void this.applyFiltersAndRerender();
     });
 
     const valueInput = expression.createEl('input', {
       type: 'text',
-      value: rule.value || '',
       placeholder: 'Empty',
       cls: 'metadata-input metadata-input-text',
     });
     valueInput.addEventListener('click', (e) => e.stopPropagation());
     valueInput.addEventListener('mousedown', (e) => e.stopPropagation());
-    if (rule.operator === 'isEmpty' || rule.operator === 'isNotEmpty') {
-      valueInput.addClass('json-table-is-hidden');
-    }
+
+    const updateValueVisibility = () => {
+      if (rule.operator === 'isEmpty' || rule.operator === 'isNotEmpty') {
+        valueInput.addClass('json-table-is-hidden');
+      } else {
+        valueInput.removeClass('json-table-is-hidden');
+      }
+    };
+    updateValueVisibility();
+
+    // Greater-than/less-than on a date column compares numeric timestamps
+    // (how date cells are stored), so the value must be entered as a real
+    // date rather than a raw millisecond number - swap in a native date
+    // picker for that combination and convert to/from a timestamp string.
+    const isDateRangeFilter = (): boolean =>
+      getColumnType() === 'date' && (rule.operator === 'gt' || rule.operator === 'lt');
+    const timestampToDateInputValue = (value: string | undefined): string => {
+      const ms = parseInt(value || '', 10);
+      if (isNaN(ms)) return '';
+      const d = new Date(ms);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    };
+    const dateInputValueToTimestamp = (value: string): string => {
+      if (!value) return '';
+      const [year, month, day] = value.split('-').map(Number);
+      return String(new Date(year, month - 1, day).getTime());
+    };
+    const updateValueInputMode = () => {
+      const useDateInput = isDateRangeFilter();
+      valueInput.type = useDateInput ? 'date' : 'text';
+      valueInput.value = useDateInput ? timestampToDateInputValue(rule.value) : (rule.value || '');
+    };
+    updateValueInputMode();
+
     let debounceTimer: ReturnType<typeof setTimeout>;
     valueInput.addEventListener('input', () => {
-      rule.value = valueInput.value;
+      rule.value = isDateRangeFilter() ? dateInputValueToTimestamp(valueInput.value) : valueInput.value;
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => this.applyFiltersAndRerender(), 400);
     });
@@ -181,6 +231,11 @@ export class FilterHandler {
     const rules = this.getCurrentFilterRules();
     if (rules.length === 0) return rows;
 
+    // Precompute each rule's column type once, so gt/lt can tell whether to
+    // compare numerically (date/number columns store numeric values) or
+    // fall back to a lexicographic comparison for everything else.
+    const ruleColumnTypes = new Map(rules.map(rule => [rule.id, this.data.columns.find(c => c.id === rule.columnId)?.type]));
+
     return rows.filter(row => {
       return rules.every(rule => {
         const cellValue = String(row.cells[rule.columnId] ?? '');
@@ -197,6 +252,18 @@ export class FilterHandler {
           case 'isNotEmpty': return cellValue !== '';
           case 'is': return cellLower === filterLower;
           case 'isNot': return cellLower !== filterLower;
+          case 'gt':
+          case 'lt': {
+            if (filterValue === '') return true;
+            const columnType = ruleColumnTypes.get(rule.id);
+            if (columnType === 'date' || columnType === 'number') {
+              const cellNum = parseFloat(cellValue);
+              const filterNum = parseFloat(filterValue);
+              if (isNaN(cellNum) || isNaN(filterNum)) return false;
+              return rule.operator === 'gt' ? cellNum > filterNum : cellNum < filterNum;
+            }
+            return rule.operator === 'gt' ? cellLower > filterLower : cellLower < filterLower;
+          }
           default:
             console.warn(`Unknown filter operator: ${rule.operator}`);
             return true;

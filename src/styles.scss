@@ -1952,6 +1952,16 @@ th.json-table-buttons-th {
   min-width: 300px;
 }
 
+// Obsidian's core `.menu` styling sets `align-items: center`, which
+// shrink-wraps and horizontally centers `.menu-scroll` (our menu's direct
+// child) whenever its content is narrow - most visibly when the filter/sort
+// list is empty. Stretching it to fill the menu's width keeps content
+// left-aligned regardless of how narrow the content is.
+.json-table-filter-menu .menu-scroll,
+.json-table-sort-menu .menu-scroll {
+  align-self: stretch;
+}
+
 .json-table-menu-width-220 {
   width: 220px;
 }
@@ -1977,10 +1987,14 @@ th.json-table-buttons-th {
 }
 
 /* Empty state styling for filter/sort containers */
-.json-table-filter-group-statements.is-empty {
+.json-table-sort-menu .filter-group-statements.is-empty,
+.json-table-filter-menu .filter-group-statements.is-empty {
   padding: 4px 8px;
   color: var(--text-muted);
   font-size: var(--font-smallest);
+  display: flex;
+  justify-content: flex-start;
+  text-align: left;
 }
 
 .json-table-menu-item-value {

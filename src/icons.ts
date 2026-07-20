@@ -46,7 +46,7 @@ export function createIconElement(iconName: string, size: number = 14, className
   iconContainer.classList.add('json-table-icon');
 
   if (className) {
-    iconContainer.classList.add(className);
+    iconContainer.classList.add(...className.split(/\s+/).filter(Boolean));
   }
 
   // Set the icon using Obsidian's utility (only takes 2 params)

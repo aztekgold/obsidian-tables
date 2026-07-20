@@ -18,6 +18,7 @@ import { SearchHandler } from '../SearchHandler';
 import { ICON_NAMES, createIconElement } from '../icons';
 import { generateCsv, downloadCsv } from '../utils/csv';
 import { createDefaultView } from '../utils/fileUtils';
+import { generateRowId } from '../utils/migrateUtils';
 import { ViewManager, IViewManagerHost } from './ViewManager';
 import { TableMenuManager, IMenuManagerHost } from './TableMenuManager';
 
@@ -144,6 +145,16 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
         return this.searchHandler.getSearchedRows(rows, this.getVisibleColumns());
     }
 
+    protected async addNewRow(): Promise<void> {
+        const newRow: AgentableRow = {
+            id: generateRowId(),
+            cells: Object.fromEntries(this.data.columns.map(col => [col.id, '']))
+        };
+        this.data.rows.push(newRow);
+        await this.view.saveTableData(this.data);
+        this.render();
+    }
+
     // --- Shared Rendering Components ---
 
     protected renderRenameInput() {
@@ -206,6 +217,11 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
                 searchInput.setSelectionRange(this.pendingSearchFocus.cursor, this.pendingSearchFocus.cursor);
             }
         }
+
+        // Add Row
+        const addRowButton = rightControls.createEl('button', { cls: 'json-table-btn json-table-btn--icon json-table-add-row-button', attr: { 'aria-label': 'Add row', title: 'Add row' } });
+        addRowButton.appendChild(createIconElement(ICON_NAMES.plus, 14, 'icon-add-row'));
+        addRowButton.addEventListener('click', (e) => { e.stopPropagation(); void this.addNewRow(); });
 
         // Settings
         const settingsButton = rightControls.createEl('button', { cls: 'json-table-btn json-table-btn--icon json-table-settings-button', attr: { 'aria-label': 'Table settings', title: 'Table settings' } });
