@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.4.1 (2026-07-21)
+
+### New Features
+
+- **Row Search:** A search box in the toolbar filters table rows by free-text match against any visible column, case-insensitively. The search query is ephemeral per-view state (not persisted to the saved table data), and respects active sort/filter rules and CSV export.
+- **Toolbar Add Row Button:** A "+" button next to Table settings adds a new row directly from the toolbar, mirroring the existing "Add row" button at the bottom of the table.
+
+### Improvements
+
+- **Greater Than / Less Than Filters:** Filter rules now support Greater than / Less than for date and number columns, with a native date picker for date comparisons instead of raw timestamps.
+- **Mobile Popups:** Show/hide and Table settings popups now open full-screen on phone, matching the existing behavior of the column options popup.
+- **Mobile Toolbar:** Sort/Filter/Show-hide button labels are hidden on phone (icon-only) so the toolbar fits alongside the search box.
+
+### Bug Fixes
+
+- Fixed a crash ("Failed to execute 'add' on 'DOMTokenList'") when enabling row reordering in beta features.
+- Fixed the empty-state text in Sort/Filter popups appearing centered instead of left-aligned.
+
 ## 1.4.0 (2026-05-08)
 
 ### New Features
