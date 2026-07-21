@@ -32,6 +32,7 @@ export class TableMenuManager {
         // --- Build Bases-style menu panel ---
         const menuEl = document.createElement('div');
         menuEl.addClass('menu');
+        menuEl.addClass('bases-toolbar-menu');
         menuEl.addClass('json-table-props-menu');
         menuEl.addClass('json-table-popup-menu');
         menuEl.addClass('json-table-menu-width-240');
@@ -135,6 +136,7 @@ export class TableMenuManager {
 
         const menuEl = document.createElement('div');
         menuEl.addClass('menu');
+        menuEl.addClass('bases-toolbar-menu');
         menuEl.addClass('json-table-settings-menu');
         menuEl.addClass('json-table-popup-menu');
         menuEl.addClass('json-table-menu-width-220');

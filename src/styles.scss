@@ -2006,6 +2006,16 @@ th.json-table-buttons-th {
   pointer-events: none !important;
 }
 
+/* Icon-only toolbar buttons on phone - the full "Sort"/"Filter"/"Show/hide"
+   labels don't fit alongside the search box on a phone-width toolbar. */
+body.is-phone .json-table-btn-label {
+  display: none;
+}
+
+body.is-phone .json-table-controls-left .json-table-btn--standard {
+  padding: 8px !important;
+}
+
 .json-table-margin-bottom-8 {
   margin-bottom: 8px !important;
 }

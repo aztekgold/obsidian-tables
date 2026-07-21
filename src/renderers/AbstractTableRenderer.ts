@@ -173,21 +173,21 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
         // Sort
         const sortButton = leftControls.createEl('button', { cls: 'json-table-btn json-table-btn--standard json-table-sort-button', attr: { 'aria-label': 'Sort table' } });
         const sortIcon = createIconElement(ICON_NAMES.sort, 14, 'icon-sort');
-        sortButton.appendChild(sortIcon); sortButton.appendText(' Sort');
+        sortButton.appendChild(sortIcon); sortButton.createSpan({ cls: 'json-table-btn-label', text: ' Sort' });
         if (this.sortHandler.getCurrentSortRules().length > 0 && this.sortHandler.getCurrentSortRules()[0].columnId !== null) sortButton.addClass('json-table-btn--active');
         sortButton.addEventListener('click', (e) => { e.stopPropagation(); this.sortHandler.showSortPopup(sortButton); });
 
         // Filter
         const filterButton = leftControls.createEl('button', { cls: 'json-table-btn json-table-btn--standard json-table-filter-button', attr: { 'aria-label': 'Filter table' } });
         const filterIcon = createIconElement(ICON_NAMES.filter, 14, 'icon-filter');
-        filterButton.appendChild(filterIcon); filterButton.appendText(' Filter');
+        filterButton.appendChild(filterIcon); filterButton.createSpan({ cls: 'json-table-btn-label', text: ' Filter' });
         if (this.filterHandler.hasActiveFilters()) filterButton.addClass('json-table-btn--active');
         filterButton.addEventListener('click', (e) => { e.stopPropagation(); this.filterHandler.showFilterPopup(filterButton); });
 
         // Show/Hide
         const propsButton = leftControls.createEl('button', { cls: 'json-table-btn json-table-btn--standard json-table-props-button', attr: { 'aria-label': 'Column visibility' } });
         const propsIcon = createIconElement(ICON_NAMES.eye, 14, 'icon-props');
-        propsButton.appendChild(propsIcon); propsButton.appendText(' Show/hide');
+        propsButton.appendChild(propsIcon); propsButton.createSpan({ cls: 'json-table-btn-label', text: ' Show/hide' });
         propsButton.addEventListener('click', (e) => this.showPropertyVisibilityPopup(propsButton, e));
 
         // Search
