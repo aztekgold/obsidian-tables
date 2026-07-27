@@ -12,7 +12,7 @@ import { UrlRenderer } from './UrlRenderer';
 import { EmailRenderer } from './EmailRenderer';
 import { DateRenderer } from './DateRenderer';
 import { NumberRenderer } from './NumberRenderer';
-import { FunctionRenderer } from './FunctionRenderer';
+import { FormulaRenderer } from './FormulaRenderer';
 import { SortHandler } from '../SortHandler';
 import { FilterHandler } from '../FilterHandler';
 import { SearchHandler } from '../SearchHandler';
@@ -39,7 +39,8 @@ export const TYPE_ICONS: Record<string, string> = {
     url: ICON_NAMES.url,
     email: ICON_NAMES.email,
     number: ICON_NAMES.number,
-    function: ICON_NAMES.function,
+    formula: ICON_NAMES.formula,
+    function: ICON_NAMES.formula, // legacy alias
 };
 
 export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuManagerHost {
@@ -83,7 +84,7 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
         this.sortHandler = new SortHandler(this.data, () => this.render(), this.view, () => this.getActiveView());
         this.filterHandler = new FilterHandler(this.data, () => this.render(), this.view, () => this.getActiveView());
         this.searchHandler = new SearchHandler();
-        // Constructed before registerRenderers() since FunctionRenderer takes
+        // Constructed before registerRenderers() since FormulaRenderer takes
         // it directly (not through the shared ICellRenderer interface, so
         // the other 7 renderers don't need a parameter only it uses).
         this.formulaHandler = new FormulaHandler(this.data);
@@ -135,7 +136,9 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
         this.cellRenderers.set('email', new EmailRenderer());
         this.cellRenderers.set('date', new DateRenderer());
         this.cellRenderers.set('number', new NumberRenderer());
-        this.cellRenderers.set('function', new FunctionRenderer(this.formulaHandler));
+        const formulaRenderer = new FormulaRenderer(this.formulaHandler);
+        this.cellRenderers.set('formula', formulaRenderer);
+        this.cellRenderers.set('function', formulaRenderer); // legacy alias
     }
 
     protected getCellRenderer(col: ColumnDef): ICellRenderer | undefined {

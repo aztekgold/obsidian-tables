@@ -15,12 +15,14 @@ export interface FormulaValidationResult {
 // be compared numerically. A single definition here means the three
 // call sites can never drift out of sync with each other. 'date' counts as
 // numeric here too - it's still a raw comparable timestamp, "date" only
-// matters for display (see FunctionRenderer).
+// matters for display (see FormulaRenderer).
 export function isNumericColumn(col: ColumnDef | undefined): boolean {
   if (!col) return false;
   if (col.type === 'date' || col.type === 'number') return true;
-  return col.type === 'function' &&
-    (col.constraints?.formulaResultKind === 'number' || col.constraints?.formulaResultKind === 'date');
+  // 'function' is a legacy alias for 'formula', normalized on load
+  // (migrateUtils.ensureViewsValid) but checked here too for safety.
+  if (col.type !== 'formula' && col.type !== 'function') return false;
+  return col.constraints?.formulaResultKind === 'number' || col.constraints?.formulaResultKind === 'date';
 }
 
 const COLUMN_REF_PATTERN = /\{\{\s*([^{}]+?)\s*\}\}/g;
@@ -60,7 +62,7 @@ export function formulaToDisplayText(storageText: string, columns: ColumnDef[]):
 }
 
 // Maps an inferred ValueKind to the persisted 'number'/'text' classification
-// Sort/Filter use to decide whether to compare a Function column numerically.
+// Sort/Filter use to decide whether to compare a Formula column numerically.
 // NUMERIC_DATE counts as numeric here too - a bare `{{ DateColumn }}`
 // reference holds the same raw numeric timestamp a Date column does.
 function toStoredResultKind(kind: ValueKind): 'number' | 'date' | 'text' {
@@ -91,12 +93,12 @@ function collectColumnRefIds(node: FormulaNode, ids: Set<string>): void {
 
 export class FormulaHandler {
   // Which "{rowId}::{columnId}" cells failed to evaluate on the most recent
-  // recomputeAll() pass. FunctionRenderer reads this instead of
+  // recomputeAll() pass. FormulaRenderer reads this instead of
   // re-evaluating the formula itself on every render - recomputeAll() has
   // already parsed/evaluated everything by the time cells render.
   private erroredCells = new Set<string>();
 
-  // Which column ids each Function column's formula references, rebuilt on
+  // Which column ids each Formula column's formula references, rebuilt on
   // every recomputeAll() pass. Lets callers ask "does editing column X
   // matter to any formula" instead of "does any formula exist" - so editing
   // a column no formula depends on doesn't force a full table re-render.
@@ -114,7 +116,7 @@ export class FormulaHandler {
     return this.erroredCells.has(FormulaHandler.cellKey(rowId, columnId));
   }
 
-  // True if any Function column's formula references the given column id,
+  // True if any Formula column's formula references the given column id,
   // per the last recomputeAll() pass.
   public dependsOnColumn(columnId: string): boolean {
     for (const deps of this.columnDependencies.values()) {
@@ -157,7 +159,7 @@ export class FormulaHandler {
     return { valid: true, warning, resultKind: toStoredResultKind(kind) };
   }
 
-  // Write-through: recomputes every `type: 'function'` column across the
+  // Write-through: recomputes every `type: 'formula'` column across the
   // given rows (defaults to the whole table) and writes results directly
   // into row.cells[col.id] - '' on any parse/type/eval failure - so
   // SortHandler/FilterHandler/SearchHandler/generateCsv() keep reading plain
@@ -171,7 +173,9 @@ export class FormulaHandler {
     this.erroredCells.clear();
     this.columnDependencies.clear();
 
-    const formulaColumns = columns.filter(c => c.type === 'function');
+    // 'function' is a legacy alias for 'formula' - normally normalized away
+    // on load (migrateUtils.ensureViewsValid), checked here too for safety.
+    const formulaColumns = columns.filter(c => c.type === 'formula' || c.type === 'function');
     if (formulaColumns.length === 0) return false;
 
     let changed = false;

@@ -86,6 +86,20 @@ export class DropdownMenu {
 
     private positionMenu() {
         const rect = this.props.anchor.getBoundingClientRect();
+        const menuRectForFallback = this.menuEl.getBoundingClientRect();
+
+        // If the anchor isn't in the document anymore (e.g. a table re-render
+        // tore down and rebuilt the button this menu was opened from),
+        // getBoundingClientRect() returns an all-zero rect, which would
+        // otherwise place the menu at the very top-left of the window.
+        // Center it instead - still not anchored to anything meaningful, but
+        // not jammed into a corner either.
+        if (!this.props.anchor.isConnected || (rect.width === 0 && rect.height === 0)) {
+            this.menuEl.style.top = `${Math.max(10, (window.innerHeight - menuRectForFallback.height) / 2)}px`;
+            this.menuEl.style.left = `${Math.max(10, (window.innerWidth - menuRectForFallback.width) / 2)}px`;
+            return;
+        }
+
         // Position below the anchor
         let top = rect.bottom + 4;
         let left = rect.left;

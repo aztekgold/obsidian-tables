@@ -1,4 +1,4 @@
-// src/renderers/FunctionRenderer.ts
+// src/renderers/FormulaRenderer.ts
 import { App } from 'obsidian';
 import { format } from 'date-fns';
 import { ICellRenderer } from './ICellRenderer';
@@ -26,7 +26,7 @@ function formatFormulaValue(value: unknown, resultKind: string | undefined): str
   return String(value);
 }
 
-// Read-only: Function cells are computed from other columns in the same row,
+// Read-only: Formula cells are computed from other columns in the same row,
 // so unlike every other renderer this one never calls onChange - the cell
 // itself isn't directly editable, only the formula (via the column's
 // "Change type"/properties menu) is.
@@ -38,7 +38,7 @@ function formatFormulaValue(value: unknown, resultKind: string | undefined): str
 // recording which cells errored - so this renderer just reads that
 // already-done work instead of re-parsing and re-evaluating the formula
 // itself on every cell, every render.
-export class FunctionRenderer implements ICellRenderer {
+export class FormulaRenderer implements ICellRenderer {
   constructor(private formulaHandler: FormulaHandler) {}
 
   public render(

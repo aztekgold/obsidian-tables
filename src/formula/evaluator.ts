@@ -118,8 +118,8 @@ export function inferKind(node: FormulaNode, columns: ColumnDef[]): ValueKind {
     case 'columnRef': {
       const col = resolveColumn(node.columnId, columns);
       if (!col) throw new FormulaTypeError(`Unknown column reference "${node.columnId}"`);
-      if (col.type === 'function') {
-        throw new FormulaTypeError(`"${col.name}" is a Function column — formulas can't reference other Function columns`);
+      if (col.type === 'formula' || col.type === 'function') {
+        throw new FormulaTypeError(`"${col.name}" is a Formula column — formulas can't reference other Formula columns`);
       }
       return kindOfColumn(col);
     }
@@ -179,7 +179,7 @@ function inferFunctionCallKind(name: string, args: FormulaNode[], columns: Colum
       if (source.kind !== 'columnRef') {
         throw new FormulaTypeError('The first argument to contains() must be a column reference, e.g. {{ Tags }}');
       }
-      inferKind(source, columns); // validates the column exists and isn't a Function column
+      inferKind(source, columns); // validates the column exists and isn't a Formula column
       inferKind(needle, columns);
       return 'BOOLEAN';
     }

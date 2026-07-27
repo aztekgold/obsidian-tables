@@ -20,7 +20,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
     }
 
     public render() {
-        // Recompute Function columns before anything below reads row.cells -
+        // Recompute Formula columns before anything below reads row.cells -
         // sort/filter/search all read cell data directly with no awareness of
         // formulas, so this write-through keeps them all correct for free.
         // Only persist in the real editable view - InlineTableRenderer and
@@ -187,7 +187,7 @@ export class DivTableRenderer extends AbstractTableRenderer {
                 // Also re-render if some formula actually depends on this
                 // column, since otherwise a sibling formula cell wouldn't
                 // refresh its own DOM until some unrelated trigger fired.
-                // Checking real dependencies (not just "any Function column
+                // Checking real dependencies (not just "any Formula column
                 // exists") means editing a column no formula references
                 // doesn't force a full-table re-render/recompute.
                 if (isSorted || this.filterHandler.hasActiveFilters() || this.formulaHandler.dependsOnColumn(col.id)) {
@@ -280,12 +280,15 @@ export class DivTableRenderer extends AbstractTableRenderer {
                             }
 
                             await this.view.saveTableData(this.data);
-
-                            if (!isMulti) {
-                                // DropdownMenu closes automatically for single select
-                                this.render();
-                            }
-                            // For multi-select, wait for onClose to re-render
+                            // Single-select already re-renders via onClose below
+                            // (DropdownMenu closes itself immediately on selection,
+                            // which fires onClose synchronously, before this save
+                            // even resolves) - rendering again here would be a
+                            // second, redundant full-table rebuild per click, and
+                            // risked tearing down/recreating the bulk-action bar's
+                            // buttons out from under any dropdown still anchored
+                            // to one of them. Multi-select doesn't re-render here
+                            // either - it waits for onClose when the user is done.
                         })();
                     },
                     onClose: () => {

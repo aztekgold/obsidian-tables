@@ -32,7 +32,7 @@ export const ICON_NAMES = {
   wrapText: 'wrap-text',
   chevronRight: 'chevron-right',
   search: 'search',
-  function: 'square-function',
+  formula: 'square-function',
 } as const;
 
 /**

@@ -183,6 +183,7 @@ export function ensureViewsValid(data: TableData): void {
   // Rename legacy type aliases
   data.columns?.forEach(col => {
     if (col.type === 'notelink' || col.type === 'wikilink') col.type = 'link';
+    if (col.type === 'function') col.type = 'formula';
     // Migrate dateFormat from constraints to display if present
     const constraintsAny = col.constraints as unknown as Record<string, unknown> | undefined;
     if (constraintsAny?.dateFormat) {

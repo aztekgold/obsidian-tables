@@ -187,7 +187,8 @@ export class SortHandler {
           sortKeys.set(row, rawValue === 'true' || rawValue === true ? 1 : 0);
           break;
         case 'number':
-        case 'function': {
+        case 'formula':
+        case 'function': { // 'function' is a legacy alias for 'formula'
           if (isNumericColumn(sortColumn)) {
             const num = parseFloat(String(rawValue));
             sortKeys.set(row, isNaN(num) ? 0 : num);

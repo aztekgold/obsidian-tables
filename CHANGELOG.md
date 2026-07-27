@@ -4,14 +4,14 @@
 
 ### New Features
 
-- **Function Column Type:** A new "Function" column type computes a cell's value from other columns in the same row, using `{{ ColumnName }}` references. Supports `+ - * /` (number columns only), `== > <` comparisons, and three built-in functions:
+- **Formula Column Type:** A new "Formula" column type computes a cell's value from other columns in the same row, using `{{ ColumnName }}` references. Supports `+ - * /` (number columns only), `== > <` comparisons, and three built-in functions:
   - `if(condition, valueIfTrue, valueIfFalse?)` — the false branch is optional and defaults to empty.
   - `contains(column, value)` — exact membership match for multi-select columns, substring match for everything else.
   - `today()` — today's date at midnight, comparable with `>`/`<` against a date column (e.g. `{{ Due Date }} < today()` for "overdue").
   - `date(text, format?)` — parses a literal date string for comparison against a date column; format defaults to `YYYY-MM-DD` and supports `YYYY`/`YY`/`MM`/`DD` tokens (e.g. `date("01/10/26", "DD/MM/YY")`).
   - A formula that resolves to a date is automatically shown as a formatted date in the cell (comparisons still use the underlying timestamp).
   - Formulas are authored against column names but stored against column ids internally, so renaming a referenced column never breaks a formula — and any older name-based formula is upgraded automatically the next time it's computed.
-  - Sort and the Greater-than/Less-than filter both work on Function columns when the result is numeric or date-shaped.
+  - Sort and the Greater-than/Less-than filter both work on Formula columns when the result is numeric or date-shaped.
   - The column editor's Functions and Insert-column lists scroll instead of overflowing the popup once there are enough entries.
 
 ### Improvements

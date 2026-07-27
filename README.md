@@ -8,7 +8,7 @@ Data is stored in a single JSON file, making it portable, readable, and future-p
 
 The single-file approach also makes Tables a natural fit for agentic workflows, allowing agents to read, update, and reason over your data without traversing linked notes.
 
-Think of it as Notion-style tables for Obsidian: more powerful than Markdown tables and more structured than free-form notes, without the overhead of a spreadsheet. Minus the formulas — for now. 🙂
+Think of it as Notion-style tables for Obsidian: more powerful than Markdown tables and more structured than free-form notes, without the overhead of a spreadsheet. 🙂
 
 ![Tables Showcase](images/obsidian-tables-showcase.png)
 
@@ -32,6 +32,27 @@ If you enjoy using Obsidian Tables consider [Buy me a coffee](https://www.buymea
 - **Email** - Renders as a `mailto:` link when the value matches an email address
 - **Note Link** - Link to other notes in your vault
 - **Date** - Date picker with customisable format
+- **Formula** - Compute a value from other columns in the same row, live
+
+### 🧮 Formulas
+
+Add a **Formula** column and reference any other column with `{{ Column Name }}` syntax:
+
+```
+{{ Price }} * {{ Quantity }}
+{{ Due Date }} < today()
+if({{ Status }} == "Done", "✅", "⏳")
+```
+
+- **Operators**: `+ - * /` (number columns only), `== > <` (comparisons — `>`/`<` work on number *and* date columns)
+- **Functions**:
+  - `if(condition, valueIfTrue, valueIfFalse?)` — the false branch is optional and defaults to empty
+  - `contains(column, value)` — exact match against the options for a multi-select column, substring match for everything else
+  - `today()` — today's date, comparable with `>`/`<` against a date column (e.g. `{{ Due Date }} < today()` for "overdue")
+  - `date(text, format?)` — parses a literal date for comparison; format defaults to `YYYY-MM-DD` and also accepts custom `YYYY`/`YY`/`MM`/`DD` patterns, e.g. `date("01/10/26", "DD/MM/YY")`
+- A formula that resolves to a date is shown as a proper formatted date automatically, no configuration needed
+- Formulas reference columns by name as you type, but are stored internally in a way that survives renaming that column later
+- Sort and the "Greater than"/"Less than" filter both work on Formula columns when the result is numeric or date-shaped
 
 ### 📊 Views & Embeds
 - **Multiple Views**: Create different perspectives of your data (e.g., "Active Tasks", "Completed Items") within the same table file.
@@ -49,8 +70,10 @@ If you enjoy using Obsidian Tables consider [Buy me a coffee](https://www.buymea
 - **Inline Renaming** - Rename tables directly in the view
 - **Smart Linking** - Automatic backlink updates when notes are renamed or deleted
 - **Advanced Sorting** - Multi-level sorting with ascending/descending order
-- **Powerful Filtering** - Complex filter rules with multiple conditions
+- **Powerful Filtering** - Complex filter rules with multiple conditions, including "greater than"/"less than" for numbers and dates
+- **Search** - Free-text search box filters rows by any visible column, case-insensitively
 - **Real-time Updates** - Changes save automatically as you type
+- **Mobile Friendly** - Popups go full-screen and the toolbar adapts to fit smaller screens on phone
 
 ### 🔗 Graph View Integration
 
@@ -73,7 +96,7 @@ Tables integrate with Obsidian's graph view through note link columns:
 
 **Add a Column**
 - Click the **"+"** button in the table header
-- Choose from 9 column types: Text, Number, Checkbox, Select, Multi-select, URL, Email, Note Link, or Date
+- Choose from 10 column types: Text, Number, Checkbox, Select, Multi-select, URL, Email, Note Link, Date, or Formula
 - Customise options and colours for Select and Multi-select columns
 
 **Edit a Column**

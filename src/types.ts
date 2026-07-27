@@ -71,7 +71,7 @@ export interface ColumnDisplay {
 export interface ColumnDef {
   id: `col_${string}`;
   name: string;
-  type: string; // spec: 'text'|'number'|'select'|'date'|'boolean'|'url'|'link'; plugin adds legacy aliases and 'function' (not in Agentable spec — use with caution)
+  type: string; // spec: 'text'|'number'|'select'|'date'|'boolean'|'url'|'link'; plugin adds legacy aliases and 'formula' (not in Agentable spec — use with caution)
   display?: ColumnDisplay;
   constraints?: ColumnConstraints;
 }

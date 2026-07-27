@@ -312,7 +312,7 @@ export class TableMenuManager {
             { value: 'email', label: 'Email', icon: ICON_NAMES.email },
             { value: 'date', label: 'Date', icon: ICON_NAMES.date },
             { value: 'number', label: 'Number', icon: ICON_NAMES.number },
-            { value: 'function', label: 'Function', icon: ICON_NAMES.function },
+            { value: 'formula', label: 'Formula', icon: ICON_NAMES.formula },
         ];
 
         const defaultSelectOptions = [
@@ -361,8 +361,8 @@ export class TableMenuManager {
                             } else if (t.value === 'date') {
                                 column.type = 'date';
                                 column.display = { ...column.display, dateFormat: column.display?.dateFormat || 'YYYY/MM/DD' };
-                            } else if (t.value === 'function') {
-                                column.type = 'function';
+                            } else if (t.value === 'formula') {
+                                column.type = 'formula';
                                 column.constraints = { ...column.constraints, formula: column.constraints?.formula ?? '' };
                             } else {
                                 column.type = t.value;
@@ -623,7 +623,7 @@ export class TableMenuManager {
                 },
                 { isSelected: suggestAll }
             );
-        } else if (column.type === 'function') {
+        } else if (column.type === 'formula') {
             const propsSection = this.createMenuSection(menuContainer, 'Formula');
 
             const formulaForm = propsSection.createDiv({ cls: 'bases-toolbar-menu-form' });
@@ -716,7 +716,7 @@ export class TableMenuManager {
             ];
             const functionsSection = this.createMenuSection(menuContainer, 'Functions');
             FORMULA_FUNCTIONS.forEach(fn => {
-                const item = this.createMenuItem(functionsSection, ICON_NAMES.function, fn.label, (e) => {
+                const item = this.createMenuItem(functionsSection, ICON_NAMES.formula, fn.label, (e) => {
                     e.stopPropagation();
                     insertIntoFormula(fn.insertText, fn.cursorOffset);
                 });
@@ -726,7 +726,7 @@ export class TableMenuManager {
             // Reference chips: the codebase has no autocomplete-while-typing
             // primitive to reuse, so clicking a column name inserts
             // "{{ Name }}" at the cursor as a lower-effort substitute.
-            const referenceableColumns = data.columns.filter(c => c.id !== column.id && c.type !== 'function');
+            const referenceableColumns = data.columns.filter(c => c.id !== column.id && c.type !== 'formula');
             if (referenceableColumns.length > 0) {
                 const chipsSection = this.createMenuSection(menuContainer, 'Insert column');
                 chipsSection.addClass('json-table-column-options-list');
@@ -833,7 +833,7 @@ export class TableMenuManager {
             { type: 'email', name: 'Email', icon: ICON_NAMES.email },
             { type: 'date', name: 'Date', icon: ICON_NAMES.date },
             { type: 'number', name: 'Number', icon: ICON_NAMES.number },
-            { type: 'function', name: 'Function', icon: ICON_NAMES.function },
+            { type: 'formula', name: 'Formula', icon: ICON_NAMES.formula },
         ];
         const defaultSelectOptions = [
             { value: 'To Do', color: 'red' }, { value: 'In Progress', color: 'blue' }, { value: 'Done', color: 'green' }
@@ -872,7 +872,7 @@ export class TableMenuManager {
                     if (type === 'select') extraProps = { constraints: { options: defaultSelectOptions } };
                     else if (type === 'select-multi') extraProps = { constraints: { options: defaultSelectOptions, multiSelect: true } };
                     else if (type === 'date') extraProps = { display: { width: 150, dateFormat: 'YYYY/MM/DD' } };
-                    else if (type === 'function') extraProps = { constraints: { formula: '' } };
+                    else if (type === 'formula') extraProps = { constraints: { formula: '' } };
                     void addColumn(type === 'select-multi' ? 'select' : type, name, extraProps);
                 }
             );
