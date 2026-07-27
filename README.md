@@ -1,14 +1,8 @@
 # Tables for Obsidian
 
-Portable, single-file, feature-rich tables for Obsidian without the need for a file for every row.
+Obsidian Tables fills the gap between spreadsheets and Obsidian Bases: portable, single-file tables without a Markdown file for every row — perfect for book lists, project trackers, contacts, and content calendars.
 
-Obsidian Tables fills the gap between spreadsheets and Obsidian Bases, giving you structured data without creating a Markdown file for every row. Perfect for things like book lists, project trackers, contacts, and content calendars.
-
-Data is stored in a single JSON file, making it portable, readable, and future-proof. Open it in any text editor, export to CSV in one click, and keep everything intact even outside Obsidian.
-
-The single-file approach also makes Tables a natural fit for agentic workflows, allowing agents to read, update, and reason over your data without traversing linked notes.
-
-Think of it as Notion-style tables for Obsidian: more powerful than Markdown tables and more structured than free-form notes, without the overhead of a spreadsheet. 🙂
+Data lives in a single JSON file, so it's readable in any text editor without being dependant on Obsidian, exportable to CSV in one click, and easy for AI agents to read, update, and reason over without traversing linked notes.
 
 ![Tables Showcase](images/obsidian-tables-showcase.png)
 
@@ -34,6 +28,29 @@ If you enjoy using Obsidian Tables consider [Buy me a coffee](https://www.buymea
 - **Date** - Date picker with customisable format
 - **Formula** - Compute a value from other columns in the same row, live
 
+### 📊 Views, Sorting & Filtering
+- **Multiple Views**: Create different perspectives of your data (e.g., "Active Tasks", "Completed Items") within the same table file.
+- **Advanced Sorting** - Multi-level sorting with ascending/descending order
+- **Powerful Filtering** - Complex filter rules with multiple conditions, including "greater than"/"less than" for numbers and dates
+- **Search** - Free-text search box filters rows by any visible column, case-insensitively
+
+### 🔌 Embeds
+- **Inline Tables**: Tables render directly in Live Preview for seamless editing.
+- **Linked Embeds**: Embed your table in any other note using standard Obsidian embed syntax `![[MyTable.table.md]]`. The embedded table is fully interactive.
+- **Embed View Pinning**: Use the alias slot to target a specific view — or create a new one automatically:
+  - `![[MyTable.table.md|Sprint Board]]` — pins the embed to the "Sprint Board" view, creating it if it doesn't exist.
+  - `![[MyTable.table.md]]` — renders the default (first) view.
+
+### 🎯 Table Management
+- **Add/Delete Rows & Columns** - Flexible data structure management
+- **Drag to Reorder Rows** - Intuitive drag-and-drop row reordering
+- **Drag to Reorder Columns** - Rearrange columns by dragging the header
+- **Resize Columns** - Adjust column widths to fit your content
+- **Inline Renaming** - Rename tables directly in the view
+- **Smart Linking** - Automatic backlink updates when notes are renamed or deleted
+- **Real-time Updates** - Changes save automatically as you type
+- **Mobile Friendly** - Popups go full-screen and the toolbar adapts to fit smaller screens on phone
+
 ### 🧮 Formulas
 
 Add a **Formula** column and reference any other column with `{{ Column Name }}` syntax:
@@ -53,27 +70,6 @@ if({{ Status }} == "Done", "✅", "⏳")
 - A formula that resolves to a date is shown as a proper formatted date automatically, no configuration needed
 - Formulas reference columns by name as you type, but are stored internally in a way that survives renaming that column later
 - Sort and the "Greater than"/"Less than" filter both work on Formula columns when the result is numeric or date-shaped
-
-### 📊 Views & Embeds
-- **Multiple Views**: Create different perspectives of your data (e.g., "Active Tasks", "Completed Items") within the same table file.
-- **Inline Tables**: Tables render directly in Live Preview for seamless editing.
-- **Linked Embeds**: Embed your table in any other note using standard Obsidian embed syntax `![[MyTable.table.md]]`. The embedded table is fully interactive.
-- **Embed View Pinning**: Use the alias slot to target a specific view — or create a new one automatically:
-  - `![[MyTable.table.md|Sprint Board]]` — pins the embed to the "Sprint Board" view, creating it if it doesn't exist.
-  - `![[MyTable.table.md]]` — renders the default (first) view.
-
-### 🎯 Table Management
-- **Add/Delete Rows & Columns** - Flexible data structure management
-- **Drag to Reorder Rows** - Intuitive drag-and-drop row reordering
-- **Drag to Reorder Columns** - Rearrange columns by dragging the header
-- **Resize Columns** - Adjust column widths to fit your content
-- **Inline Renaming** - Rename tables directly in the view
-- **Smart Linking** - Automatic backlink updates when notes are renamed or deleted
-- **Advanced Sorting** - Multi-level sorting with ascending/descending order
-- **Powerful Filtering** - Complex filter rules with multiple conditions, including "greater than"/"less than" for numbers and dates
-- **Search** - Free-text search box filters rows by any visible column, case-insensitively
-- **Real-time Updates** - Changes save automatically as you type
-- **Mobile Friendly** - Popups go full-screen and the toolbar adapts to fit smaller screens on phone
 
 ### 🔗 Graph View Integration
 
