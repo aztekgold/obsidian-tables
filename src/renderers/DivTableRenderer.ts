@@ -256,13 +256,29 @@ export class DivTableRenderer extends AbstractTableRenderer {
 
                 const isMulti = (col.type === 'select' && col.constraints?.multiSelect) || col.type === 'multiselect';
 
+                // Seed the menu's checked state from what's actually on the
+                // selected rows (checked only if EVERY selected row already
+                // has that value) instead of always opening empty - otherwise
+                // a value already applied to the rows shows as unchecked on
+                // reopen, and clicking it gets read as "add" (a no-op, since
+                // it's already there) instead of "remove".
+                const selectedRowsData = [...this.selectedRows].map(idx => this.data.rows[idx]).filter((r): r is AgentableRow => !!r);
+                const initialSelectedValues = isMulti
+                    ? (col.constraints?.options || [])
+                        .map(opt => opt.value)
+                        .filter(optValue => selectedRowsData.length > 0 && selectedRowsData.every(row => {
+                            const currentValues = row.cells[col.id] ? String(row.cells[col.id]).split(',').filter(Boolean) : [];
+                            return currentValues.includes(optValue);
+                        }))
+                    : [];
+
                 new DropdownMenu({
                     app: this.view.app,
                     anchor: btn,
                     options: col.constraints?.options || [],
-                    selectedValues: [],
+                    selectedValues: initialSelectedValues,
                     multiSelect: isMulti,
-                    onSelect: (selectedValue) => {
+                    onSelect: (selectedValue, isNowSelected) => {
                         void (async () => {
                             for (const rowIndex of this.selectedRows) {
                                 const row = this.data.rows[rowIndex];
@@ -270,9 +286,11 @@ export class DivTableRenderer extends AbstractTableRenderer {
 
                                 if (isMulti) {
                                     const currentValues = row.cells[col.id] ? String(row.cells[col.id]).split(',').filter(Boolean) : [];
-                                    if (!currentValues.includes(selectedValue)) {
+                                    if (isNowSelected && !currentValues.includes(selectedValue)) {
                                         currentValues.push(selectedValue);
                                         row.cells[col.id] = currentValues.join(',');
+                                    } else if (!isNowSelected && currentValues.includes(selectedValue)) {
+                                        row.cells[col.id] = currentValues.filter(v => v !== selectedValue).join(',');
                                     }
                                 } else {
                                     row.cells[col.id] = selectedValue;
@@ -280,15 +298,21 @@ export class DivTableRenderer extends AbstractTableRenderer {
                             }
 
                             await this.view.saveTableData(this.data);
-                            // Single-select already re-renders via onClose below
-                            // (DropdownMenu closes itself immediately on selection,
-                            // which fires onClose synchronously, before this save
-                            // even resolves) - rendering again here would be a
-                            // second, redundant full-table rebuild per click, and
-                            // risked tearing down/recreating the bulk-action bar's
-                            // buttons out from under any dropdown still anchored
-                            // to one of them. Multi-select doesn't re-render here
-                            // either - it waits for onClose when the user is done.
+
+                            if (isMulti) {
+                                // Single-select re-renders via onClose below
+                                // instead (DropdownMenu closes itself immediately
+                                // on selection, calling onClose synchronously) -
+                                // but multi-select stays open across many clicks,
+                                // so without rendering here the table wouldn't
+                                // reflect a change until the menu finally closes.
+                                // The dropdown itself doesn't move when this runs:
+                                // its position was fixed once at open time, not
+                                // recalculated per click, so rebuilding the
+                                // bulk-action bar underneath it (which this
+                                // triggers) doesn't disturb it.
+                                this.render();
+                            }
                         })();
                     },
                     onClose: () => {

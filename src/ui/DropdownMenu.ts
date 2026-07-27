@@ -7,7 +7,13 @@ interface DropdownMenuProps {
     anchor: HTMLElement;
     options: DropdownOption[];
     selectedValues: string[]; // for multi-select
-    onSelect: (value: string) => void;
+    // isNowSelected is the value's checked state AFTER this click (i.e.
+    // whether this was a check or an uncheck) - callers that manage
+    // multi-select state externally (e.g. bulk-editing many rows at once,
+    // where there's no single "current" selection to toggle against) need
+    // this to know whether to add or remove the value, since the menu's own
+    // internal checkbox toggle isn't visible to them otherwise.
+    onSelect: (value: string, isNowSelected: boolean) => void;
     onClose: () => void;
     multiSelect?: boolean;
     onCreateOption?: (value: string) => void;
@@ -112,6 +118,13 @@ export class DropdownMenu {
         if (left + menuRect.width > window.innerWidth) {
             left = window.innerWidth - menuRect.width - 10; // Flip left
         }
+        // A menu taller than the space on both sides of the anchor (e.g. a
+        // bottom-pinned toolbar button with a long options list) would
+        // otherwise flip up past the top of the window with nothing to stop
+        // it. Clamp both axes to stay fully on-screen rather than drifting
+        // off toward a corner or landing somewhere unrelated to the anchor.
+        top = Math.max(10, top);
+        left = Math.max(10, left);
 
         this.menuEl.style.top = `${top}px`;
         this.menuEl.style.left = `${left}px`;
@@ -157,7 +170,7 @@ export class DropdownMenu {
             item.addEventListener('click', (e) => {
                 e.stopPropagation();
                 e.preventDefault();
-                this.props.onSelect(opt.value);
+                this.props.onSelect(opt.value, !isSelected);
 
                 if (!this.props.multiSelect) {
                     this.close();
