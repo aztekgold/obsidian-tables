@@ -1,6 +1,6 @@
 import { App } from 'obsidian';
 import { ICellRenderer } from './ICellRenderer';
-import { ColumnDef } from '../types';
+import { AgentableRow, ColumnDef } from '../types';
 
 export abstract class AbstractLinkRenderer implements ICellRenderer {
   protected abstract buildLink(displayEl: HTMLElement, val: string): void;
@@ -10,7 +10,9 @@ export abstract class AbstractLinkRenderer implements ICellRenderer {
     container: HTMLElement,
     value: unknown,
     column: ColumnDef,
-    onChange: (newValue: unknown) => void
+    onChange: (newValue: unknown) => void,
+    row: AgentableRow,
+    columns: ColumnDef[]
   ): void {
     container.empty();
 

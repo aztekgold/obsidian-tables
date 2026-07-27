@@ -1,7 +1,7 @@
 // src/renderers/DropdownRenderer.ts
 import { App } from 'obsidian';
 import { ICellRenderer } from './ICellRenderer';
-import { ColumnDef } from '../types';
+import { AgentableRow, ColumnDef } from '../types';
 
 import { DropdownMenu } from '../ui/DropdownMenu';
 
@@ -11,7 +11,9 @@ export class DropdownRenderer implements ICellRenderer {
     container: HTMLElement, // This is the <td>
     value: unknown,
     column: ColumnDef,
-    onChange: (newValue: unknown) => void
+    onChange: (newValue: unknown) => void,
+    row: AgentableRow,
+    columns: ColumnDef[]
   ): void {
     container.empty();
 

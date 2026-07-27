@@ -2,7 +2,7 @@
 
 import { App } from 'obsidian';
 import { ICellRenderer } from './ICellRenderer';
-import { ColumnDef } from '../types';
+import { AgentableRow, ColumnDef } from '../types';
 
 export class CheckboxRenderer implements ICellRenderer {
   public render(
@@ -10,7 +10,9 @@ export class CheckboxRenderer implements ICellRenderer {
     container: HTMLElement,
     value: unknown,
     column: ColumnDef,
-    onChange: (newValue: unknown) => void
+    onChange: (newValue: unknown) => void,
+    row: AgentableRow,
+    columns: ColumnDef[]
   ): void {
 
     // Create cell content wrapper

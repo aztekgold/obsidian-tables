@@ -2,7 +2,7 @@
 
 import { App } from 'obsidian';
 import { ICellRenderer } from './ICellRenderer';
-import { ColumnDef } from '../types';
+import { AgentableRow, ColumnDef } from '../types';
 import { FileSuggest } from '../suggesters/FileSuggest';
 
 export class NoteLinkRenderer implements ICellRenderer {
@@ -13,7 +13,9 @@ export class NoteLinkRenderer implements ICellRenderer {
     container: HTMLElement, // This is the <td>
     value: unknown,
     column: ColumnDef, // We receive the full column definition
-    onChange: (newValue: unknown) => void
+    onChange: (newValue: unknown) => void,
+    row: AgentableRow,
+    columns: ColumnDef[]
   ): void {
     container.empty(); // Clear td
 

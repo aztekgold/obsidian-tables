@@ -4,6 +4,7 @@ import { ICON_NAMES, createIconElement } from './icons';
 import { positionPopup, attachPopupCleanup } from './utils/popup';
 import { createDefaultView } from './utils/fileUtils';
 import { generateFilterId } from './utils/migrateUtils';
+import { isNumericColumn as isColumnNumeric } from './FormulaHandler';
 
 export class FilterHandler {
   constructor(
@@ -112,11 +113,13 @@ export class FilterHandler {
       void this.applyFiltersAndRerender();
     });
 
-    const getColumnType = () => this.data.columns.find(c => c.id === rule.columnId)?.type;
-    const isNumericColumn = () => getColumnType() === 'date' || getColumnType() === 'number';
+    const getColumn = () => this.data.columns.find(c => c.id === rule.columnId);
+    const getColumnType = () => getColumn()?.type;
+    const isNumericColumn = () => isColumnNumeric(getColumn());
 
     // gt/lt only make sense as a numeric comparison, so they're only offered
-    // for date/number columns (date cells are stored as numeric timestamps).
+    // for date/number columns (date cells are stored as numeric timestamps)
+    // and Function columns whose formula resolves to a number.
     const ALL_OPERATORS: { label: string; value: FilterOperator; numericOnly?: boolean }[] = [
       { label: 'Contains', value: 'contains' },
       { label: 'Does not contain', value: 'doesNotContain' },
@@ -231,10 +234,11 @@ export class FilterHandler {
     const rules = this.getCurrentFilterRules();
     if (rules.length === 0) return rows;
 
-    // Precompute each rule's column type once, so gt/lt can tell whether to
-    // compare numerically (date/number columns store numeric values) or
-    // fall back to a lexicographic comparison for everything else.
-    const ruleColumnTypes = new Map(rules.map(rule => [rule.id, this.data.columns.find(c => c.id === rule.columnId)?.type]));
+    // Precompute each rule's column once, so gt/lt can tell whether to
+    // compare numerically (date/number columns, or a Function column whose
+    // formula resolves to a number) or fall back to a lexicographic
+    // comparison for everything else.
+    const ruleColumns = new Map(rules.map(rule => [rule.id, this.data.columns.find(c => c.id === rule.columnId)]));
 
     return rows.filter(row => {
       return rules.every(rule => {
@@ -255,8 +259,7 @@ export class FilterHandler {
           case 'gt':
           case 'lt': {
             if (filterValue === '') return true;
-            const columnType = ruleColumnTypes.get(rule.id);
-            if (columnType === 'date' || columnType === 'number') {
+            if (isColumnNumeric(ruleColumns.get(rule.id))) {
               const cellNum = parseFloat(cellValue);
               const filterNum = parseFloat(filterValue);
               if (isNaN(cellNum) || isNaN(filterNum)) return false;

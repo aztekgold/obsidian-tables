@@ -6,6 +6,7 @@ import { ICON_NAMES } from '../icons';
 import { setIcon } from 'obsidian';
 import { positionPopup, attachPopupCleanup } from '../utils/popup';
 import { generateColId } from '../utils/migrateUtils';
+import { FormulaHandler, formulaToDisplayText, formulaToStorageText } from '../FormulaHandler';
 
 export interface IMenuManagerHost {
     data: TableData;
@@ -16,6 +17,7 @@ export interface IMenuManagerHost {
     exportToCsv(): void;
     exportViewToCsv(): void;
     TYPE_ICONS: Record<string, string>;
+    formulaHandler: FormulaHandler;
 }
 
 export class TableMenuManager {
@@ -166,6 +168,14 @@ export class TableMenuManager {
 
     // --- Helper Methods ---
 
+    // "{{ }}" is the formula-reference delimiter, so a column literally named
+    // with curly braces (e.g. "A}}+{{B") would corrupt reference parsing for
+    // any formula built by clicking its "Insert column" chip - strip them
+    // rather than let the name reach storage.
+    private sanitizeColumnName(name: string): string {
+        return name.replace(/[{}]/g, '');
+    }
+
     private createMenuSection(container: HTMLElement, title?: string): HTMLElement {
         const section = container.createDiv({ cls: 'bases-toolbar-section' });
         if (title) {
@@ -223,6 +233,26 @@ export class TableMenuManager {
         this.createMenuItem(items, 'arrow-left', label, onBack);
     }
 
+    // Merges any of a column's cell values that aren't already represented as
+    // an option into its existing option list, on every conversion to
+    // select/multi-select - not just when the list starts out empty. Existing
+    // options (and their colors) are never touched or removed, so this only
+    // ever adds newly-typed values; it won't discard a deliberately-removed
+    // option just because a stale cell still holds that value.
+    private mergeDerivedOptions(existingOptions: DropdownOption[], data: TableData, columnId: string): DropdownOption[] {
+        const known = new Set(existingOptions.map(o => o.value));
+        const options = [...existingOptions];
+        data.rows.forEach(row => {
+            const raw = row.cells[columnId];
+            if (raw === null || raw === undefined || raw === '') return;
+            const value = String(raw);
+            if (known.has(value)) return;
+            known.add(value);
+            options.push({ value, color: 'default' });
+        });
+        return options;
+    }
+
     public showEditColumnDialog(headerCell: HTMLElement, column: ColumnDef, data: TableData, colIndex: number, deepLink?: { view: 'option-edit', optionIndex: number }) {
         // Remove any existing popup
         let cleanup: () => void = () => { };
@@ -255,8 +285,10 @@ export class TableMenuManager {
             ev.stopPropagation();
             if (ev.key === 'Enter') {
                 ev.preventDefault();
-                const newName = renameInput.value.trim();
+                const newName = this.sanitizeColumnName(renameInput.value.trim());
                 if (newName && newName !== column.name) {
+                    // Formulas reference columns by id internally, so renaming
+                    // needs no rewrite here - existing formulas keep working.
                     column.name = newName;
                     void (async () => {
                         await this.host.view.saveTableData(data);
@@ -280,6 +312,7 @@ export class TableMenuManager {
             { value: 'email', label: 'Email', icon: ICON_NAMES.email },
             { value: 'date', label: 'Date', icon: ICON_NAMES.date },
             { value: 'number', label: 'Number', icon: ICON_NAMES.number },
+            { value: 'function', label: 'Function', icon: ICON_NAMES.function },
         ];
 
         const defaultSelectOptions = [
@@ -323,14 +356,14 @@ export class TableMenuManager {
                             if (t.value === 'select' || t.value === 'select-multi') {
                                 column.type = 'select';
                                 const isMulti = t.value === 'select-multi';
-                                if (!column.constraints?.options?.length) {
-                                    column.constraints = { ...column.constraints, options: defaultSelectOptions, multiSelect: isMulti };
-                                } else {
-                                    column.constraints = { ...column.constraints, multiSelect: isMulti };
-                                }
+                                const mergedOptions = this.mergeDerivedOptions(column.constraints?.options ?? [], data, column.id);
+                                column.constraints = { ...column.constraints, options: mergedOptions.length ? mergedOptions : defaultSelectOptions, multiSelect: isMulti };
                             } else if (t.value === 'date') {
                                 column.type = 'date';
                                 column.display = { ...column.display, dateFormat: column.display?.dateFormat || 'YYYY/MM/DD' };
+                            } else if (t.value === 'function') {
+                                column.type = 'function';
+                                column.constraints = { ...column.constraints, formula: column.constraints?.formula ?? '' };
                             } else {
                                 column.type = t.value;
                             }
@@ -590,6 +623,121 @@ export class TableMenuManager {
                 },
                 { isSelected: suggestAll }
             );
+        } else if (column.type === 'function') {
+            const propsSection = this.createMenuSection(menuContainer, 'Formula');
+
+            const formulaForm = propsSection.createDiv({ cls: 'bases-toolbar-menu-form' });
+            const formulaInputRow = formulaForm.createDiv({ cls: 'input-row' });
+            const formulaInputContent = formulaInputRow.createDiv({ cls: 'input-row-content' });
+            const formulaInput = formulaInputContent.createEl('input', {
+                type: 'text',
+                // Formulas are stored with column ids ("{{ col_abc }}") so
+                // renames don't break them - translate back to names for editing.
+                value: formulaToDisplayText(column.constraints?.formula ?? '', data.columns),
+                placeholder: '{{ Price }} * {{ Quantity }}',
+            });
+            formulaInput.spellcheck = false;
+            formulaInput.addEventListener('click', (ev) => ev.stopPropagation());
+            formulaInput.addEventListener('mousedown', (ev) => ev.stopPropagation());
+
+            const errorEl = propsSection.createDiv({ cls: 'json-table-formula-error-text json-table-is-hidden' });
+
+            const runValidation = (value: string) => {
+                const result = this.host.formulaHandler.validate(value, data.columns);
+                if (!result.valid) {
+                    errorEl.setText(result.error ?? 'Invalid formula');
+                    errorEl.removeClass('json-table-is-hidden');
+                } else if (result.warning) {
+                    errorEl.setText(result.warning);
+                    errorEl.removeClass('json-table-is-hidden');
+                } else {
+                    errorEl.addClass('json-table-is-hidden');
+                }
+            };
+            runValidation(formulaInput.value);
+
+            let formulaDebounceTimer: ReturnType<typeof setTimeout>;
+            const applyFormulaChange = (displayValue: string) => {
+                runValidation(displayValue);
+                clearTimeout(formulaDebounceTimer);
+                formulaDebounceTimer = setTimeout(() => {
+                    const result = this.host.formulaHandler.validate(displayValue, data.columns);
+                    const { text: storageText } = formulaToStorageText(displayValue, data.columns);
+                    column.constraints = { ...column.constraints, formula: storageText, formulaResultKind: result.valid ? result.resultKind : undefined };
+                    void this.host.view.saveTableData(data);
+                    this.host.render();
+                }, 400);
+            };
+
+            formulaInput.addEventListener('input', () => applyFormulaChange(formulaInput.value));
+
+            // Shared by both chip lists below: inserts text at the current
+            // cursor position (or the end, if nothing's focused), places the
+            // cursor `cursorOffset` chars into the inserted text, and runs it
+            // through the same debounced validate/save path as typing.
+            const insertIntoFormula = (insertText: string, cursorOffset: number) => {
+                const start = formulaInput.selectionStart ?? formulaInput.value.length;
+                const end = formulaInput.selectionEnd ?? formulaInput.value.length;
+                const newValue = formulaInput.value.slice(0, start) + insertText + formulaInput.value.slice(end);
+                formulaInput.value = newValue;
+                formulaInput.focus();
+                const cursor = start + cursorOffset;
+                formulaInput.setSelectionRange(cursor, cursor);
+                applyFormulaChange(newValue);
+            };
+
+            // Functions: a fixed, short list, so explanations live in a hover
+            // tooltip rather than permanent on-screen text.
+            const FORMULA_FUNCTIONS: { label: string; insertText: string; cursorOffset: number; tooltip: string }[] = [
+                {
+                    label: 'if()',
+                    insertText: 'if()',
+                    cursorOffset: 3,
+                    tooltip: 'if(condition, valueIfTrue, valueIfFalse?)\nReturns valueIfTrue when the condition is met, otherwise valueIfFalse (or empty if omitted).\nExample: if({{ Price }} < 10, "Budget", "Premium")',
+                },
+                {
+                    label: 'contains()',
+                    insertText: 'contains()',
+                    cursorOffset: 9,
+                    tooltip: 'contains(column, value)\nChecks whether a column contains a value - exact match against the options for a multi-select column, substring match for everything else.\nExample: contains({{ Tags }}, "Urgent")',
+                },
+                {
+                    label: 'today()',
+                    insertText: 'today()',
+                    cursorOffset: 7,
+                    tooltip: "today()\nToday's date at midnight, comparable to a date column with > and <.\nExample: {{ Due Date }} < today()  (true once the due date has passed)",
+                },
+                {
+                    label: 'date()',
+                    insertText: 'date()',
+                    cursorOffset: 5,
+                    tooltip: 'date(text, format?)\nParses a literal date so it can be compared with > and <. Format defaults to "YYYY-MM-DD"; only YYYY/YY/MM/DD tokens are supported.\nExample: {{ Due Date }} < date("2026-10-01")\nExample: {{ Due Date }} < date("01/10/26", "DD/MM/YY")',
+                },
+            ];
+            const functionsSection = this.createMenuSection(menuContainer, 'Functions');
+            FORMULA_FUNCTIONS.forEach(fn => {
+                const item = this.createMenuItem(functionsSection, ICON_NAMES.function, fn.label, (e) => {
+                    e.stopPropagation();
+                    insertIntoFormula(fn.insertText, fn.cursorOffset);
+                });
+                item.title = fn.tooltip;
+            });
+
+            // Reference chips: the codebase has no autocomplete-while-typing
+            // primitive to reuse, so clicking a column name inserts
+            // "{{ Name }}" at the cursor as a lower-effort substitute.
+            const referenceableColumns = data.columns.filter(c => c.id !== column.id && c.type !== 'function');
+            if (referenceableColumns.length > 0) {
+                const chipsSection = this.createMenuSection(menuContainer, 'Insert column');
+                chipsSection.addClass('json-table-column-options-list');
+                referenceableColumns.forEach(col => {
+                    this.createMenuItem(chipsSection, undefined, col.name, (e) => {
+                        e.stopPropagation();
+                        const insertText = `{{ ${col.name} }}`;
+                        insertIntoFormula(insertText, insertText.length);
+                    });
+                });
+            }
         }
 
         const actionItems = this.createMenuSection(menuContainer);
@@ -685,13 +833,26 @@ export class TableMenuManager {
             { type: 'email', name: 'Email', icon: ICON_NAMES.email },
             { type: 'date', name: 'Date', icon: ICON_NAMES.date },
             { type: 'number', name: 'Number', icon: ICON_NAMES.number },
+            { type: 'function', name: 'Function', icon: ICON_NAMES.function },
         ];
         const defaultSelectOptions = [
             { value: 'To Do', color: 'red' }, { value: 'In Progress', color: 'blue' }, { value: 'Done', color: 'green' }
         ];
 
         const addColumn = async (columnType: string, typeName: string, extraProps: Record<string, unknown> = {}) => {
-            const columnName = nameInput.value.trim() || typeName;
+            const typedName = this.sanitizeColumnName(nameInput.value.trim());
+            let columnName = typedName || typeName;
+            if (!typedName) {
+                // Only auto-number the *default* type name (e.g. "Text") when
+                // it collides - an explicitly typed name is left as-is,
+                // matching how duplicate column names are tolerated elsewhere.
+                const existingNames = new Set(data.columns.map(c => c.name));
+                if (existingNames.has(columnName)) {
+                    let suffix = 1;
+                    while (existingNames.has(`${typeName} ${suffix}`)) suffix++;
+                    columnName = `${typeName} ${suffix}`;
+                }
+            }
             const columnId = generateColId(new Set(data.columns.map(c => c.id)));
             data.columns.push({ id: columnId, name: columnName, type: columnType, display: { width: 150 }, ...extraProps });
             data.rows.forEach(row => { row.cells[columnId] = ''; });
@@ -711,6 +872,7 @@ export class TableMenuManager {
                     if (type === 'select') extraProps = { constraints: { options: defaultSelectOptions } };
                     else if (type === 'select-multi') extraProps = { constraints: { options: defaultSelectOptions, multiSelect: true } };
                     else if (type === 'date') extraProps = { display: { width: 150, dateFormat: 'YYYY/MM/DD' } };
+                    else if (type === 'function') extraProps = { constraints: { formula: '' } };
                     void addColumn(type === 'select-multi' ? 'select' : type, name, extraProps);
                 }
             );

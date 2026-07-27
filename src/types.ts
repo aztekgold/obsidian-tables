@@ -59,6 +59,8 @@ export interface ColumnConstraints {
   multiSelect?: boolean;
   suggestAllFiles?: boolean;  // plugin extension for link columns
   wrap?: boolean;             // plugin extension for text columns
+  formula?: string;           // plugin extension for function columns — raw "{{ ColumnName }}" expression text
+  formulaResultKind?: 'number' | 'date' | 'text'; // plugin extension — cached inference of the formula's result type
 }
 
 export interface ColumnDisplay {
@@ -69,7 +71,7 @@ export interface ColumnDisplay {
 export interface ColumnDef {
   id: `col_${string}`;
   name: string;
-  type: string; // spec: 'text'|'number'|'select'|'date'|'boolean'|'url'|'link'; plugin adds legacy aliases
+  type: string; // spec: 'text'|'number'|'select'|'date'|'boolean'|'url'|'link'; plugin adds legacy aliases and 'function' (not in Agentable spec — use with caution)
   display?: ColumnDisplay;
   constraints?: ColumnConstraints;
 }

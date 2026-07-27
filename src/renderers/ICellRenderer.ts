@@ -1,5 +1,5 @@
 import { App } from 'obsidian';
-import { ColumnDef } from '../types';
+import { AgentableRow, ColumnDef } from '../types';
 /**
  * The "contract" that all cell renderers must follow.
  */
@@ -11,12 +11,16 @@ export interface ICellRenderer {
    * @param value The current value of the cell.
    * @param column The column definition (for dropdown options, etc.).
    * @param onChange A callback function to call when the value changes.
+   * @param row The full row this cell belongs to (needed by FunctionRenderer to read sibling cell values).
+   * @param columns All of the table's columns (needed by FunctionRenderer to resolve "{{ ColumnName }}" references).
    */
   render(
     app: App,
     container: HTMLElement,
     value: unknown,
     column: ColumnDef,
-    onChange: (newValue: unknown) => void
+    onChange: (newValue: unknown) => void,
+    row: AgentableRow,
+    columns: ColumnDef[]
   ): void;
 }

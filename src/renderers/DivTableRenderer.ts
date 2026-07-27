@@ -20,6 +20,19 @@ export class DivTableRenderer extends AbstractTableRenderer {
     }
 
     public render() {
+        // Recompute Function columns before anything below reads row.cells -
+        // sort/filter/search all read cell data directly with no awareness of
+        // formulas, so this write-through keeps them all correct for free.
+        // Only persist in the real editable view - InlineTableRenderer and
+        // EmbedTableRenderer both set isInline=true and are documented as
+        // read-only, so a passive render (e.g. a hover preview) must never
+        // write back to the source file, even though cells still need the
+        // freshly computed values for correct display/sort/filter here.
+        const formulasChanged = this.formulaHandler.recomputeAll();
+        if (formulasChanged && !this.isInline) {
+            void this.view.saveTableData(this.data);
+        }
+
         const existingWrapper = this.container.querySelector('.json-table-div-wrapper') as HTMLElement;
         const scrollLeft = existingWrapper?.scrollLeft ?? 0;
         const scrollTop = existingWrapper?.scrollTop ?? 0;
@@ -171,11 +184,21 @@ export class DivTableRenderer extends AbstractTableRenderer {
             const onCellChange = async (newValue: string) => {
                 row.cells[col.id] = newValue;
                 await this.view.saveTableData(this.data);
-                if (isSorted || this.filterHandler.hasActiveFilters()) {
+                // Also re-render if some formula actually depends on this
+                // column, since otherwise a sibling formula cell wouldn't
+                // refresh its own DOM until some unrelated trigger fired.
+                // Checking real dependencies (not just "any Function column
+                // exists") means editing a column no formula references
+                // doesn't force a full-table re-render/recompute.
+                if (isSorted || this.filterHandler.hasActiveFilters() || this.formulaHandler.dependsOnColumn(col.id)) {
                     this.render();
                 }
             };
-            renderer.render(this.view.app, td, value, col, onCellChange);
+            // Pass the full column list (not just the visible ones iterated
+            // above) so a formula can still resolve a reference to a column
+            // the user has hidden from this view - visibility is a display
+            // concern, not a reason for a formula to break.
+            renderer.render(this.view.app, td, value, col, onCellChange, row, this.data.columns);
         });
     }
 

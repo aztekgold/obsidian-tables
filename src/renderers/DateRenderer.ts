@@ -1,7 +1,7 @@
 // src/renderers/DateRenderer.ts
 import { App } from 'obsidian';
 import { ICellRenderer } from './ICellRenderer';
-import { ColumnDef, DateFormat } from '../types';
+import { AgentableRow, ColumnDef, DateFormat } from '../types';
 import flatpickr from 'flatpickr';
 // flatpickr CSS is included in styles.scss
 import { format } from 'date-fns';
@@ -25,7 +25,9 @@ export class DateRenderer implements ICellRenderer {
     container: HTMLElement, // This is the <td>
     value: unknown, // Stored as timestamp string (or number)
     column: ColumnDef, // Full column definition including typeOptions
-    onChange: (newValue: unknown) => void
+    onChange: (newValue: unknown) => void,
+    row: AgentableRow,
+    columns: ColumnDef[]
   ): void {
     container.empty();
     container.addClass('json-table-date-cell'); // Style the TD directly

@@ -1,6 +1,6 @@
 import { App } from 'obsidian';
 import { ICellRenderer } from './ICellRenderer';
-import { ColumnDef } from '../types';
+import { AgentableRow, ColumnDef } from '../types';
 
 export class TextRenderer implements ICellRenderer {
   public render(
@@ -8,7 +8,9 @@ export class TextRenderer implements ICellRenderer {
     container: HTMLElement,
     value: unknown,
     column: ColumnDef,
-    onChange: (newValue: unknown) => void
+    onChange: (newValue: unknown) => void,
+    row: AgentableRow,
+    columns: ColumnDef[]
   ): void {
     const isWrapped = column.constraints?.wrap || false;
 

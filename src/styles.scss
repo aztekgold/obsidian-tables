@@ -2019,3 +2019,22 @@ body.is-phone .json-table-controls-left .json-table-btn--standard {
 .json-table-margin-bottom-8 {
   margin-bottom: 8px !important;
 }
+
+/* Function column cells - read-only, so no text cursor and a slightly muted
+   color to visually distinguish "computed" cells from editable ones. */
+.json-table-formula-span {
+  cursor: default;
+  color: var(--text-muted);
+}
+
+.json-table-formula-error {
+  /* Same muted color and cursor as a successfully evaluated formula cell -
+     no tooltip, the dash itself is the only indicator. */
+  color: var(--text-muted);
+}
+
+.json-table-formula-error-text {
+  padding: 0 12px 8px;
+  font-size: var(--font-smallest);
+  color: var(--text-error);
+}

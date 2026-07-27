@@ -4,6 +4,7 @@ import { ICON_NAMES, createIconElement } from './icons';
 import { positionPopup } from './utils/popup';
 import { createDefaultView, } from './utils/fileUtils';
 import { generateSortId } from './utils/migrateUtils';
+import { isNumericColumn } from './FormulaHandler';
 
 export class SortHandler {
 
@@ -185,9 +186,14 @@ export class SortHandler {
         case 'checkbox':
           sortKeys.set(row, rawValue === 'true' || rawValue === true ? 1 : 0);
           break;
-        case 'number': {
-          const num = parseFloat(String(rawValue));
-          sortKeys.set(row, isNaN(num) ? 0 : num);
+        case 'number':
+        case 'function': {
+          if (isNumericColumn(sortColumn)) {
+            const num = parseFloat(String(rawValue));
+            sortKeys.set(row, isNaN(num) ? 0 : num);
+          } else {
+            sortKeys.set(row, stripEmojis(String(rawValue)).toLowerCase());
+          }
           break;
         }
         default:

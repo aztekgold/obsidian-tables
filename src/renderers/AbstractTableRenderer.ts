@@ -12,13 +12,16 @@ import { UrlRenderer } from './UrlRenderer';
 import { EmailRenderer } from './EmailRenderer';
 import { DateRenderer } from './DateRenderer';
 import { NumberRenderer } from './NumberRenderer';
+import { FunctionRenderer } from './FunctionRenderer';
 import { SortHandler } from '../SortHandler';
 import { FilterHandler } from '../FilterHandler';
 import { SearchHandler } from '../SearchHandler';
+import { FormulaHandler } from '../FormulaHandler';
 import { ICON_NAMES, createIconElement } from '../icons';
 import { generateCsv, downloadCsv } from '../utils/csv';
 import { createDefaultView } from '../utils/fileUtils';
 import { generateRowId } from '../utils/migrateUtils';
+import { isMultiSelectColumn } from '../utils/columnUtils';
 import { ViewManager, IViewManagerHost } from './ViewManager';
 import { TableMenuManager, IMenuManagerHost } from './TableMenuManager';
 
@@ -36,6 +39,7 @@ export const TYPE_ICONS: Record<string, string> = {
     url: ICON_NAMES.url,
     email: ICON_NAMES.email,
     number: ICON_NAMES.number,
+    function: ICON_NAMES.function,
 };
 
 export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuManagerHost {
@@ -44,6 +48,7 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
     protected sortHandler: SortHandler;
     protected filterHandler: FilterHandler;
     protected searchHandler: SearchHandler;
+    public formulaHandler: FormulaHandler;
     // Set at the start of render() when the search box currently has real DOM
     // focus, so renderControls() can restore it after the DOM is rebuilt.
     // Deliberately re-derived from document.activeElement every render instead
@@ -75,12 +80,16 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
         this.viewManager = new ViewManager(this);
         this.menuManager = new TableMenuManager(this);
 
-        this.cellRenderers = new Map();
-        this.registerRenderers();
-
         this.sortHandler = new SortHandler(this.data, () => this.render(), this.view, () => this.getActiveView());
         this.filterHandler = new FilterHandler(this.data, () => this.render(), this.view, () => this.getActiveView());
         this.searchHandler = new SearchHandler();
+        // Constructed before registerRenderers() since FunctionRenderer takes
+        // it directly (not through the shared ICellRenderer interface, so
+        // the other 7 renderers don't need a parameter only it uses).
+        this.formulaHandler = new FormulaHandler(this.data);
+
+        this.cellRenderers = new Map();
+        this.registerRenderers();
     }
 
     // --- Abstract Methods ---
@@ -126,10 +135,11 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
         this.cellRenderers.set('email', new EmailRenderer());
         this.cellRenderers.set('date', new DateRenderer());
         this.cellRenderers.set('number', new NumberRenderer());
+        this.cellRenderers.set('function', new FunctionRenderer(this.formulaHandler));
     }
 
     protected getCellRenderer(col: ColumnDef): ICellRenderer | undefined {
-        if (col.type === 'select' && col.constraints?.multiSelect) {
+        if (isMultiSelectColumn(col)) {
             return this.cellRenderers.get('multiselect');
         }
         return this.cellRenderers.get(col.type);
@@ -253,12 +263,18 @@ export abstract class AbstractTableRenderer implements IViewManagerHost, IMenuMa
     // --- CSV Export ---
 
     public exportToCsv() {
+        if (this.formulaHandler.recomputeAll() && !this.isInline) {
+            void this.view.saveTableData(this.data);
+        }
         const csvContent = generateCsv(this.data.columns, this.data.rows);
         const filename = (this.view.getDisplayText() || 'table_export') + '.csv';
         downloadCsv(filename, csvContent);
     }
 
     public exportViewToCsv() {
+        if (this.formulaHandler.recomputeAll() && !this.isInline) {
+            void this.view.saveTableData(this.data);
+        }
         const rows = this.getSearchFilteredRows(this.filterHandler.getFilteredRows(this.sortHandler.getSortedRows()));
         const csvContent = generateCsv(this.getVisibleColumns(), rows);
         const filename = (this.view.getDisplayText() || 'view_export') + '_view.csv';
